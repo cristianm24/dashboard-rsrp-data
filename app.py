@@ -4336,6 +4336,11 @@ else:
     share_range = (0, 100)
     zone_focus = "Todas"
     solo_validos = True
+    territorial_filters_enabled = False
+    territorial_available_cols = []
+    codigos_disponibles_por_territorio = []
+    search_territory = ""
+    territorial_scope = pd.DataFrame(columns=["Codigo_postal"])
 
 
 # =========================================================
