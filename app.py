@@ -1,4 +1,63 @@
 
+# =========================
+# INTEGRACION VISTA CLARO PREPAGO
+# =========================
+import streamlit as st
+import pandas as pd
+
+def render_claro_view():
+    try:
+        df_claro = pd.read_excel("Plan_actualizado_CORTE_28_FINAL.xlsx")
+    except:
+        st.error("No se pudo cargar archivo de Claro")
+        return
+
+    if "OPERADOR" in df_claro.columns:
+        df_claro = df_claro[df_claro["OPERADOR"] == "Claro"]
+
+    st.markdown("## 🔴 Claro - Agentes Prepago")
+
+    agente = st.sidebar.multiselect("Agente", df_claro.get("AGENTE", []))
+    ruta = st.sidebar.multiselect("Ruta", df_claro.get("RUTA", []))
+
+    if agente:
+        df_claro = df_claro[df_claro["AGENTE"].isin(agente)]
+    if ruta:
+        df_claro = df_claro[df_claro["RUTA"].isin(ruta)]
+
+    tabs = st.tabs([
+        "📊 Resumen Ejecutivo",
+        "🗺️ Cobertura",
+        "📈 Plan de Trabajo",
+        "👥 Agentes",
+        "🚨 Alertas"
+    ])
+
+    with tabs[0]:
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Agentes", df_claro.get("AGENTE", pd.Series()).nunique())
+        col2.metric("Rutas", df_claro.get("RUTA", pd.Series()).nunique())
+        col3.metric("Registros", len(df_claro))
+
+    with tabs[2]:
+        if "META" in df_claro.columns and "VENTAS" in df_claro.columns:
+            resumen = df_claro.groupby("RUTA")[["VENTAS","META"]].sum()
+            resumen["%"] = resumen["VENTAS"]/resumen["META"]
+            st.dataframe(resumen)
+
+# selector global
+vista_global = st.radio(
+    "Vista",
+    ["Operadores", "Claro - Agentes Prepago"],
+    horizontal=True
+)
+
+if vista_global == "Claro - Agentes Prepago":
+    render_claro_view()
+    st.stop()
+
+
+
 import os
 import io
 import re
