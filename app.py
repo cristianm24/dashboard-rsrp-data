@@ -3239,7 +3239,7 @@ def render_claro_view():
     # =========================================================
     # MÉTRICAS GLOBALES
     # =========================================================
-    total_pdvs        = int(df["ID "].nunique()) if "ID " in df.columns else int(len(df))
+    total_pdvs        = int(df["ID"].nunique()) if "ID" in df.columns else int(len(df))
     meta_nat_total    = df["META ALTA NAT (>$2000)"].sum()
     ejec_nat_total    = df["EJEC ALTA NAT"].sum()
     meta_total_alta   = df["TOTAL META ALTA"].sum()
@@ -3425,7 +3425,7 @@ def render_claro_view():
         agentes_all = sorted(df["AGENTE"].dropna().unique())
         cols_ag = st.columns(min(len(agentes_all), 4), gap="small")
         by_agente = df.groupby("AGENTE").agg(
-            pdvs=("ID ", "count"),
+            pdvs=("ID", "count"),
             meta_nat=("META ALTA NAT (>$2000)", "sum"),
             ejec_nat=("EJEC ALTA NAT", "sum"),
             ejec_total=("EJE ALTA TOTAL", "sum"),
@@ -3460,7 +3460,7 @@ def render_claro_view():
         st.markdown(lane_label("Distribución por categoría", "spark"), unsafe_allow_html=True)
         c1a, c1b = st.columns(2, gap="large")
         by_cat = df.groupby("CATEGORIA").agg(
-            pdvs=("ID ", "count"),
+            pdvs=("ID", "count"),
             ejec_nat=("EJEC ALTA NAT", "sum"),
             meta_nat=("META ALTA NAT (>$2000)", "sum"),
             ejec_total=("EJE ALTA TOTAL", "sum"),
@@ -3540,7 +3540,7 @@ def render_claro_view():
         ), unsafe_allow_html=True)
 
         by_ag_full = df.groupby("AGENTE").agg(
-            pdvs=("ID ", "count"),
+            pdvs=("ID", "count"),
             meta_nat=("META ALTA NAT (>$2000)", "sum"),
             ejec_nat=("EJEC ALTA NAT", "sum"),
             meta_indu=("META ALTA INDU (=< $2.000)", "sum"),
@@ -3645,7 +3645,7 @@ def render_claro_view():
 
         # Top asesores
         by_asesor = df.groupby(["ASESOR","AGENTE"]).agg(
-            pdvs=("ID ", "count"),
+            pdvs=("ID", "count"),
             meta_nat=("META ALTA NAT (>$2000)", "sum"),
             ejec_nat=("EJEC ALTA NAT", "sum"),
             ejec_total=("EJE ALTA TOTAL", "sum"),
@@ -3676,7 +3676,7 @@ def render_claro_view():
         with c3b:
             # Top circuitos
             by_circ = df.groupby("CIRCUITO").agg(
-                pdvs=("ID ", "count"),
+                pdvs=("ID", "count"),
                 meta_nat=("META ALTA NAT (>$2000)", "sum"),
                 ejec_nat=("EJEC ALTA NAT", "sum"),
                 ejec_total=("EJE ALTA TOTAL", "sum"),
@@ -3710,7 +3710,7 @@ def render_claro_view():
 
         with c3c:
             by_clasif = df.groupby("CLASIFICACION").agg(
-                pdvs=("ID ", "count"),
+                pdvs=("ID", "count"),
                 ejec_nat=("EJEC ALTA NAT", "sum"),
                 meta_nat=("META ALTA NAT (>$2000)", "sum"),
             ).reset_index().sort_values("ejec_nat", ascending=False).head(12)
@@ -3728,7 +3728,7 @@ def render_claro_view():
 
         with c3d:
             by_tipo = df.groupby("TIPOLOGIA").agg(
-                pdvs=("ID ", "count"),
+                pdvs=("ID", "count"),
                 ejec_nat=("EJEC ALTA NAT", "sum"),
                 meta_nat=("META ALTA NAT (>$2000)", "sum"),
             ).reset_index()
@@ -3757,7 +3757,7 @@ def render_claro_view():
 
         st.markdown(table_shell(f"PDVs con cumplimiento < 70% ({len(df_opp_show)} visibles)"), unsafe_allow_html=True)
         if not df_opp_show.empty:
-            cols_show = [c for c in ["ID ", "AGENTE", "ASESOR", "CIRCUITO", "CLASIFICACION", "CATEGORIA",
+            cols_show = [c for c in ["ID", "AGENTE", "ASESOR", "CIRCUITO", "CLASIFICACION", "CATEGORIA",
                                      "META ALTA NAT (>$2000)", "EJEC ALTA NAT", "cumpl_pdv"] if c in df_opp_show.columns]
             show_opp = df_opp_show[cols_show].copy()
             show_opp = safe_round_columns(show_opp, ["META ALTA NAT (>$2000)", "EJEC ALTA NAT", "cumpl_pdv"])
@@ -3954,7 +3954,7 @@ def render_claro_view():
             cuota_by_ag = df.groupby("AGENTE").agg(
                 cuota_mkt=("CUOTA DE MERCADO", "mean"),
                 cuota_alta=("CUOTA DE ALTA", "mean"),
-                n=("ID ", "count"),
+                n=("ID", "count"),
             ).reset_index()
 
             st.markdown('<div class="section-card"><div class="section-title">Cuota de mercado y alta por agente</div><div class="section-subtitle">Promedio de cuota de mercado Claro y cuota de altas Claro por agente.</div>', unsafe_allow_html=True)
@@ -4013,7 +4013,7 @@ def render_claro_view():
             cuota_cat = df.groupby("CATEGORIA").agg(
                 cuota_mkt=("CUOTA DE MERCADO", "mean"),
                 cuota_alta=("CUOTA DE ALTA", "mean"),
-                n=("ID ", "count"),
+                n=("ID", "count"),
             ).reset_index()
             cuota_cat["CATEGORIA"] = pd.Categorical(cuota_cat["CATEGORIA"], categories=["DIAMANTE","PLATINO","ORO","PLATA","BRONCE"], ordered=True)
             cuota_cat = cuota_cat.sort_values("CATEGORIA")
