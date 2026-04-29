@@ -3494,13 +3494,12 @@ def render_claro_view():
         with c1b:
             st.markdown('<div class="section-card"><div class="section-title">Cumplimiento por categoría</div><div class="section-subtitle">% de cumplimiento meta altas nat. por nivel de PDV.</div>', unsafe_allow_html=True)
             if not by_cat.empty:
-                chart_cumpl = alt.Chart(by_cat).mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
+                chart_cumpl = alt.Chart(by_cat).transform_calculate(
+                    color_semaforo="datum.cumpl >= 100 ? '#22C55E' : datum.cumpl >= 70 ? '#F59E0B' : '#EF4444'"
+                ).mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
                     x=alt.X("CATEGORIA:N", sort=cat_order, title=None),
                     y=alt.Y("cumpl:Q", title="Cumplimiento (%)"),
-                    color=alt.condition(
-                        alt.datum.cumpl >= 100, alt.value("#22C55E"),
-                        alt.condition(alt.datum.cumpl >= 70, alt.value("#F59E0B"), alt.value("#EF4444"))
-                    ),
+                    color=alt.Color("color_semaforo:N", scale=None, legend=None),
                     tooltip=[
                         alt.Tooltip("CATEGORIA:N", title="Categoría"),
                         alt.Tooltip("cumpl:Q", title="Cumpl. %", format=".1f"),
@@ -3686,13 +3685,12 @@ def render_claro_view():
             by_circ = by_circ.sort_values("ejec_total", ascending=False).head(15)
 
             st.markdown('<div class="section-card"><div class="section-title">Top circuitos por ejecución</div><div class="section-subtitle">Los 15 circuitos con mayor volumen de altas totales ejecutadas.</div>', unsafe_allow_html=True)
-            chart_circ = alt.Chart(by_circ).mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5).encode(
+            chart_circ = alt.Chart(by_circ).transform_calculate(
+                color_semaforo="datum.cumpl >= 100 ? '#22C55E' : datum.cumpl >= 70 ? '#F59E0B' : '#EF4444'"
+            ).mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5).encode(
                 x=alt.X("ejec_total:Q", title="Altas totales"),
                 y=alt.Y("CIRCUITO:N", sort="-x", title=None, axis=alt.Axis(labelLimit=160)),
-                color=alt.condition(
-                    alt.datum.cumpl >= 100, alt.value("#22C55E"),
-                    alt.condition(alt.datum.cumpl >= 70, alt.value("#F59E0B"), alt.value("#EF4444"))
-                ),
+                color=alt.Color("color_semaforo:N", scale=None, legend=None),
                 tooltip=[
                     alt.Tooltip("CIRCUITO:N"),
                     alt.Tooltip("pdvs:Q", title="PDVs"),
@@ -3736,13 +3734,12 @@ def render_claro_view():
 
             st.markdown('<div class="section-card"><div class="section-title">Ejecución por tipología de PDV</div><div class="section-subtitle">Cumplimiento y volumen según el tipo A, B, C o D de PDV.</div>', unsafe_allow_html=True)
             if not by_tipo.empty:
-                chart_tip = alt.Chart(by_tipo).mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
+                chart_tip = alt.Chart(by_tipo).transform_calculate(
+                    color_semaforo="datum.cumpl >= 100 ? '#22C55E' : datum.cumpl >= 70 ? '#F59E0B' : '#EF4444'"
+                ).mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
                     x=alt.X("TIPOLOGIA:N", title=None),
                     y=alt.Y("ejec_nat:Q", title="Altas nat."),
-                    color=alt.condition(
-                        alt.datum.cumpl >= 100, alt.value("#22C55E"),
-                        alt.condition(alt.datum.cumpl >= 70, alt.value("#F59E0B"), alt.value("#EF4444"))
-                    ),
+                    color=alt.Color("color_semaforo:N", scale=None, legend=None),
                     tooltip=[alt.Tooltip("TIPOLOGIA:N"), alt.Tooltip("pdvs:Q", title="PDVs"),
                              alt.Tooltip("ejec_nat:Q", format=",.0f"), alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %")]
                 ).properties(height=300)
@@ -4103,222 +4100,243 @@ vista_activa = st.sidebar.radio(
 st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
 
+_vista_claro_sidebar = st.session_state.get("vista_activa", "🔴 Red y Mercado · Operadores") == "📊 Claro · Agentes y PDVs"
+
 fecha_min = df["Fecha de inicio"].min()
 fecha_max = df["Fecha de inicio"].max()
 if pd.isna(fecha_min) or pd.isna(fecha_max):
-    st.error("No se encontraron fechas válidas en el archivo principal.")
-    st.stop()
+    if not _vista_claro_sidebar:
+        st.error("No se encontraron fechas válidas en el archivo principal.")
+        st.stop()
 
-st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("trend",12)} Paso 1 · Define el horizonte</div><div class="sidebar-title">Contexto temporal</div><div class="sidebar-sub">Define una ventana personalizada o una ventana móvil por mes, semana o día, y el nivel al que se calcula la variación.</div><div class="filter-stage"><div class="filter-stage-card"><div class="filter-stage-title">Ventana</div><div class="filter-stage-text">Rango o ventana móvil</div></div><div class="filter-stage-card"><div class="filter-stage-title">Unidad</div><div class="filter-stage-text">Mes, semana o día</div></div><div class="filter-stage-card"><div class="filter-stage-title">Lectura</div><div class="filter-stage-text">Cómo comparar periodos</div></div></div>', unsafe_allow_html=True)
-temporal_mode = st.sidebar.radio(
-    "Modo de ventana temporal",
-    options=["Rango personalizado", "Ventana por periodo"],
-    key="temporal_mode",
-    horizontal=False
-)
-
-if temporal_mode == "Rango personalizado":
-    col_f1, col_f2 = st.sidebar.columns(2)
-    with col_f1:
-        fecha_ini_input = st.date_input(
-            "Desde",
-            value=fecha_min.date(),
-            min_value=fecha_min.date(),
-            max_value=fecha_max.date(),
-            key="fecha_ini_personalizada",
-        )
-    with col_f2:
-        fecha_fin_input = st.date_input(
-            "Hasta",
-            value=fecha_max.date(),
-            min_value=fecha_min.date(),
-            max_value=fecha_max.date(),
-            key="fecha_fin_personalizada",
-        )
-    if fecha_ini_input > fecha_fin_input:
-        fecha_ini_input, fecha_fin_input = fecha_fin_input, fecha_ini_input
-    fecha_ini = fecha_ini_input
-    fecha_fin = fecha_fin_input
-    st.sidebar.caption(f"Ventana activa: {fecha_ini.strftime('%d/%m/%Y')} - {fecha_fin.strftime('%d/%m/%Y')}")
-else:
-    col_w1, col_w2 = st.sidebar.columns([1, 1])
-    with col_w1:
-        window_value = st.number_input(
-            "Últimos",
-            min_value=1,
-            max_value=104,
-            value=int(st.session_state.get("window_value", 12)),
-            step=1,
-            key="window_value"
-        )
-    with col_w2:
-        window_unit = st.selectbox(
-            "Periodo",
-            options=["Mes", "Semana", "Día"],
-            index=["Mes", "Semana", "Día"].index(st.session_state.get("window_unit", "Mes")),
-            key="window_unit"
-        )
-
-    fecha_fin = fecha_max.date()
-    fecha_fin_ts = pd.Timestamp(fecha_fin)
-    if window_unit == "Mes":
-        fecha_ini = (fecha_fin_ts - pd.DateOffset(months=int(window_value) - 1)).date()
-    elif window_unit == "Semana":
-        fecha_ini = (fecha_fin_ts - pd.Timedelta(weeks=int(window_value) - 1)).date()
-    else:
-        fecha_ini = (fecha_fin_ts - pd.Timedelta(days=int(window_value) - 1)).date()
-
-    if fecha_ini < fecha_min.date():
-        fecha_ini = fecha_min.date()
-
-    st.sidebar.caption(
-        f"Ventana activa: últimos {int(window_value)} {window_unit.lower()}{'' if int(window_value)==1 else 'es' if window_unit=='Mes' else 's'} | {fecha_ini.strftime('%d/%m/%Y')} - {fecha_fin.strftime('%d/%m/%Y')}"
+if not _vista_claro_sidebar:
+    st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("trend",12)} Paso 1 · Define el horizonte</div><div class="sidebar-title">Contexto temporal</div><div class="sidebar-sub">Define una ventana personalizada o una ventana móvil por mes, semana o día, y el nivel al que se calcula la variación.</div><div class="filter-stage"><div class="filter-stage-card"><div class="filter-stage-title">Ventana</div><div class="filter-stage-text">Rango o ventana móvil</div></div><div class="filter-stage-card"><div class="filter-stage-title">Unidad</div><div class="filter-stage-text">Mes, semana o día</div></div><div class="filter-stage-card"><div class="filter-stage-title">Lectura</div><div class="filter-stage-text">Cómo comparar periodos</div></div></div>', unsafe_allow_html=True)
+if not _vista_claro_sidebar:
+    temporal_mode = st.sidebar.radio(
+        "Modo de ventana temporal",
+        options=["Rango personalizado", "Ventana por periodo"],
+        key="temporal_mode",
+        horizontal=False
     )
 
-nivel_temporal_variacion = st.sidebar.selectbox("Nivel temporal de variación", options=["Mes", "Semana", "Día"], index=0)
-st.sidebar.markdown('</div>', unsafe_allow_html=True)
+    if temporal_mode == "Rango personalizado":
+        col_f1, col_f2 = st.sidebar.columns(2)
+        with col_f1:
+            fecha_ini_input = st.date_input(
+                "Desde",
+                value=fecha_min.date(),
+                min_value=fecha_min.date(),
+                max_value=fecha_max.date(),
+                key="fecha_ini_personalizada",
+            )
+        with col_f2:
+            fecha_fin_input = st.date_input(
+                "Hasta",
+                value=fecha_max.date(),
+                min_value=fecha_min.date(),
+                max_value=fecha_max.date(),
+                key="fecha_fin_personalizada",
+            )
+        if fecha_ini_input > fecha_fin_input:
+            fecha_ini_input, fecha_fin_input = fecha_fin_input, fecha_ini_input
+        fecha_ini = fecha_ini_input
+        fecha_fin = fecha_fin_input
+        st.sidebar.caption(f"Ventana activa: {fecha_ini.strftime('%d/%m/%Y')} - {fecha_fin.strftime('%d/%m/%Y')}")
+    else:
+        col_w1, col_w2 = st.sidebar.columns([1, 1])
+        with col_w1:
+            window_value = st.number_input(
+                "Últimos",
+                min_value=1,
+                max_value=104,
+                value=int(st.session_state.get("window_value", 12)),
+                step=1,
+                key="window_value"
+            )
+        with col_w2:
+            window_unit = st.selectbox(
+                "Periodo",
+                options=["Mes", "Semana", "Día"],
+                index=["Mes", "Semana", "Día"].index(st.session_state.get("window_unit", "Mes")),
+                key="window_unit"
+            )
 
-territorial_available_cols = territorial_info.get("available_cols", []) if territorial_info else []
-territorial_filters_enabled = territorial_info.get("found", False) and "Codigo_postal" in territorial_df.columns
+        fecha_fin = fecha_max.date()
+        fecha_fin_ts = pd.Timestamp(fecha_fin)
+        if window_unit == "Mes":
+            fecha_ini = (fecha_fin_ts - pd.DateOffset(months=int(window_value) - 1)).date()
+        elif window_unit == "Semana":
+            fecha_ini = (fecha_fin_ts - pd.Timedelta(weeks=int(window_value) - 1)).date()
+        else:
+            fecha_ini = (fecha_fin_ts - pd.Timedelta(days=int(window_value) - 1)).date()
 
-localidad_options, barrio_options, ruta_options, circuito_options = get_dynamic_territorial_options(
-    territorial_df=territorial_df if territorial_filters_enabled else pd.DataFrame(),
-    localidad_sel=st.session_state.get("localidad_sel", []),
-    barrio_sel=st.session_state.get("barrio_sel", []),
-    ruta_sel=st.session_state.get("ruta_sel", []),
-)
+        if fecha_ini < fecha_min.date():
+            fecha_ini = fecha_min.date()
 
-# Fallback visual para evitar selectores vacíos cuando el Excel territorial no carga,
-# pero las columnas territoriales sí existen en el dataset ya unido.
-if not localidad_options and "LOCALIDAD" in df_long.columns:
-    localidad_options = sorted(df_long["LOCALIDAD"].dropna().astype(str).loc[lambda s: s.str.strip() != ""].unique().tolist())
-if not barrio_options and "BARRIO" in df_long.columns:
-    barrio_options = sorted(df_long["BARRIO"].dropna().astype(str).loc[lambda s: s.str.strip() != ""].unique().tolist())
-if not ruta_options and "RUTA" in df_long.columns:
-    ruta_options = sorted(df_long["RUTA"].dropna().astype(str).loc[lambda s: s.str.strip() != ""].unique().tolist())
-if not circuito_options and "CIRCUITO" in df_long.columns:
-    circuito_options = sorted(df_long["CIRCUITO"].dropna().astype(str).loc[lambda s: s.str.strip() != ""].unique().tolist())
+        st.sidebar.caption(
+            f"Ventana activa: últimos {int(window_value)} {window_unit.lower()}{'' if int(window_value)==1 else 'es' if window_unit=='Mes' else 's'} | {fecha_ini.strftime('%d/%m/%Y')} - {fecha_fin.strftime('%d/%m/%Y')}"
+        )
 
-st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("map",12)} Paso 2 · Acota el territorio</div><div class="sidebar-title">Segmentación principal</div><div class="sidebar-sub">Usa estos filtros para definir rápidamente el universo principal.</div><div class="filter-stage"><div class="filter-stage-card"><div class="filter-stage-title">Localidad</div><div class="filter-stage-text">Define el bloque geográfico</div></div><div class="filter-stage-card"><div class="filter-stage-title">Barrio</div><div class="filter-stage-text">Aterriza la búsqueda</div></div><div class="filter-stage-card"><div class="filter-stage-title">Avanzados</div><div class="filter-stage-text">Ruta, circuito y CP</div></div></div>', unsafe_allow_html=True)
-localidad_sel = st.sidebar.multiselect("Localidad", options=localidad_options, default=[x for x in st.session_state.get("localidad_sel", []) if x in localidad_options], key="localidad_sel", disabled=(not ("LOCALIDAD" in territorial_available_cols) and not localidad_options))
-_, barrio_options, ruta_options, circuito_options = get_dynamic_territorial_options(territorial_df if territorial_filters_enabled else pd.DataFrame(), localidad_sel, st.session_state.get("barrio_sel", []), st.session_state.get("ruta_sel", []))
-if not barrio_options and "BARRIO" in df_long.columns:
-    barrio_scope_fallback = df_long.copy()
-    if localidad_sel and "LOCALIDAD" in barrio_scope_fallback.columns:
-        barrio_scope_fallback = barrio_scope_fallback[barrio_scope_fallback["LOCALIDAD"].isin(localidad_sel)]
-    barrio_options = sorted(barrio_scope_fallback["BARRIO"].dropna().astype(str).loc[lambda s: s.str.strip() != ""].unique().tolist())
-barrio_sel = st.sidebar.multiselect("Barrio", options=barrio_options, default=[x for x in st.session_state.get("barrio_sel", []) if x in barrio_options], key="barrio_sel", disabled=(not ("BARRIO" in territorial_available_cols) and not barrio_options))
-st.sidebar.markdown('</div>', unsafe_allow_html=True)
+    nivel_temporal_variacion = st.sidebar.selectbox("Nivel temporal de variación", options=["Mes", "Semana", "Día"], index=0)
+    st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
-with st.sidebar.expander("Filtros avanzados", expanded=False):
-    _, _, ruta_options, circuito_options = get_dynamic_territorial_options(territorial_df if territorial_filters_enabled else pd.DataFrame(), localidad_sel, barrio_sel, st.session_state.get("ruta_sel", []))
+    territorial_available_cols = territorial_info.get("available_cols", []) if territorial_info else []
+    territorial_filters_enabled = territorial_info.get("found", False) and "Codigo_postal" in territorial_df.columns
+
+    localidad_options, barrio_options, ruta_options, circuito_options = get_dynamic_territorial_options(
+        territorial_df=territorial_df if territorial_filters_enabled else pd.DataFrame(),
+        localidad_sel=st.session_state.get("localidad_sel", []),
+        barrio_sel=st.session_state.get("barrio_sel", []),
+        ruta_sel=st.session_state.get("ruta_sel", []),
+    )
+
+    # Fallback visual para evitar selectores vacíos cuando el Excel territorial no carga,
+    # pero las columnas territoriales sí existen en el dataset ya unido.
+    if not localidad_options and "LOCALIDAD" in df_long.columns:
+        localidad_options = sorted(df_long["LOCALIDAD"].dropna().astype(str).loc[lambda s: s.str.strip() != ""].unique().tolist())
+    if not barrio_options and "BARRIO" in df_long.columns:
+        barrio_options = sorted(df_long["BARRIO"].dropna().astype(str).loc[lambda s: s.str.strip() != ""].unique().tolist())
     if not ruta_options and "RUTA" in df_long.columns:
-        ruta_scope_fallback = df_long.copy()
-        if localidad_sel and "LOCALIDAD" in ruta_scope_fallback.columns:
-            ruta_scope_fallback = ruta_scope_fallback[ruta_scope_fallback["LOCALIDAD"].isin(localidad_sel)]
-        if barrio_sel and "BARRIO" in ruta_scope_fallback.columns:
-            ruta_scope_fallback = ruta_scope_fallback[ruta_scope_fallback["BARRIO"].isin(barrio_sel)]
-        ruta_options = sorted(ruta_scope_fallback["RUTA"].dropna().astype(str).loc[lambda s: s.str.strip() != ""].unique().tolist())
-    ruta_sel = st.multiselect("Ruta", options=ruta_options, default=[x for x in st.session_state.get("ruta_sel", []) if x in ruta_options], key="ruta_sel", disabled=(not ("RUTA" in territorial_available_cols) and not ruta_options))
-    _, _, _, circuito_options = get_dynamic_territorial_options(territorial_df if territorial_filters_enabled else pd.DataFrame(), localidad_sel, barrio_sel, ruta_sel)
+        ruta_options = sorted(df_long["RUTA"].dropna().astype(str).loc[lambda s: s.str.strip() != ""].unique().tolist())
     if not circuito_options and "CIRCUITO" in df_long.columns:
-        circuito_scope_fallback = df_long.copy()
-        if localidad_sel and "LOCALIDAD" in circuito_scope_fallback.columns:
-            circuito_scope_fallback = circuito_scope_fallback[circuito_scope_fallback["LOCALIDAD"].isin(localidad_sel)]
-        if barrio_sel and "BARRIO" in circuito_scope_fallback.columns:
-            circuito_scope_fallback = circuito_scope_fallback[circuito_scope_fallback["BARRIO"].isin(barrio_sel)]
-        if ruta_sel and "RUTA" in circuito_scope_fallback.columns:
-            circuito_scope_fallback = circuito_scope_fallback[circuito_scope_fallback["RUTA"].isin(ruta_sel)]
-        circuito_options = sorted(circuito_scope_fallback["CIRCUITO"].dropna().astype(str).loc[lambda s: s.str.strip() != ""].unique().tolist())
-    circuito_sel = st.multiselect("Circuito", options=circuito_options, default=[x for x in st.session_state.get("circuito_sel", []) if x in circuito_options], key="circuito_sel", disabled=(not ("CIRCUITO" in territorial_available_cols) and not circuito_options))
-    search_territory = st.text_input("Buscar CP / zona", key="search_territory", placeholder="Ej: 110111 o Suba")
+        circuito_options = sorted(df_long["CIRCUITO"].dropna().astype(str).loc[lambda s: s.str.strip() != ""].unique().tolist())
+
+    st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("map",12)} Paso 2 · Acota el territorio</div><div class="sidebar-title">Segmentación principal</div><div class="sidebar-sub">Usa estos filtros para definir rápidamente el universo principal.</div><div class="filter-stage"><div class="filter-stage-card"><div class="filter-stage-title">Localidad</div><div class="filter-stage-text">Define el bloque geográfico</div></div><div class="filter-stage-card"><div class="filter-stage-title">Barrio</div><div class="filter-stage-text">Aterriza la búsqueda</div></div><div class="filter-stage-card"><div class="filter-stage-title">Avanzados</div><div class="filter-stage-text">Ruta, circuito y CP</div></div></div>', unsafe_allow_html=True)
+    localidad_sel = st.sidebar.multiselect("Localidad", options=localidad_options, default=[x for x in st.session_state.get("localidad_sel", []) if x in localidad_options], key="localidad_sel", disabled=(not ("LOCALIDAD" in territorial_available_cols) and not localidad_options))
+    _, barrio_options, ruta_options, circuito_options = get_dynamic_territorial_options(territorial_df if territorial_filters_enabled else pd.DataFrame(), localidad_sel, st.session_state.get("barrio_sel", []), st.session_state.get("ruta_sel", []))
+    if not barrio_options and "BARRIO" in df_long.columns:
+        barrio_scope_fallback = df_long.copy()
+        if localidad_sel and "LOCALIDAD" in barrio_scope_fallback.columns:
+            barrio_scope_fallback = barrio_scope_fallback[barrio_scope_fallback["LOCALIDAD"].isin(localidad_sel)]
+        barrio_options = sorted(barrio_scope_fallback["BARRIO"].dropna().astype(str).loc[lambda s: s.str.strip() != ""].unique().tolist())
+    barrio_sel = st.sidebar.multiselect("Barrio", options=barrio_options, default=[x for x in st.session_state.get("barrio_sel", []) if x in barrio_options], key="barrio_sel", disabled=(not ("BARRIO" in territorial_available_cols) and not barrio_options))
+    st.sidebar.markdown('</div>', unsafe_allow_html=True)
+
+    with st.sidebar.expander("Filtros avanzados", expanded=False):
+        _, _, ruta_options, circuito_options = get_dynamic_territorial_options(territorial_df if territorial_filters_enabled else pd.DataFrame(), localidad_sel, barrio_sel, st.session_state.get("ruta_sel", []))
+        if not ruta_options and "RUTA" in df_long.columns:
+            ruta_scope_fallback = df_long.copy()
+            if localidad_sel and "LOCALIDAD" in ruta_scope_fallback.columns:
+                ruta_scope_fallback = ruta_scope_fallback[ruta_scope_fallback["LOCALIDAD"].isin(localidad_sel)]
+            if barrio_sel and "BARRIO" in ruta_scope_fallback.columns:
+                ruta_scope_fallback = ruta_scope_fallback[ruta_scope_fallback["BARRIO"].isin(barrio_sel)]
+            ruta_options = sorted(ruta_scope_fallback["RUTA"].dropna().astype(str).loc[lambda s: s.str.strip() != ""].unique().tolist())
+        ruta_sel = st.multiselect("Ruta", options=ruta_options, default=[x for x in st.session_state.get("ruta_sel", []) if x in ruta_options], key="ruta_sel", disabled=(not ("RUTA" in territorial_available_cols) and not ruta_options))
+        _, _, _, circuito_options = get_dynamic_territorial_options(territorial_df if territorial_filters_enabled else pd.DataFrame(), localidad_sel, barrio_sel, ruta_sel)
+        if not circuito_options and "CIRCUITO" in df_long.columns:
+            circuito_scope_fallback = df_long.copy()
+            if localidad_sel and "LOCALIDAD" in circuito_scope_fallback.columns:
+                circuito_scope_fallback = circuito_scope_fallback[circuito_scope_fallback["LOCALIDAD"].isin(localidad_sel)]
+            if barrio_sel and "BARRIO" in circuito_scope_fallback.columns:
+                circuito_scope_fallback = circuito_scope_fallback[circuito_scope_fallback["BARRIO"].isin(barrio_sel)]
+            if ruta_sel and "RUTA" in circuito_scope_fallback.columns:
+                circuito_scope_fallback = circuito_scope_fallback[circuito_scope_fallback["RUTA"].isin(ruta_sel)]
+            circuito_options = sorted(circuito_scope_fallback["CIRCUITO"].dropna().astype(str).loc[lambda s: s.str.strip() != ""].unique().tolist())
+        circuito_sel = st.multiselect("Circuito", options=circuito_options, default=[x for x in st.session_state.get("circuito_sel", []) if x in circuito_options], key="circuito_sel", disabled=(not ("CIRCUITO" in territorial_available_cols) and not circuito_options))
+        search_territory = st.text_input("Buscar CP / zona", key="search_territory", placeholder="Ej: 110111 o Suba")
+
+        territorial_scope = filter_territorial_scope(
+            territorial_df if territorial_filters_enabled else pd.DataFrame(columns=["Codigo_postal"]),
+            localidad_sel=localidad_sel, barrio_sel=barrio_sel, ruta_sel=ruta_sel, circuito_sel=circuito_sel
+        )
+        codigos_disponibles_por_territorio = sorted(territorial_scope["Codigo_postal"].dropna().astype(str).unique().tolist()) if not territorial_scope.empty else []
+
+        codigos = sorted(df["Codigo_postal"].dropna().astype(str).unique().tolist())
+        if territorial_filters_enabled and (localidad_sel or barrio_sel or ruta_sel or circuito_sel):
+            codigos_options_sidebar = sorted(set(codigos).intersection(set(codigos_disponibles_por_territorio)))
+        else:
+            codigos_options_sidebar = codigos
+        codigos_sel = st.multiselect("Códigos postales", options=codigos_options_sidebar, default=[])
+
+    st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("users",12)} Paso 3 · Define la competencia</div><div class="sidebar-title">Operadores</div><div class="sidebar-sub">Selecciona el universo competitivo a comparar.</div><div class="sidebar-guide-row"><span class="sidebar-guide-pill">{icon_svg("eye",12)} Visible en análisis</span><span class="sidebar-guide-pill">{icon_svg("chart",12)} Impacta todas las tabs</span></div>', unsafe_allow_html=True)
+    btn1, btn2 = st.sidebar.columns(2)
+    with btn1:
+        if st.button("Seleccionar todos", use_container_width=True):
+            for op in operator_cols:
+                st.session_state[f"op_{op}"] = True
+    with btn2:
+        if st.button("Limpiar", use_container_width=True):
+            for op in operator_cols:
+                st.session_state[f"op_{op}"] = False
+    st.sidebar.markdown('<div class="sidebar-soft-note">Activa solo los operadores que quieras comparar. Si dejas uno solo, el tablero se comporta como una vista focalizada.</div>', unsafe_allow_html=True)
+    cols_ops = st.sidebar.columns(2)
+    for i, op in enumerate(operator_cols):
+        with cols_ops[i % 2]:
+            op_color = OPERATOR_COLORS.get(op, "#64748B")
+            st.markdown(
+                f'''<div class="sidebar-operator-card">
+                    <div class="sidebar-operator-chip" style="background:{op_color};">{icon_svg("users", 11)} Operador</div>
+                    <div class="sidebar-operator-label">{op}</div>
+                    <div class="sidebar-operator-sub">Inclúyelo o exclúyelo del universo competitivo.</div>
+                </div>''',
+                unsafe_allow_html=True
+            )
+            st.checkbox(op, key=f"op_{op}")
+    operadores_sel = [op for op in operator_cols if st.session_state.get(f"op_{op}", False)]
+    st.sidebar.markdown('</div>', unsafe_allow_html=True)
+    if not operadores_sel:
+        st.warning("Debes seleccionar al menos un operador.")
+        st.stop()
+
+    with st.sidebar.expander("Negocio · configuración avanzada", expanded=False):
+        st.markdown(f'<div class="sidebar-guide-row"><span class="sidebar-guide-pill">{icon_svg("briefcase",12)} Mercado y captación</span><span class="sidebar-guide-pill">{icon_svg("target",12)} Filtra focos</span></div>', unsafe_allow_html=True)
+        metric_focus = st.selectbox("Vista de negocio", ["Comparado", "Mercado", "Altas"], key="metric_focus")
+        share_range = st.slider("Rango de cuota / participación (%)", 0, 100, st.session_state.get("share_range", (0, 100)), key="share_range")
+        zone_focus = st.selectbox("Tipo de zona", ["Todas", "Alta competencia", "Dominio claro", "Bajo desarrollo"], key="zone_focus")
+        solo_validos = st.checkbox("Excluir registros sin medición válida", value=True)
+        if st.button("Reset filtros", use_container_width=True):
+            keep_ops = {k: v for k, v in st.session_state.items() if k.startswith("op_")}
+            st.session_state.clear()
+            for k, v in keep_ops.items():
+                st.session_state[k] = v
+            st.rerun()
 
     territorial_scope = filter_territorial_scope(
         territorial_df if territorial_filters_enabled else pd.DataFrame(columns=["Codigo_postal"]),
         localidad_sel=localidad_sel, barrio_sel=barrio_sel, ruta_sel=ruta_sel, circuito_sel=circuito_sel
     )
     codigos_disponibles_por_territorio = sorted(territorial_scope["Codigo_postal"].dropna().astype(str).unique().tolist()) if not territorial_scope.empty else []
-
-    codigos = sorted(df["Codigo_postal"].dropna().astype(str).unique().tolist())
-    if territorial_filters_enabled and (localidad_sel or barrio_sel or ruta_sel or circuito_sel):
-        codigos_options_sidebar = sorted(set(codigos).intersection(set(codigos_disponibles_por_territorio)))
-    else:
-        codigos_options_sidebar = codigos
-    codigos_sel = st.multiselect("Códigos postales", options=codigos_options_sidebar, default=[])
-
-st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("users",12)} Paso 3 · Define la competencia</div><div class="sidebar-title">Operadores</div><div class="sidebar-sub">Selecciona el universo competitivo a comparar.</div><div class="sidebar-guide-row"><span class="sidebar-guide-pill">{icon_svg("eye",12)} Visible en análisis</span><span class="sidebar-guide-pill">{icon_svg("chart",12)} Impacta todas las tabs</span></div>', unsafe_allow_html=True)
-btn1, btn2 = st.sidebar.columns(2)
-with btn1:
-    if st.button("Seleccionar todos", use_container_width=True):
-        for op in operator_cols:
-            st.session_state[f"op_{op}"] = True
-with btn2:
-    if st.button("Limpiar", use_container_width=True):
-        for op in operator_cols:
-            st.session_state[f"op_{op}"] = False
-st.sidebar.markdown('<div class="sidebar-soft-note">Activa solo los operadores que quieras comparar. Si dejas uno solo, el tablero se comporta como una vista focalizada.</div>', unsafe_allow_html=True)
-cols_ops = st.sidebar.columns(2)
-for i, op in enumerate(operator_cols):
-    with cols_ops[i % 2]:
-        op_color = OPERATOR_COLORS.get(op, "#64748B")
-        st.markdown(
-            f'''<div class="sidebar-operator-card">
-                <div class="sidebar-operator-chip" style="background:{op_color};">{icon_svg("users", 11)} Operador</div>
-                <div class="sidebar-operator-label">{op}</div>
-                <div class="sidebar-operator-sub">Inclúyelo o exclúyelo del universo competitivo.</div>
-            </div>''',
-            unsafe_allow_html=True
+    if territorial_filters_enabled:
+        st.sidebar.markdown(
+            f"""
+            <div class="executive-ribbon">
+                <span class="pill">{len(codigos_disponibles_por_territorio):,} CP territoriales</span>
+                <span class="pill">{len(operadores_sel)} operadores activos</span>
+                <span class="pill">Variación: {nivel_temporal_variacion}</span>
+            </div>
+            """.replace(",", "."),
+            unsafe_allow_html=True,
         )
-        st.checkbox(op, key=f"op_{op}")
-operadores_sel = [op for op in operator_cols if st.session_state.get(f"op_{op}", False)]
-st.sidebar.markdown('</div>', unsafe_allow_html=True)
-if not operadores_sel:
-    st.warning("Debes seleccionar al menos un operador.")
-    st.stop()
+    if not territorial_filters_enabled and territorial_info.get("message"):
+        st.sidebar.info(territorial_info["message"])
+    if market_info.get("message"):
+        st.sidebar.caption(f"Mercado: {market_info.get('message')}")
+    if altas_info.get("message"):
+        st.sidebar.caption(f"Altas: {altas_info.get('message')}")
 
-with st.sidebar.expander("Negocio · configuración avanzada", expanded=False):
-    st.markdown(f'<div class="sidebar-guide-row"><span class="sidebar-guide-pill">{icon_svg("briefcase",12)} Mercado y captación</span><span class="sidebar-guide-pill">{icon_svg("target",12)} Filtra focos</span></div>', unsafe_allow_html=True)
-    metric_focus = st.selectbox("Vista de negocio", ["Comparado", "Mercado", "Altas"], key="metric_focus")
-    share_range = st.slider("Rango de cuota / participación (%)", 0, 100, st.session_state.get("share_range", (0, 100)), key="share_range")
-    zone_focus = st.selectbox("Tipo de zona", ["Todas", "Alta competencia", "Dominio claro", "Bajo desarrollo"], key="zone_focus")
-    solo_validos = st.checkbox("Excluir registros sin medición válida", value=True)
-    if st.button("Reset filtros", use_container_width=True):
-        keep_ops = {k: v for k, v in st.session_state.items() if k.startswith("op_")}
-        st.session_state.clear()
-        for k, v in keep_ops.items():
-            st.session_state[k] = v
-        st.rerun()
+    st.sidebar.markdown("### Referencia visual")
+    st.sidebar.markdown('<div class="sidebar-soft-note">Esta leyenda te ayuda a reconocer rápidamente el color asociado a cada operador en tarjetas y gráficos.</div>', unsafe_allow_html=True)
+    chips = []
+    for op in operadores_sel:
+        color = OPERATOR_COLORS.get(op, "#64748B")
+        chips.append(f'<span class="operator-chip" style="background:{color};">{op}</span>')
+    st.sidebar.markdown("".join(chips), unsafe_allow_html=True)
+else:
+    # Vista Claro: set defaults so downstream code that references these variables does not crash
+    fecha_ini = fecha_min.date() if not pd.isna(fecha_min) else None
+    fecha_fin = fecha_max.date() if not pd.isna(fecha_max) else None
+    nivel_temporal_variacion = "Mes"
+    operadores_sel = list(operator_cols) if operator_cols else []
+    localidad_sel = []
+    barrio_sel = []
+    ruta_sel = []
+    circuito_sel = []
+    codigos_sel = []
+    metric_focus = "Comparado"
+    share_range = (0, 100)
+    zone_focus = "Todas"
+    solo_validos = True
 
-territorial_scope = filter_territorial_scope(
-    territorial_df if territorial_filters_enabled else pd.DataFrame(columns=["Codigo_postal"]),
-    localidad_sel=localidad_sel, barrio_sel=barrio_sel, ruta_sel=ruta_sel, circuito_sel=circuito_sel
-)
-codigos_disponibles_por_territorio = sorted(territorial_scope["Codigo_postal"].dropna().astype(str).unique().tolist()) if not territorial_scope.empty else []
-if territorial_filters_enabled:
-    st.sidebar.markdown(
-        f"""
-        <div class="executive-ribbon">
-            <span class="pill">{len(codigos_disponibles_por_territorio):,} CP territoriales</span>
-            <span class="pill">{len(operadores_sel)} operadores activos</span>
-            <span class="pill">Variación: {nivel_temporal_variacion}</span>
-        </div>
-        """.replace(",", "."),
-        unsafe_allow_html=True,
-    )
-if not territorial_filters_enabled and territorial_info.get("message"):
-    st.sidebar.info(territorial_info["message"])
-if market_info.get("message"):
-    st.sidebar.caption(f"Mercado: {market_info.get('message')}")
-if altas_info.get("message"):
-    st.sidebar.caption(f"Altas: {altas_info.get('message')}")
-
-st.sidebar.markdown("### Referencia visual")
-st.sidebar.markdown('<div class="sidebar-soft-note">Esta leyenda te ayuda a reconocer rápidamente el color asociado a cada operador en tarjetas y gráficos.</div>', unsafe_allow_html=True)
-chips = []
-for op in operadores_sel:
-    color = OPERATOR_COLORS.get(op, "#64748B")
-    chips.append(f'<span class="operator-chip" style="background:{color};">{op}</span>')
-st.sidebar.markdown("".join(chips), unsafe_allow_html=True)
 
 # =========================================================
 # FILTROS
