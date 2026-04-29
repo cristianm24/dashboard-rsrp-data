@@ -1,59 +1,130 @@
 
 # =========================
-# INTEGRACION VISTA CLARO PREPAGO
+# SELECTOR GLOBAL
 # =========================
-import streamlit as st
-import pandas as pd
+if "vista_global" not in st.session_state:
+    st.session_state.vista_global = "Operadores"
 
-def render_claro_view():
+st.session_state.vista_global = st.sidebar.selectbox(
+    "Vista",
+    ["Operadores", "Claro - Agentes Prepago"]
+)
+
+# =========================
+# VISTA CLARO CON MISMO SISTEMA VISUAL
+# =========================
+def render_claro_view_full():
+
+    import pandas as pd
+
     try:
         df_claro = pd.read_excel("Plan_actualizado_CORTE_28_FINAL.xlsx")
     except:
-        st.error("No se pudo cargar archivo de Claro")
+        st.error("Error cargando archivo Claro")
         return
 
     if "OPERADOR" in df_claro.columns:
         df_claro = df_claro[df_claro["OPERADOR"] == "Claro"]
 
-    st.markdown("## 🔴 Claro - Agentes Prepago")
-
-    agente = st.sidebar.multiselect("Agente", df_claro.get("AGENTE", []))
-    ruta = st.sidebar.multiselect("Ruta", df_claro.get("RUTA", []))
-
-    if agente:
-        df_claro = df_claro[df_claro["AGENTE"].isin(agente)]
-    if ruta:
-        df_claro = df_claro[df_claro["RUTA"].isin(ruta)]
+    # HEADER reutilizando estilos
+    st.markdown('<div class="header-shell">', unsafe_allow_html=True)
+    st.markdown(f'<div class="hero-title">Claro - Agentes Prepago</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="hero-subtitle">Gestión operativa de agentes, rutas y ejecución</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     tabs = st.tabs([
-        "📊 Resumen Ejecutivo",
-        "🗺️ Cobertura",
-        "📈 Plan de Trabajo",
-        "👥 Agentes",
-        "🚨 Alertas"
+        "Resumen Ejecutivo",
+        "Cobertura Territorial",
+        "Plan de Trabajo",
+        "Gestión de Agentes",
+        "Alertas"
     ])
 
+    # =========================
+    # TAB 1
+    # =========================
     with tabs[0]:
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Agentes", df_claro.get("AGENTE", pd.Series()).nunique())
-        col2.metric("Rutas", df_claro.get("RUTA", pd.Series()).nunique())
-        col3.metric("Registros", len(df_claro))
 
+        st.markdown('<div class="tab-section">', unsafe_allow_html=True)
+        st.markdown('<div class="tab-section-header"><div class="tab-section-title">Resumen operativo</div></div>', unsafe_allow_html=True)
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            st.markdown(f'<div class="card"><div class="kpi-label">Agentes</div><div class="kpi-value">{df_claro["AGENTE"].nunique() if "AGENTE" in df_claro else 0}</div></div>', unsafe_allow_html=True)
+        with col2:
+            st.markdown(f'<div class="card"><div class="kpi-label">Rutas</div><div class="kpi-value">{df_claro["RUTA"].nunique() if "RUTA" in df_claro else 0}</div></div>', unsafe_allow_html=True)
+        with col3:
+            st.markdown(f'<div class="card"><div class="kpi-label">Barrios</div><div class="kpi-value">{df_claro["BARRIO"].nunique() if "BARRIO" in df_claro else 0}</div></div>', unsafe_allow_html=True)
+        with col4:
+            val = df_claro["EJECUCION"].mean() if "EJECUCION" in df_claro else 0
+            st.markdown(f'<div class="card"><div class="kpi-label">Ejecución</div><div class="kpi-value">{val:.1f}%</div></div>', unsafe_allow_html=True)
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # =========================
+    # TAB 2
+    # =========================
+    with tabs[1]:
+
+        st.markdown('<div class="tab-section">', unsafe_allow_html=True)
+        st.markdown('<div class="tab-section-header"><div class="tab-section-title">Cobertura territorial</div></div>', unsafe_allow_html=True)
+
+        if "RUTA" in df_claro:
+            rutas = df_claro.groupby("RUTA").size()
+            st.bar_chart(rutas)
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # =========================
+    # TAB 3
+    # =========================
     with tabs[2]:
-        if "META" in df_claro.columns and "VENTAS" in df_claro.columns:
+
+        st.markdown('<div class="tab-section">', unsafe_allow_html=True)
+        st.markdown('<div class="tab-section-header"><div class="tab-section-title">Plan de trabajo</div></div>', unsafe_allow_html=True)
+
+        if all(c in df_claro.columns for c in ["VENTAS","META","RUTA"]):
             resumen = df_claro.groupby("RUTA")[["VENTAS","META"]].sum()
-            resumen["%"] = resumen["VENTAS"]/resumen["META"]
+            resumen["Cumplimiento"] = resumen["VENTAS"] / resumen["META"]
             st.dataframe(resumen)
 
-# selector global
-vista_global = st.radio(
-    "Vista",
-    ["Operadores", "Claro - Agentes Prepago"],
-    horizontal=True
-)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-if vista_global == "Claro - Agentes Prepago":
-    render_claro_view()
+    # =========================
+    # TAB 4
+    # =========================
+    with tabs[3]:
+
+        st.markdown('<div class="tab-section">', unsafe_allow_html=True)
+        st.markdown('<div class="tab-section-header"><div class="tab-section-title">Gestión de agentes</div></div>', unsafe_allow_html=True)
+
+        if "EJECUCION" in df_claro:
+            ranking = df_claro.groupby("AGENTE")["EJECUCION"].mean().sort_values(ascending=False)
+            st.dataframe(ranking)
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # =========================
+    # TAB 5
+    # =========================
+    with tabs[4]:
+
+        st.markdown('<div class="tab-section">', unsafe_allow_html=True)
+        st.markdown('<div class="tab-section-header"><div class="tab-section-title">Alertas</div></div>', unsafe_allow_html=True)
+
+        if "EJECUCION" in df_claro:
+            alertas = df_claro[df_claro["EJECUCION"] < 50]
+            st.dataframe(alertas)
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+
+# =========================
+# CONTROL
+# =========================
+if st.session_state.vista_global == "Claro - Agentes Prepago":
+    render_claro_view_full()
     st.stop()
 
 
