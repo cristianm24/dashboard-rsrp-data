@@ -2491,6 +2491,18 @@ def build_territory_label(row):
             parts.append(str(row[col]))
     return " | ".join(parts)
 
+def enrich_cp_label(cp_val, row=None):
+    """Devuelve etiqueta enriquecida de un código postal: CP + Barrio/Localidad si disponibles."""
+    label = str(cp_val) if pd.notna(cp_val) else "N/D"
+    if row is not None:
+        barrio = str(row.get("BARRIO", "")).strip() if "BARRIO" in row.index else ""
+        localidad = str(row.get("LOCALIDAD", "")).strip() if "LOCALIDAD" in row.index else ""
+        if barrio and barrio not in ("nan", ""):
+            label = f"{barrio.title()} ({label})"
+        elif localidad and localidad not in ("nan", ""):
+            label = f"{localidad.title()} ({label})"
+    return label
+
 def add_temporal_fields(df_in, date_col="Fecha de inicio"):
     df_out = df_in.copy()
     if date_col not in df_out.columns:
@@ -3203,7 +3215,7 @@ def render_claro_view():
     # SIDEBAR CLARO: Filtros propios
     # =========================================================
     st.sidebar.markdown("---")
-    st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("spark",12)} Vista Claro · Filtros</div><div class="sidebar-title">Personaliza la vista</div><div class="sidebar-sub">Filtra el universo de PDVs por agente, categoría, zona, circuito, ruta, barrio y más.</div>', unsafe_allow_html=True)
+    st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("spark",12)} Vista Claro · Filtros</div><div class="sidebar-title">Personaliza la vista</div><div class="sidebar-sub">Filtra el universo de PDVs por agente, categoría, zona, circuito, ruta, barrio y más.</div><div style="margin-top:8px;padding:8px 10px;background:rgba(225,6,0,0.10);border:1px solid rgba(225,6,0,0.22);border-radius:12px;font-size:0.73rem;color:#FCA5A5;font-weight:700;">📅 Ventana de datos: 1 al 27 de Abril 2025</div>', unsafe_allow_html=True)
 
     def _opts(col): return sorted([x for x in df_det[col].dropna().unique() if str(x).strip() not in ("","nan")]) if col in df_det.columns else []
 
@@ -3324,6 +3336,7 @@ def render_claro_view():
                 altas orgánicas, captación inducida, cuota de mercado y curva semanal de ejecución.
             </div>
             <div class="hero-meta">
+                <span class="hero-meta-pill" style="background:rgba(225,6,0,0.15);border-color:rgba(225,6,0,0.30);color:#FCA5A5;">📅 Ventana de datos: <b>1 al 27 de Abril 2025</b></span>
                 <span class="hero-meta-pill">PDVs visibles: <b>{fmt_int(total_pdvs)}</b></span>
                 <span class="hero-meta-pill">Agentes: <b>{df["AGENTE"].dropna().nunique()}</b></span>
                 <span class="hero-meta-pill">Circuitos: <b>{df["CIRCUITO"].dropna().nunique() if "CIRCUITO" in df.columns else "N/D"}</b></span>
@@ -3341,14 +3354,15 @@ def render_claro_view():
             <div class="header-status-sub">Meta: {fmt_int(meta_nat_total)} · Ejec: {fmt_int(ejec_nat_total)}</div>
         </div>
         ''', unsafe_allow_html=True)
-        if not df_cierre.empty:
-            st.markdown(f'''
-            <div class="header-status-card" style="margin-top:8px;">
-                <div class="header-status-label">Cierre Marzo · Total altas</div>
-                <div class="header-status-value">{fmt_int(cierre_altas)}</div>
-                <div class="header-status-sub">Ingresos: {fmt_m(cierre_ingresos)}</div>
-            </div>
-            ''', unsafe_allow_html=True)
+        meta_ing_total = df["META INGRESOS M0"].sum() if "META INGRESOS M0" in df.columns else 0
+        ejec_ing_total = df["EJEC INGRESOS M0"].sum() if "EJEC INGRESOS M0" in df.columns else 0
+        st.markdown(f'''
+        <div class="header-status-card" style="margin-top:8px;">
+            <div class="header-status-label">📅 Corte: 1–27 Abril · Meta ingresos</div>
+            <div class="header-status-value">{fmt_m(meta_ing_total)}</div>
+            <div class="header-status-sub">Ejec. ingresos M0: {fmt_m(ejec_ing_total)}</div>
+        </div>
+        ''', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     # =========================================================
@@ -3356,6 +3370,7 @@ def render_claro_view():
     # =========================================================
     st.markdown(f"""
     <div class="executive-ribbon">
+        <span class="pill" style="background:rgba(225,6,0,0.12);border-color:rgba(225,6,0,0.25);color:#FCA5A5;">📅 1–27 Abril 2025</span>
         <span class="pill">{fmt_int(total_pdvs)} PDVs</span>
         <span class="pill">{df["AGENTE"].dropna().nunique()} agentes activos</span>
         <span class="pill">Cuota mkt media: <b>{fmt_pct_c(cuota_mkt_media)}</b></span>
@@ -3600,33 +3615,25 @@ def render_claro_view():
             st.markdown('</div>', unsafe_allow_html=True)
 
         with a2_r:
-            st.markdown('<div class="section-card"><div class="section-title">Cumplimiento vs cuota de mercado</div><div class="section-subtitle">Cada círculo es un agente. Posición horizontal = qué tan cerca está de su meta. Posición vertical = qué parte del mercado tiene Claro en sus PDVs. El tamaño del círculo = cantidad de PDVs.</div>', unsafe_allow_html=True)
-            # Add cumpl color
-            by_ag_plot = by_ag_full.copy()
-            by_ag_plot["estado"] = by_ag_plot["cumpl_nat"].apply(lambda v: "✅ Meta cumplida (≥100%)" if v >= 100 else "⚠️ En vigilancia (70-99%)" if v >= 70 else "🔴 Brecha (< 70%)")
-            scatter_ag = alt.Chart(by_ag_plot).mark_circle(opacity=0.9).encode(
-                x=alt.X("cumpl_nat:Q", title="Cumplimiento de meta de altas (%) →"),
-                y=alt.Y("cuota_mkt:Q", title="← Cuota de mercado Claro en PDVs (%)"),
-                color=alt.Color("estado:N",
-                    scale=alt.Scale(
-                        domain=["✅ Meta cumplida (≥100%)", "⚠️ En vigilancia (70-99%)", "🔴 Brecha (< 70%)"],
-                        range=["#22C55E", "#F59E0B", "#EF4444"]
-                    ), legend=alt.Legend(title="Estado", orient="bottom")
-                ),
-                size=alt.Size("pdvs:Q", title="Cantidad de PDVs", scale=alt.Scale(range=[120, 600]), legend=alt.Legend(title="PDVs")),
-                text=alt.Text("AGENTE:N"),
+            st.markdown('<div class="section-card"><div class="section-title">Cumplimiento vs cuota de mercado por agente</div><div class="section-subtitle">Comparativa de dos indicadores clave por agente: barra roja = cumplimiento de meta de altas nat. · barra azul = cuota de mercado Claro en sus PDVs. La línea verde marca el 100% de cumplimiento.</div>', unsafe_allow_html=True)
+            by_ag_dual = by_ag_full[["AGENTE","cumpl_nat","cuota_mkt"]].melt("AGENTE", var_name="Indicador", value_name="Valor")
+            by_ag_dual["Indicador"] = by_ag_dual["Indicador"].map({"cumpl_nat": "📊 Cumplimiento meta nat. (%)", "cuota_mkt": "🔴 Cuota de mercado (%)"})
+            chart_dual = alt.Chart(by_ag_dual).mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5).encode(
+                y=alt.Y("AGENTE:N", title=None, sort="-x"),
+                x=alt.X("Valor:Q", title="Valor (%)"),
+                color=alt.Color("Indicador:N",
+                    scale=alt.Scale(domain=["📊 Cumplimiento meta nat. (%)", "🔴 Cuota de mercado (%)"], range=["#E10600","#38BDF8"]),
+                    legend=alt.Legend(title="", orient="bottom")),
+                yOffset="Indicador:N",
                 tooltip=[
                     alt.Tooltip("AGENTE:N", title="Agente"),
-                    alt.Tooltip("cumpl_nat:Q", format=".1f", title="Cumplimiento %"),
-                    alt.Tooltip("cuota_mkt:Q", format=".1f", title="Cuota mercado %"),
-                    alt.Tooltip("pdvs:Q", title="Cantidad de PDVs"),
-                    alt.Tooltip("ejec_nat:Q", format=",.0f", title="Altas ejecutadas"),
+                    alt.Tooltip("Indicador:N", title=""),
+                    alt.Tooltip("Valor:Q", format=".1f", title="Valor %"),
                 ]
             ).properties(height=300)
-            labels_ag = scatter_ag.mark_text(dy=-14, fontSize=10, fontWeight="bold").encode(text="AGENTE:N", color=alt.value("#CBD5E1"))
-            rule_100 = alt.Chart(pd.DataFrame({"x":[100]})).mark_rule(color="#22C55E", strokeDash=[5,3], strokeWidth=1.5).encode(x="x:Q")
-            st.altair_chart(style_chart((scatter_ag + labels_ag + rule_100).interactive()), use_container_width=True, theme=None)
-            st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:4px;">Línea verde punteada = 100% de cumplimiento. Agentes a la derecha de esa línea superaron su meta.</div>', unsafe_allow_html=True)
+            rule_100_h = alt.Chart(pd.DataFrame({"x":[100]})).mark_rule(color="#22C55E", strokeDash=[5,3], strokeWidth=1.5).encode(x="x:Q")
+            st.altair_chart(style_chart(chart_dual + rule_100_h), use_container_width=True, theme=None)
+            st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:4px;">Línea verde punteada = 100% de cumplimiento. Agentes con barra roja que supera esa línea, cumplieron su meta orgánica.</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown(lane_label("Ranking ejecutivo de agentes", "target"), unsafe_allow_html=True)
@@ -3836,8 +3843,8 @@ def render_claro_view():
     with tc4:
         st.markdown(stage_header(
             "04 · Curva semanal de ejecución",
-            "Ritmo de captación por semana",
-            "Evolución semanal de altas orgánicas e inducidas (S1–S4) por agente, categoría y zona.",
+            "Ritmo de captación por semana · 1–27 Abril 2025",
+            "Evolución semanal de altas orgánicas e inducidas (S1–S4) por agente, categoría y zona. Ventana: 1 al 27 de Abril 2025. S4 puede estar incompleta al corte.",
             "trend", "red"
         ), unsafe_allow_html=True)
 
@@ -3940,60 +3947,18 @@ def render_claro_view():
             st.altair_chart(style_chart(chart_acum), use_container_width=True, theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # Cierre marzo desde hoja Cierre marzo
-        if not df_cierre.empty:
-            st.markdown(lane_label("Cierre Marzo · Detalle por PDV", "briefcase"), unsafe_allow_html=True)
-            c4e, c4f = st.columns(2, gap="large")
-            with c4e:
-                st.markdown(f"""
-                <div class="business-hero">
-                    <div class="section-title">Cierre Marzo · Resumen</div>
-                    <div class="section-subtitle">Datos directos de la hoja "Cierre marzo" del archivo de plan.</div>
-                </div>
-                """, unsafe_allow_html=True)
-                cierr_top = df_cierre.sort_values("MAR_ALTAS", ascending=False).head(15)
-                chart_cierre = alt.Chart(cierr_top).mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5).encode(
-                    x=alt.X("MAR_ALTAS:Q", title="Altas Marzo"),
-                    y=alt.Y("ID_POS:O", sort="-x", title="ID PDV", axis=alt.Axis(labelLimit=80)),
-                    color=alt.value("#E10600"),
-                    tooltip=[alt.Tooltip("ID_POS:O", title="ID PDV"), alt.Tooltip("MAR_ALTAS:Q", title="Altas"), alt.Tooltip("MAR_INGRESOS:Q", format=",.0f", title="Ingresos")]
-                ).properties(height=340)
-                st.altair_chart(style_chart(chart_cierre), use_container_width=True, theme=None)
-
-            with c4f:
-                kpi_top_pdv = df_cierre.sort_values("MAR_ALTAS", ascending=False).iloc[0] if not df_cierre.empty else None
-                kpi_top_ing = df_cierre.sort_values("MAR_INGRESOS", ascending=False).iloc[0] if not df_cierre.empty else None
-                avg_altas = df_cierre["MAR_ALTAS"].mean()
-                pdvs_con_altas = int((df_cierre["MAR_ALTAS"] > 0).sum())
-
-                st.markdown(f"""
-                <div class="section-card">
-                    <div class="section-title">KPIs Cierre Marzo</div>
-                    <div class="section-subtitle">Métricas de cierre del mes desde la hoja Cierre marzo.</div>
-                    <div class="story-grid" style="grid-template-columns:1fr 1fr;">
-                        <div class="story-mini">
-                            <div class="story-label">Total altas marzo</div>
-                            <div class="story-value">{fmt_int(cierre_altas)}</div>
-                            <div class="story-sub">Suma de todos los PDVs</div>
-                        </div>
-                        <div class="story-mini">
-                            <div class="story-label">Ingresos marzo</div>
-                            <div class="story-value">{fmt_m(cierre_ingresos)}</div>
-                            <div class="story-sub">Ingresos totales M0</div>
-                        </div>
-                        <div class="story-mini">
-                            <div class="story-label">PDVs con altas</div>
-                            <div class="story-value">{fmt_int(pdvs_con_altas)}</div>
-                            <div class="story-sub">de {fmt_int(len(df_cierre))} PDVs totales</div>
-                        </div>
-                        <div class="story-mini">
-                            <div class="story-label">Promedio por PDV</div>
-                            <div class="story-value">{fmt_num(avg_altas,1)}</div>
-                            <div class="story-sub">Altas promedio</div>
-                        </div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+        # Nota de contexto temporal — ventana 1–27 de Abril
+        st.markdown(f"""
+        <div class="executive-note" style="margin-top:10px;">
+            <div class="executive-highlight">{icon_svg("trend",12)} Contexto de la curva semanal</div>
+            <div class="insight-body">
+                La información de esta curva corresponde a la <b>ventana del 1 al 27 de Abril 2025</b>.
+                Las semanas S1–S4 reflejan el avance acumulado dentro de ese periodo. S4 puede estar incompleta
+                dado que el corte es al 27 de abril. Compara la curva orgánica vs inducida para identificar
+                dónde se concentró el esfuerzo de captación.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     # -------------------------------------------------------
     # TAB C5 — MERCADO Y SEÑAL
@@ -5052,7 +5017,7 @@ with tab1:
             </div>
             <div class="story-mini">
                 <div class="story-label">Prioridad territorial</div>
-                <div class="story-value">{worst_zone["Codigo_postal"] if worst_zone is not None else "N/D"}</div>
+                <div class="story-value">{enrich_cp_label(worst_zone["Codigo_postal"], worst_zone) if worst_zone is not None else "N/D"}</div>
                 <div class="story-sub">{fmt_pct(worst_zone["Pct_critica"]) if worst_zone is not None else "N/D"} crítica en la zona principal</div>
             </div>
         </div>
@@ -5074,7 +5039,7 @@ with tab1:
             <span class="pill">Operador líder: {best_operator["Operador"]}</span>
             <span class="pill">RSRP mediano: {fmt_dBm(global_median)}</span>
             <span class="pill">CP críticos: {fmt_int(cp_critical_count)}</span>
-            <span class="pill">CP prioritario: {worst_zone["Codigo_postal"] if worst_zone is not None else "N/D"}</span>
+            <span class="pill">CP prioritario: {enrich_cp_label(worst_zone["Codigo_postal"], worst_zone) if worst_zone is not None else "N/D"}</span>
         </div>
         """,
         unsafe_allow_html=True
@@ -5115,7 +5080,7 @@ with tab1:
         st.markdown(f"""
         <div class="card">
             <div class="kpi-label">Zona crítica</div>
-            <div class="kpi-value">{worst_zone["Codigo_postal"] if worst_zone is not None else "N/D"}</div>
+            <div class="kpi-value" style="font-size:1.38rem;">{enrich_cp_label(worst_zone["Codigo_postal"], worst_zone) if worst_zone is not None else "N/D"}</div>
             <div class="kpi-sub">{fmt_pct(worst_zone["Pct_critica"]) if worst_zone is not None else "N/D"} crítica en la principal zona de atención.</div>
         </div>
         """, unsafe_allow_html=True)
@@ -5314,7 +5279,7 @@ with tab3:
     st.markdown(stage_header("03 · Territorio", "Dónde intervenir primero", "Prioriza códigos postales con mayor criticidad y cruza la lectura con operador más débil y referencia territorial.", "map", "red"), unsafe_allow_html=True)
     st.markdown(lane_label("Primero mira la prioridad, después el detalle territorial", "target"), unsafe_allow_html=True)
     st.markdown(tab_kpi_context([
-        {"icon": "target", "label": "CP prioritario", "value": str(worst_zone["Codigo_postal"]) if worst_zone is not None else "N/D", "sub": f"{fmt_pct(worst_zone['Pct_critica']) if worst_zone is not None else 'N/D'} crítica"},
+        {"icon": "target", "label": "CP prioritario", "value": enrich_cp_label(worst_zone["Codigo_postal"], worst_zone) if worst_zone is not None else "N/D", "sub": f"{fmt_pct(worst_zone['Pct_critica']) if worst_zone is not None else 'N/D'} crítica"},
         {"icon": "users", "label": "Operador más débil", "value": worst_zone["Operador_mas_debil"] if worst_zone is not None else "N/D", "sub": "En zona prioritaria"},
         {"icon": "map", "label": "CP evaluados", "value": fmt_int(zone_summary["Codigo_postal"].nunique()) if not zone_summary.empty else "0", "sub": "Territorio visible"}
     ]), unsafe_allow_html=True)
@@ -5331,7 +5296,7 @@ with tab3:
         <div class="story-grid">
             <div class="story-mini">
                 <div class="story-label">Zona prioritaria</div>
-                <div class="story-value">{str(worst_zone["Codigo_postal"]) if worst_zone is not None else "N/D"}</div>
+                <div class="story-value">{enrich_cp_label(worst_zone["Codigo_postal"], worst_zone) if worst_zone is not None else "N/D"}</div>
                 <div class="story-sub">Crítica {fmt_pct(worst_zone["Pct_critica"]) if worst_zone is not None else "N/D"} | Mediana {fmt_dBm(worst_zone["RSRP_mediana"]) if worst_zone is not None else "N/D"}</div>
             </div>
             <div class="story-mini">
@@ -5341,7 +5306,7 @@ with tab3:
             </div>
             <div class="story-mini">
                 <div class="story-label">Mejor zona visible</div>
-                <div class="story-value">{str(best_zone["Codigo_postal"]) if best_zone is not None else "N/D"}</div>
+                <div class="story-value">{enrich_cp_label(best_zone["Codigo_postal"], best_zone) if best_zone is not None else "N/D"}</div>
                 <div class="story-sub">Cobertura buena o mejor {fmt_pct(best_zone["Pct_buena_o_mejor"]) if best_zone is not None else "N/D"}</div>
             </div>
         </div>
