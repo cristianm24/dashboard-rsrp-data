@@ -2206,8 +2206,8 @@ def context_badges(scope="red"):
         f'</div>'
     )
 
-def stage_header(kicker, title, subtitle, icon="spark", scope="red"):
-    badges = context_badges("negocio" if scope == "negocio" else "red")
+def stage_header(kicker, title, subtitle, icon="spark", scope="red", show_badges=True):
+    badges = context_badges("negocio" if scope == "negocio" else "red") if show_badges else ""
     return (
         f'<div class="stage-header">'
         f'<div class="stage-kicker">{icon_svg(icon, 13)} {kicker}</div>'
@@ -3215,11 +3215,11 @@ def render_claro_view():
     # SIDEBAR CLARO: Filtros propios
     # =========================================================
     st.sidebar.markdown("---")
-    st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("spark",12)} Vista Claro · Filtros</div><div class="sidebar-title">Personaliza la vista</div><div class="sidebar-sub">Filtra el universo de PDVs por agente, categoría, zona, circuito, ruta, barrio y más.</div><div style="margin-top:8px;padding:8px 10px;background:rgba(225,6,0,0.10);border:1px solid rgba(225,6,0,0.22);border-radius:12px;font-size:0.73rem;color:#FCA5A5;font-weight:700;">📅 Ventana de datos: 1 al 27 de Abril 2025</div>', unsafe_allow_html=True)
+    st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("spark",12)} Vista Claro · Filtros</div><div class="sidebar-title">Personaliza la vista</div><div class="sidebar-sub">Filtra el universo de PDVs por agente, categoría, zona, circuito, ruta, barrio y más.</div><div style="margin-top:8px;padding:8px 10px;background:rgba(225,6,0,0.10);border:1px solid rgba(225,6,0,0.22);border-radius:12px;font-size:0.73rem;color:#FCA5A5;font-weight:700;">📅 Ventana de datos: 1 al 27 de Abril 2026</div>', unsafe_allow_html=True)
 
     def _opts(col): return sorted([x for x in df_det[col].dropna().unique() if str(x).strip() not in ("","nan")]) if col in df_det.columns else []
 
-    agente_sel = st.sidebar.multiselect("🔴 Agente", options=_opts("AGENTE"), default=[], key="claro_agente_sel")
+    agente_sel = st.sidebar.multiselect("Agente", options=_opts("AGENTE"), default=[], key="claro_agente_sel")
     cat_sel    = st.sidebar.multiselect("⭐ Categoría PDV", options=_opts("CATEGORIA"), default=[], key="claro_cat_sel",
                     help="DIAMANTE, PLATINO, ORO, PLATA, BRONCE — jerarquía comercial del PDV")
     zona_sel   = st.sidebar.multiselect("📍 Zona", options=_opts("ZONA"), default=[], key="claro_zona_sel")
@@ -3330,13 +3330,14 @@ def render_claro_view():
         <div style="position:relative; z-index:2;">
             <div class="hero-badge">{icon_svg("spark",13)} Panel Claro · Agentes y PDVs</div>
             <div style="font-size:0.84rem; color:#94A3B8; font-weight:800; letter-spacing:0.55px;">GERENCIA R4 PREPAGO — SEGUIMIENTO COMERCIAL</div>
-            <div class="hero-title">Plan y Ejecución de Agentes Claro</div>
+            <div class="hero-title">Agentes Claro · Abril 2026</div>
             <div class="hero-subtitle">
                 Desempeño individual y agregado de agentes, circuitos y PDVs —
                 altas orgánicas, captación inducida, cuota de mercado y curva semanal de ejecución.
+                Ventana de análisis: <b>1 al 27 de Abril 2026</b>.
             </div>
             <div class="hero-meta">
-                <span class="hero-meta-pill" style="background:rgba(225,6,0,0.15);border-color:rgba(225,6,0,0.30);color:#FCA5A5;">📅 Ventana de datos: <b>1 al 27 de Abril 2025</b></span>
+                <span class="hero-meta-pill" style="background:rgba(225,6,0,0.15);border-color:rgba(225,6,0,0.30);color:#FCA5A5;">📅 Ventana de datos: <b>1 al 27 de Abril 2026</b></span>
                 <span class="hero-meta-pill">PDVs visibles: <b>{fmt_int(total_pdvs)}</b></span>
                 <span class="hero-meta-pill">Agentes: <b>{df["AGENTE"].dropna().nunique()}</b></span>
                 <span class="hero-meta-pill">Circuitos: <b>{df["CIRCUITO"].dropna().nunique() if "CIRCUITO" in df.columns else "N/D"}</b></span>
@@ -3358,7 +3359,7 @@ def render_claro_view():
         ejec_ing_total = df["EJEC INGRESOS M0"].sum() if "EJEC INGRESOS M0" in df.columns else 0
         st.markdown(f'''
         <div class="header-status-card" style="margin-top:8px;">
-            <div class="header-status-label">📅 Corte: 1–27 Abril · Meta ingresos</div>
+            <div class="header-status-label">📅 Corte: 1–27 Abril 2026 · Meta ingresos</div>
             <div class="header-status-value">{fmt_m(meta_ing_total)}</div>
             <div class="header-status-sub">Ejec. ingresos M0: {fmt_m(ejec_ing_total)}</div>
         </div>
@@ -3370,7 +3371,7 @@ def render_claro_view():
     # =========================================================
     st.markdown(f"""
     <div class="executive-ribbon">
-        <span class="pill" style="background:rgba(225,6,0,0.12);border-color:rgba(225,6,0,0.25);color:#FCA5A5;">📅 1–27 Abril 2025</span>
+        <span class="pill" style="background:rgba(225,6,0,0.12);border-color:rgba(225,6,0,0.25);color:#FCA5A5;">📅 1–27 Abril 2026</span>
         <span class="pill">{fmt_int(total_pdvs)} PDVs</span>
         <span class="pill">{df["AGENTE"].dropna().nunique()} agentes activos</span>
         <span class="pill">Cuota mkt media: <b>{fmt_pct_c(cuota_mkt_media)}</b></span>
@@ -3447,7 +3448,7 @@ def render_claro_view():
             "01 · Resumen ejecutivo Claro",
             "Estado del plan al corte",
             "KPIs globales de altas orgánicas, captación inducida, ingresos y cuota de mercado por agente y categoría.",
-            "spark", "red"
+            "spark", "red", show_badges=False
         ), unsafe_allow_html=True)
 
         st.markdown(tab_kpi_context([
@@ -3574,7 +3575,7 @@ def render_claro_view():
             "02 · Análisis por agente",
             "Comparativa de desempeño entre agentes",
             "Comparación de meta vs ejecución, participación de altas y cuota de mercado por agente comercial.",
-            "users", "red"
+            "users", "red", show_badges=False
         ), unsafe_allow_html=True)
 
         by_ag_full = df.groupby("AGENTE").agg(
@@ -3617,7 +3618,7 @@ def render_claro_view():
         with a2_r:
             st.markdown('<div class="section-card"><div class="section-title">Cumplimiento vs cuota de mercado por agente</div><div class="section-subtitle">Comparativa de dos indicadores clave por agente: barra roja = cumplimiento de meta de altas nat. · barra azul = cuota de mercado Claro en sus PDVs. La línea verde marca el 100% de cumplimiento.</div>', unsafe_allow_html=True)
             by_ag_dual = by_ag_full[["AGENTE","cumpl_nat","cuota_mkt"]].melt("AGENTE", var_name="Indicador", value_name="Valor")
-            by_ag_dual["Indicador"] = by_ag_dual["Indicador"].map({"cumpl_nat": "📊 Cumplimiento meta nat. (%)", "cuota_mkt": "🔴 Cuota de mercado (%)"})
+            by_ag_dual["Indicador"] = by_ag_dual["Indicador"].map({"cumpl_nat": "Cumplimiento meta nat. (%)", "cuota_mkt": "Cuota de mercado (%)"})
             chart_dual = alt.Chart(by_ag_dual).mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5).encode(
                 y=alt.Y("AGENTE:N", title=None, sort="-x"),
                 x=alt.X("Valor:Q", title="Valor (%)"),
@@ -3701,7 +3702,7 @@ def render_claro_view():
             "03 · PDVs y Circuitos",
             "Granularidad territorial y comercial",
             "Desempeño por circuito, tipología de PDV, clasificación comercial y asesores con mayor aporte.",
-            "map", "red"
+            "map", "red", show_badges=False
         ), unsafe_allow_html=True)
 
         # Top asesores
@@ -3843,9 +3844,9 @@ def render_claro_view():
     with tc4:
         st.markdown(stage_header(
             "04 · Curva semanal de ejecución",
-            "Ritmo de captación por semana · 1–27 Abril 2025",
-            "Evolución semanal de altas orgánicas e inducidas (S1–S4) por agente, categoría y zona. Ventana: 1 al 27 de Abril 2025. S4 puede estar incompleta al corte.",
-            "trend", "red"
+            "Ritmo de captación por semana · 1–27 Abril 2026",
+            "Evolución semanal de altas orgánicas e inducidas (S1–S4) por agente, categoría y zona. Ventana: 1 al 27 de Abril 2026. S4 puede estar incompleta al corte.",
+            "trend", "red", show_badges=False
         ), unsafe_allow_html=True)
 
         semanas = ["S1", "S2", "S3", "S4"]
@@ -3952,7 +3953,7 @@ def render_claro_view():
         <div class="executive-note" style="margin-top:10px;">
             <div class="executive-highlight">{icon_svg("trend",12)} Contexto de la curva semanal</div>
             <div class="insight-body">
-                La información de esta curva corresponde a la <b>ventana del 1 al 27 de Abril 2025</b>.
+                La información de esta curva corresponde a la <b>ventana del 1 al 27 de Abril 2026</b>.
                 Las semanas S1–S4 reflejan el avance acumulado dentro de ese periodo. S4 puede estar incompleta
                 dado que el corte es al 27 de abril. Compara la curva orgánica vs inducida para identificar
                 dónde se concentró el esfuerzo de captación.
@@ -3968,7 +3969,7 @@ def render_claro_view():
             "05 · Mercado y Señal en PDVs",
             "Cuota, presencia de mercado e intensidad de señal",
             "Distribución de cuota de mercado, cuota de altas y calidad de señal RSRP en el portafolio de PDVs visible.",
-            "briefcase", "red"
+            "briefcase", "red", show_badges=False
         ), unsafe_allow_html=True)
 
         st.markdown(tab_kpi_context([
@@ -4019,23 +4020,51 @@ def render_claro_view():
 
         c5c, c5d = st.columns(2, gap="large")
         with c5c:
-            # RSRP vs cuota de mercado scatter
-            df_sc = df[["CUOTA DE MERCADO","RSRP","AGENTE","CATEGORIA"]].dropna()
+            # Replace scatter: RSRP buckets vs cuota media — much clearer bar chart
+            df_sc = df[["CUOTA DE MERCADO","RSRP","AGENTE","CATEGORIA"]].copy()
             df_sc["RSRP_num"] = pd.to_numeric(df_sc["RSRP"], errors="coerce")
             df_sc["CUOTA_num"] = pd.to_numeric(df_sc["CUOTA DE MERCADO"], errors="coerce")
             df_sc = df_sc.dropna(subset=["RSRP_num","CUOTA_num"]).copy()
 
-            st.markdown('<div class="section-card"><div class="section-title">¿Mejor señal = más cuota?</div><div class="section-subtitle">Cada punto = un PDV. Posición horizontal = calidad de señal Claro (más hacia la derecha = mejor señal, valores menos negativos). Posición vertical = cuota de mercado de Claro en ese PDV. Si hay correlación, los puntos formarán una diagonal ascendente.</div>', unsafe_allow_html=True)
-            if not df_sc.empty:
-                chart_sc = alt.Chart(df_sc.sample(min(1500, len(df_sc)))).mark_circle(size=40, opacity=0.6).encode(
-                    x=alt.X("RSRP_num:Q", title="RSRP (dBm)"),
-                    y=alt.Y("CUOTA_num:Q", title="Cuota mercado (%)"),
-                    color=alt.Color("AGENTE:N",
-                        scale=alt.Scale(domain=list(AGENTE_COLORS.keys()), range=list(AGENTE_COLORS.values())),
-                        legend=alt.Legend(title="Agente")),
-                    tooltip=[alt.Tooltip("AGENTE:N"), alt.Tooltip("RSRP_num:Q", format=".0f", title="RSRP dBm"), alt.Tooltip("CUOTA_num:Q", format=".1f", title="Cuota %"), alt.Tooltip("CATEGORIA:N")]
-                ).properties(height=280).interactive()
-                st.altair_chart(style_chart(chart_sc), use_container_width=True, theme=None)
+            # Create RSRP quality bands
+            def rsrp_band(v):
+                if v >= -90: return "Excelente (≥ -90 dBm)"
+                if v >= -95: return "Buena (-95 a -90)"
+                if v >= -100: return "Aceptable (-100 a -95)"
+                return "Crítica (< -100 dBm)"
+            band_order = ["Excelente (≥ -90 dBm)", "Buena (-95 a -90)", "Aceptable (-100 a -95)", "Crítica (< -100 dBm)"]
+            band_colors = ["#22C55E", "#84CC16", "#F59E0B", "#EF4444"]
+
+            df_sc["Banda RSRP"] = df_sc["RSRP_num"].apply(rsrp_band)
+            df_sc["Banda RSRP"] = pd.Categorical(df_sc["Banda RSRP"], categories=band_order, ordered=True)
+            by_band = df_sc.groupby("Banda RSRP", observed=True).agg(
+                cuota_media=("CUOTA_num", "mean"),
+                pdvs=("CUOTA_num", "count"),
+            ).reset_index()
+            by_band["Banda RSRP"] = by_band["Banda RSRP"].astype(str)
+
+            st.markdown('<div class="section-card"><div class="section-title">Calidad de señal vs cuota de mercado Claro</div><div class="section-subtitle">PDVs agrupados por banda de calidad de señal. Compara la cuota media de Claro en cada banda: ¿los puntos con mejor señal tienen más cuota? La referencia punteada marca el 50%.</div>', unsafe_allow_html=True)
+            if not by_band.empty:
+                chart_band = alt.Chart(by_band).mark_bar(cornerRadiusTopLeft=7, cornerRadiusTopRight=7).encode(
+                    x=alt.X("Banda RSRP:N", sort=band_order, title=None, axis=alt.Axis(labelAngle=-15, labelLimit=200)),
+                    y=alt.Y("cuota_media:Q", title="Cuota media Claro (%)", scale=alt.Scale(domain=[0, 80])),
+                    color=alt.Color("Banda RSRP:N",
+                        scale=alt.Scale(domain=band_order, range=band_colors),
+                        legend=None),
+                    tooltip=[
+                        alt.Tooltip("Banda RSRP:N", title="Calidad señal"),
+                        alt.Tooltip("cuota_media:Q", format=".1f", title="Cuota media %"),
+                        alt.Tooltip("pdvs:Q", title="PDVs en esta banda"),
+                    ]
+                ).properties(height=290)
+                rule50 = alt.Chart(pd.DataFrame({"y":[50]})).mark_rule(color="#38BDF8", strokeDash=[5,3], strokeWidth=1.5).encode(y="y:Q")
+                text_band = alt.Chart(by_band).mark_text(dy=-12, fontSize=11, fontWeight="bold", color="#F8FAFC").encode(
+                    x=alt.X("Banda RSRP:N", sort=band_order),
+                    y=alt.Y("cuota_media:Q"),
+                    text=alt.Text("cuota_media:Q", format=".1f")
+                )
+                st.altair_chart(style_chart(chart_band + rule50 + text_band), use_container_width=True, theme=None)
+                st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:4px;">Línea azul = 50% de referencia. Verde = señal excelente · Rojo = señal crítica. El número encima de cada barra es la cuota media en esa banda.</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with c5d:
@@ -4126,14 +4155,14 @@ st.sidebar.markdown(f"""<div class="sidebar-guide-row"><span class="sidebar-guid
 st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("spark",12)} Modo de visualización</div><div class="sidebar-title">Selecciona la vista</div><div class="sidebar-sub">Alterna entre el panel de red y mercado por operador, y la vista focalizada en el desempeño comercial de agentes Claro.</div>', unsafe_allow_html=True)
 vista_activa = st.sidebar.radio(
     "Vista del dashboard",
-    options=["🔴 Red y Mercado · Operadores", "📊 Claro · Agentes y PDVs"],
+    options=["Red y Mercado · Operadores", "Agentes Claro · PDVs"],
     key="vista_activa",
     horizontal=False,
 )
 st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
 
-_vista_claro_sidebar = st.session_state.get("vista_activa", "🔴 Red y Mercado · Operadores") == "📊 Claro · Agentes y PDVs"
+_vista_claro_sidebar = st.session_state.get("vista_activa", "Red y Mercado · Operadores") == "Agentes Claro · PDVs"
 
 fecha_min = df["Fecha de inicio"].min()
 fecha_max = df["Fecha de inicio"].max()
@@ -4794,7 +4823,7 @@ else:
 # =========================================================
 # SWITCH PRINCIPAL
 # =========================================================
-_vista_claro = st.session_state.get("vista_activa", "🔴 Red y Mercado · Operadores") == "📊 Claro · Agentes y PDVs"
+_vista_claro = st.session_state.get("vista_activa", "Red y Mercado · Operadores") == "Agentes Claro · PDVs"
 
 if _vista_claro:
     render_claro_view()
