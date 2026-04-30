@@ -3404,11 +3404,11 @@ def render_claro_view():
     # TABS
     # =========================================================
     tc1, tc2, tc3, tc4, tc5 = st.tabs([
-        "01  ¿Cómo vamos?",
-        "02  ¿Quién cumple?",
-        "03  ¿Dónde está la brecha?",
-        "04  ¿Sube el ritmo?",
-        "05  ¿Dónde ganar más?",
+        "↗  ¿Cómo vamos?",
+        "◈  ¿Quién cumple?",
+        "◎  La brecha",
+        "∿  El ritmo",
+        "◉  Oportunidades",
     ])
 
     # -------------------------------------------------------
