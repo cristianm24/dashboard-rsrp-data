@@ -3632,7 +3632,125 @@ def render_claro_view():
             "Desempeño por circuito, tipología de PDV, clasificación comercial y asesores con mayor aporte.",
             "map", "red", show_badges=False
         ), unsafe_allow_html=True)
+# =========================================================
+# 🔻 CAPACIDAD DE MEJORA (NUEVA CAPA)
+# =========================================================
 
+st.markdown("""
+<div class="tab-section">
+    <div class="tab-section-header">
+        <div class="tab-section-title">Capacidad de Mejora Operativa</div>
+        <div class="tab-section-hint">
+        Identificación de oportunidades de intervención comercial
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# ===============================
+# INSIGHT GENERAL
+# ===============================
+if "VENTAS" in df.columns:
+
+    promedio = df["VENTAS"].mean()
+
+    st.markdown(f"""
+    <div class="insight-card">
+        <div class="insight-title">Lectura Ejecutiva</div>
+        <div class="insight-body">
+        Existe dispersión frente al promedio ({promedio:,.0f}), lo que indica oportunidades claras de mejora en ejecución.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ===============================
+# ASESOR
+# ===============================
+if "ASESOR" in df.columns and "VENTAS" in df.columns:
+
+    df_a = df.groupby("ASESOR")["VENTAS"].sum().reset_index()
+    prom = df_a["VENTAS"].mean()
+    df_a["BRECHA"] = prom - df_a["VENTAS"]
+
+    df_a = df_a[df_a["BRECHA"] > 0].sort_values("BRECHA", ascending=False).head(10)
+
+    st.markdown("""
+    <div class="section-card">
+        <div class="section-title">Capacidad de Mejora por Asesor</div>
+        <div class="section-subtitle">
+        Asesores con mayor distancia frente al promedio de ejecución
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.altair_chart(
+        alt.Chart(df_a).mark_bar().encode(
+            x="BRECHA:Q",
+            y=alt.Y("ASESOR:N", sort="-x"),
+            color=alt.value("#EF4444")
+        ),
+        use_container_width=True
+    )
+
+
+# ===============================
+# BARRIO
+# ===============================
+if "BARRIO" in df.columns and "VENTAS" in df.columns:
+
+    df_b = df.groupby("BARRIO")["VENTAS"].sum().reset_index()
+    prom = df_b["VENTAS"].mean()
+    df_b["BRECHA"] = prom - df_b["VENTAS"]
+
+    df_b = df_b[df_b["BRECHA"] > 0].sort_values("BRECHA", ascending=False).head(10)
+
+    st.markdown("""
+    <div class="section-card">
+        <div class="section-title">Capacidad de Mejora por Barrio</div>
+        <div class="section-subtitle">
+        Zonas con mayor oportunidad de recuperación comercial
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.altair_chart(
+        alt.Chart(df_b).mark_bar().encode(
+            x="BRECHA:Q",
+            y=alt.Y("BARRIO:N", sort="-x"),
+            color=alt.value("#F59E0B")
+        ),
+        use_container_width=True
+    )
+
+
+# ===============================
+# CUOTA ALTA
+# ===============================
+if "CUOTA_ALTA" in df.columns:
+
+    prom = df["CUOTA_ALTA"].mean()
+    df["BRECHA_ALTA"] = prom - df["CUOTA_ALTA"]
+
+    df_c = df[df["BRECHA_ALTA"] > 0].sort_values("BRECHA_ALTA", ascending=False).head(10)
+
+    st.markdown("""
+    <div class="section-card">
+        <div class="section-title">Capacidad de Mejora en Cuota de Alta</div>
+        <div class="section-subtitle">
+        Brecha en captación frente al promedio esperado
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.altair_chart(
+        alt.Chart(df_c).mark_bar().encode(
+            x="BRECHA_ALTA:Q",
+            y=alt.Y("ASESOR:N", sort="-x"),
+            color=alt.value("#8B5CF6")
+        ),
+        use_container_width=True
+    )
         # Top asesores
         by_asesor = df.groupby(["ASESOR","AGENTE"]).agg(
             pdvs=("ID", "count"),
