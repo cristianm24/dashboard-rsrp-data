@@ -3623,7 +3623,7 @@ def render_claro_view():
                 y=alt.Y("AGENTE:N", title=None, sort="-x"),
                 x=alt.X("Valor:Q", title="Valor (%)"),
                 color=alt.Color("Indicador:N",
-                    scale=alt.Scale(domain=["📊 Cumplimiento meta nat. (%)", "🔴 Cuota de mercado (%)"], range=["#E10600","#38BDF8"]),
+                    scale=alt.Scale(domain=["Cumplimiento meta nat. (%)", "Cuota de mercado (%)"], range=["#E10600","#38BDF8"]),
                     legend=alt.Legend(title="", orient="bottom")),
                 yOffset="Indicador:N",
                 tooltip=[
@@ -3738,34 +3738,73 @@ def render_claro_view():
             st.markdown('</div>', unsafe_allow_html=True)
 
         with c3b:
-            # Top circuitos
-            by_circ = df.groupby("CIRCUITO").agg(
+            # Top barrios por ejecución (con circuitos como contexto)
+            barrio_col_exists = "BARRIO" in df.columns
+            circuito_col_exists = "CIRCUITO" in df.columns
+            group_cols_circ = []
+            if barrio_col_exists:
+                group_cols_circ.append("BARRIO")
+            if circuito_col_exists:
+                group_cols_circ.append("CIRCUITO")
+            if not group_cols_circ:
+                group_cols_circ = ["CIRCUITO"] if circuito_col_exists else ["AGENTE"]
+
+            by_barrio = df.groupby(group_cols_circ).agg(
                 pdvs=("ID", "count"),
                 meta_nat=("META ALTA NAT (>$2000)", "sum"),
                 ejec_nat=("EJEC ALTA NAT", "sum"),
                 ejec_total=("EJE ALTA TOTAL", "sum"),
                 cuota_mkt=("CUOTA DE MERCADO", "mean"),
             ).reset_index()
-            by_circ["cumpl"] = (by_circ["ejec_nat"] / by_circ["meta_nat"].replace(0, np.nan) * 100).fillna(0)
-            by_circ = by_circ.sort_values("ejec_total", ascending=False).head(15)
+            by_barrio["cumpl"] = (by_barrio["ejec_nat"] / by_barrio["meta_nat"].replace(0, np.nan) * 100).fillna(0)
 
-            st.markdown('<div class="section-card"><div class="section-title">Top circuitos por ejecución</div><div class="section-subtitle">Cada circuito agrupa varios PDVs de una zona. El color indica el % de cumplimiento: 🟢 verde = cumplió meta, 🟡 amarillo = 70-99%, 🔴 rojo = por debajo del 70%.</div>', unsafe_allow_html=True)
-            chart_circ = alt.Chart(by_circ).transform_calculate(
+            if barrio_col_exists:
+                by_barrio_top = by_barrio.groupby("BARRIO").agg(
+                    ejec_total=("ejec_total", "sum"),
+                    meta_nat=("meta_nat", "sum"),
+                    ejec_nat=("ejec_nat", "sum"),
+                    pdvs=("pdvs", "sum"),
+                    cuota_mkt=("cuota_mkt", "mean"),
+                ).reset_index()
+                by_barrio_top["cumpl"] = (by_barrio_top["ejec_nat"] / by_barrio_top["meta_nat"].replace(0, np.nan) * 100).fillna(0)
+                # Attach list of circuitos per barrio
+                if circuito_col_exists:
+                    circ_per_barrio = by_barrio.groupby("BARRIO")["CIRCUITO"].apply(lambda x: ", ".join(sorted(x.dropna().unique()))).reset_index()
+                    circ_per_barrio.columns = ["BARRIO", "circuitos_lista"]
+                    by_barrio_top = by_barrio_top.merge(circ_per_barrio, on="BARRIO", how="left")
+                else:
+                    by_barrio_top["circuitos_lista"] = ""
+                by_barrio_top = by_barrio_top.sort_values("ejec_total", ascending=False).head(15)
+                y_col = "BARRIO"
+                tooltip_extra = [alt.Tooltip("circuitos_lista:N", title="Circuitos")]
+            else:
+                by_barrio_top = by_barrio.sort_values("ejec_total", ascending=False).head(15)
+                y_col = "CIRCUITO"
+                tooltip_extra = []
+
+            st.markdown('<div class="section-card"><div class="section-title">Top barrios por ejecución</div><div class="section-subtitle">Eje Y = barrio principal. Debajo del nombre aparecen los circuitos asociados. El color de semáforo indica si ese barrio cumplió su meta de altas: 🟢 ≥100% · 🟡 70–99% · 🔴 &lt;70%. La longitud de la barra refleja el total de altas ejecutadas.</div>', unsafe_allow_html=True)
+            chart_circ = alt.Chart(by_barrio_top).transform_calculate(
                 color_semaforo="datum.cumpl >= 100 ? '#22C55E' : datum.cumpl >= 70 ? '#F59E0B' : '#EF4444'"
             ).mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5).encode(
                 x=alt.X("ejec_total:Q", title="Altas totales"),
-                y=alt.Y("CIRCUITO:N", sort="-x", title=None, axis=alt.Axis(labelLimit=160)),
+                y=alt.Y(f"{y_col}:N", sort="-x", title=None, axis=alt.Axis(labelLimit=220)),
                 color=alt.Color("color_semaforo:N", scale=None, legend=None),
                 tooltip=[
-                    alt.Tooltip("CIRCUITO:N"),
+                    alt.Tooltip(f"{y_col}:N", title="Barrio" if y_col == "BARRIO" else "Circuito"),
                     alt.Tooltip("pdvs:Q", title="PDVs"),
                     alt.Tooltip("ejec_total:Q", format=",.0f", title="Ejec. total"),
                     alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %"),
                     alt.Tooltip("cuota_mkt:Q", format=".1f", title="Cuota mkt %"),
-                ]
+                ] + tooltip_extra
             ).properties(height=380)
             st.altair_chart(style_chart(chart_circ), use_container_width=True, theme=None)
-            st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:4px;">🟢 Verde = meta cumplida · 🟡 Amarillo = entre 70% y 99% · 🔴 Rojo = por debajo del 70%. Pasa el mouse para ver el detalle de cuota de mercado.</div>', unsafe_allow_html=True)
+            if barrio_col_exists and circuito_col_exists and not by_barrio_top.empty:
+                # Show small table mapping barrio → circuitos below chart
+                st.markdown('<div style="font-size:0.72rem;color:#94A3B8;margin-top:6px;margin-bottom:4px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;">Barrios y sus circuitos:</div>', unsafe_allow_html=True)
+                for _, row_b in by_barrio_top.head(8).iterrows():
+                    circs = row_b.get("circuitos_lista", "")
+                    st.markdown(f'<div style="font-size:0.74rem;color:#F8FAFC;margin-bottom:3px;"><b>{row_b["BARRIO"]}</b> <span style="color:#94A3B8;font-size:0.68rem;">— {circs}</span></div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:6px;">🟢 Verde = meta cumplida · 🟡 Amarillo = 70-99% · 🔴 Rojo = &lt;70%. Pasa el mouse para ver cuota de mercado y circuitos del barrio.</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # Clasificación comercial
@@ -3812,6 +3851,57 @@ def render_claro_view():
                 st.altair_chart(style_chart(chart_tip), use_container_width=True, theme=None)
                 st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:4px;">Pasa el mouse para ver cuántos PDVs hay en cada tipología y su % de cumplimiento.</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
+
+        # Tabla de rutas con mayor oportunidad de mejora
+        st.markdown(lane_label("Rutas con mayor oportunidad de mejora", "target"), unsafe_allow_html=True)
+        ruta_col_exists_opp = "RUTA" in df.columns
+        if ruta_col_exists_opp:
+            df_ruta_opp = df[df["META ALTA NAT (>$2000)"] > 0].copy()
+            df_ruta_opp["cumpl_pdv"] = (df_ruta_opp["EJEC ALTA NAT"] / df_ruta_opp["META ALTA NAT (>$2000)"] * 100).fillna(0)
+            ruta_group_cols = ["RUTA"]
+            if "AGENTE" in df_ruta_opp.columns:
+                ruta_group_cols.append("AGENTE")
+            if "BARRIO" in df_ruta_opp.columns:
+                ruta_group_cols.append("BARRIO")
+            ruta_opp = df_ruta_opp.groupby(ruta_group_cols).agg(
+                pdvs_totales=("ID", "count"),
+                pdvs_criticos=("cumpl_pdv", lambda x: (x < 70).sum()),
+                meta_total=("META ALTA NAT (>$2000)", "sum"),
+                ejec_total=("EJEC ALTA NAT", "sum"),
+            ).reset_index()
+            ruta_opp["cumpl_ruta"] = (ruta_opp["ejec_total"] / ruta_opp["meta_total"].replace(0, np.nan) * 100).fillna(0)
+            ruta_opp["brecha"] = ruta_opp["meta_total"] - ruta_opp["ejec_total"]
+            ruta_opp["pct_pdvs_criticos"] = (ruta_opp["pdvs_criticos"] / ruta_opp["pdvs_totales"].replace(0, np.nan) * 100).fillna(0)
+            ruta_opp = ruta_opp[ruta_opp["cumpl_ruta"] < 70].sort_values("brecha", ascending=False).head(20)
+
+            st.markdown(f"""
+            <div class="section-card">
+                <div class="anchor-note">
+                    <div class="anchor-note-body">
+                        <b>¿Para qué sirve esta tabla?</b> Identifica las <b>rutas más críticas</b> que necesitan intervención inmediata:
+                        aquellas con mayor brecha absoluta entre meta y ejecución, con cumplimiento bajo el 70%.
+                        Están ordenadas de mayor a menor brecha — las primeras son las que más impacto tendrían al intervenir.
+                        El campo <b>PDVs críticos</b> indica cuántos puntos de venta en esa ruta también están por debajo del 70%.
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            st.markdown(table_shell(f"Rutas críticas con mayor oportunidad — {len(ruta_opp)} rutas identificadas"), unsafe_allow_html=True)
+            if not ruta_opp.empty:
+                ruta_rename = {"RUTA": "Ruta", "AGENTE": "Agente", "BARRIO": "Barrio",
+                               "pdvs_totales": "PDVs totales", "pdvs_criticos": "PDVs críticos",
+                               "meta_total": "Meta altas", "ejec_total": "Altas ejecutadas",
+                               "cumpl_ruta": "Cumpl. %", "brecha": "Brecha",
+                               "pct_pdvs_criticos": "% PDVs críticos"}
+                show_ruta_cols = [c for c in ruta_rename.keys() if c in ruta_opp.columns]
+                show_ruta = safe_round_columns(ruta_opp[show_ruta_cols].copy(), ["meta_total","ejec_total","cumpl_ruta","brecha","pct_pdvs_criticos"])
+                show_ruta = show_ruta.rename(columns={k:v for k,v in ruta_rename.items() if k in show_ruta.columns})
+                st.dataframe(show_ruta, use_container_width=True, height=300)
+                st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:4px;">Ordenado por mayor brecha (meta - ejecución). Las rutas arriba de la lista son las de intervención más urgente.</div>', unsafe_allow_html=True)
+            else:
+                st.success("✅ No hay rutas con cumplimiento por debajo del 70%.")
+            st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            st.info("No se encontró la columna RUTA en los datos para calcular oportunidades por ruta.")
 
         # Tabla PDVs con bajo cumplimiento
         st.markdown(lane_label("PDVs con oportunidad de mejora", "target"), unsafe_allow_html=True)
@@ -3988,7 +4078,7 @@ def render_claro_view():
                 n=("ID", "count"),
             ).reset_index()
 
-            st.markdown('<div class="section-card"><div class="section-title">Cuota de mercado y alta por agente</div><div class="section-subtitle">Promedio de cuota de mercado Claro y cuota de altas Claro por agente.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">Cuota de mercado y alta por agente</div><div class="section-subtitle">Compara dos indicadores clave por agente: la <b>barra roja</b> = cuota de mercado promedio de Claro en sus PDVs (qué porción del mercado total tiene Claro). La <b>barra azul</b> = cuota de altas (qué parte de las nuevas ventas son de Claro). Si la barra azul supera la roja, ese agente está ganando participación — buen síntoma. Si la roja supera a la azul, hay mercado instalado pero se está perdiendo en captación nueva.</div>', unsafe_allow_html=True)
             cuota_melt = cuota_by_ag[["AGENTE","cuota_mkt","cuota_alta"]].melt("AGENTE", var_name="Indicador", value_name="Valor")
             cuota_melt["Indicador"] = cuota_melt["Indicador"].map({"cuota_mkt": "Cuota Mercado", "cuota_alta": "Cuota Alta"})
             chart_cuota = alt.Chart(cuota_melt).mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5).encode(
@@ -4008,7 +4098,7 @@ def render_claro_view():
             cuota_vals = pd.to_numeric(df["CUOTA DE MERCADO"], errors="coerce").dropna()
             df_hist = pd.DataFrame({"Cuota": cuota_vals})
 
-            st.markdown('<div class="section-card"><div class="section-title">Distribución de cuota de mercado Claro</div><div class="section-subtitle">Histograma de cuota de mercado de Claro en el universo de PDVs visible.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">Distribución de cuota de mercado Claro</div><div class="section-subtitle">Este histograma muestra <b>cuántos PDVs tienen cada nivel de cuota de mercado</b>. El eje X representa el porcentaje de cuota de Claro (0% a 100%) y el eje Y muestra cuántos puntos de venta caen en ese rango. Una barra alta en valores bajos indica muchos PDVs donde Claro tiene poca participación — oportunidad de mejora. Una barra alta cerca del 100% indica PDVs donde Claro domina. El objetivo es desplazar la distribución hacia la derecha.</div>', unsafe_allow_html=True)
             if not df_hist.empty:
                 chart_hist = alt.Chart(df_hist).mark_bar(color="#E10600", opacity=0.82).encode(
                     x=alt.X("Cuota:Q", bin=alt.Bin(maxbins=20), title="Cuota mercado Claro (%)"),
@@ -4043,7 +4133,7 @@ def render_claro_view():
             ).reset_index()
             by_band["Banda RSRP"] = by_band["Banda RSRP"].astype(str)
 
-            st.markdown('<div class="section-card"><div class="section-title">Calidad de señal vs cuota de mercado Claro</div><div class="section-subtitle">PDVs agrupados por banda de calidad de señal. Compara la cuota media de Claro en cada banda: ¿los puntos con mejor señal tienen más cuota? La referencia punteada marca el 50%.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">Calidad de señal vs cuota de mercado Claro</div><div class="section-subtitle">Este gráfico responde: <b>¿Los PDVs con mejor señal tienen más cuota de mercado Claro?</b> Los PDVs están agrupados en 4 bandas de calidad de señal RSRP: Excelente, Buena, Aceptable y Crítica. La altura de cada barra = cuota media de Claro en esa banda. Si las barras verdes (mejor señal) son más altas, confirma que la calidad de red impulsa la participación comercial. La línea azul punteada marca el 50% como referencia de liderazgo.</div>', unsafe_allow_html=True)
             if not by_band.empty:
                 chart_band = alt.Chart(by_band).mark_bar(cornerRadiusTopLeft=7, cornerRadiusTopRight=7).encode(
                     x=alt.X("Banda RSRP:N", sort=band_order, title=None, axis=alt.Axis(labelAngle=-15, labelLimit=200)),
@@ -4077,7 +4167,7 @@ def render_claro_view():
             cuota_cat["CATEGORIA"] = pd.Categorical(cuota_cat["CATEGORIA"], categories=["DIAMANTE","PLATINO","ORO","PLATA","BRONCE"], ordered=True)
             cuota_cat = cuota_cat.sort_values("CATEGORIA")
 
-            st.markdown('<div class="section-card"><div class="section-title">¿En qué categoría de PDV capta más Claro?</div><div class="section-subtitle">Muestra en qué porcentaje de las altas totales de ese PDV, Claro es quien vende. Un valor alto significa que Claro domina la captación en esos puntos.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">¿En qué categoría de PDV capta más Claro?</div><div class="section-subtitle">Muestra la <b>cuota de altas Claro por categoría de PDV</b> (Diamante → Bronce). Un valor alto significa que en esos PDVs, Claro gana la mayoría de las ventas nuevas frente a otros operadores. Si la cuota de altas en PDVs grandes (Diamante, Platino) es alta, el posicionamiento en puntos ancla es sólido. Si en PDVs pequeños (Bronce, Plata) la cuota cae, hay oportunidad de reforzar presencia en esos puntos de larga cola.</div>', unsafe_allow_html=True)
             if not cuota_cat.empty:
                 chart_calt = alt.Chart(cuota_cat).mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
                     x=alt.X("CATEGORIA:N", sort=["DIAMANTE","PLATINO","ORO","PLATA","BRONCE"], title=None),
@@ -4877,137 +4967,13 @@ elif business_records_visible < 20:
         unsafe_allow_html=True
     )
 
-st.markdown('<div class="header-shell">', unsafe_allow_html=True)
-head_left, head_right = st.columns([4.9, 1.25], gap="large")
-
-with head_left:
-    st.markdown(
-        f'''
-        <div style="position:relative; z-index:2;">
-            <div class="hero-badge">Panel ejecutivo corporativo</div>
-            <div style="font-size:0.84rem; color:#94A3B8; font-weight:800; letter-spacing:0.55px;">{AREA_NAME}</div>
-            <div class="hero-title">{DASHBOARD_TITLE}</div>
-            <div class="hero-subtitle">
-                Seguimiento integrado de desempeño de red, variación territorial, mercado y captación,
-                organizado para lectura ejecutiva y revisión gerencial.
-            </div>
-            <div class="hero-meta">
-                <span class="hero-meta-pill">Periodo: <b>{periodo_txt}</b></span>
-                <span class="hero-meta-pill">Observaciones válidas: <b>{fmt_int(obs_validas)}</b></span>
-                <span class="hero-meta-pill">CP visibles: <b>{fmt_int(df_f['Codigo_postal'].nunique())}</b></span>
-            </div>
-        </div>
-        ''',
-        unsafe_allow_html=True,
-    )
-
-with head_right:
-    st.markdown(
-        f'''
-        <div class="header-status-card">
-            <div class="header-status-label">Estado agregado</div>
-            <div class="header-status-value">{status_text}</div>
-            <div class="header-status-sub">Mediana global {fmt_dBm(global_median)}</div>
-        </div>
-        ''',
-        unsafe_allow_html=True,
-    )
-    st.download_button(
-        label="Exportar Excel",
-        data=excel_bytes,
-        file_name="dashboard_rsrp_mercado_export.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True,
-    )
-
-st.markdown('</div>', unsafe_allow_html=True)
-
-st.markdown(
-    f"""
-    <div class="executive-ribbon">
-        <span class="pill">{fmt_int(df_f['Codigo_postal'].nunique())} CP activos</span>
-        <span class="pill">{fmt_int(df_f['Operador'].nunique())} operadores visibles</span>
-        <span class="pill">{fmt_int(df_f['RSRP_valido'].count())} observaciones válidas</span>
-        <span class="pill">Negocio: {metric_focus}</span>
-        <span class="pill">Cuota/participación {share_range[0]}% - {share_range[1]}%</span>
-        <span class="pill">{' | '.join(filtros_activos) if filtros_activos else 'Sin filtros adicionales'}</span>
-    </div>
-    """,
-    unsafe_allow_html=True
+st.download_button(
+    label="⬇ Exportar Excel",
+    data=excel_bytes,
+    file_name="dashboard_rsrp_mercado_export.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    use_container_width=False,
 )
-
-st.markdown(
-    f'''
-    <div class="anchor-note">
-        <div>{icon_svg("filter", 15) if "icon_svg" in globals() else ""}</div>
-        <div class="anchor-note-body">
-            <b>Universo sincronizado:</b> todas las visuales se calculan con el rango <b>{periodo_txt_corto}</b>,
-            <b>{fmt_int(network_records_visible)}</b> mediciones de red y <b>{fmt_int(business_records_visible)}</b> registros de negocio visibles.
-        </div>
-    </div>
-    ''',
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    f'''
-    <div class="reading-band">
-        <div class="reading-card">
-            <div class="reading-title">{icon_svg("eye", 14)} Lectura recomendada</div>
-            <div class="reading-text">Empieza por el insight y los KPIs superiores. Luego entra al tab que responda la pregunta: operador, territorio, variación o negocio.</div>
-        </div>
-        <div class="reading-card">
-            <div class="reading-title">{icon_svg("filter", 14)} Contexto activo</div>
-            <div class="reading-text">El rango <b>{periodo_txt_corto}</b>, los operadores seleccionados y el territorio activo gobiernan todo el tablero.</div>
-        </div>
-        <div class="reading-card">
-            <div class="reading-title">{icon_svg("target", 14)} Foco de decisión</div>
-            <div class="reading-text">El objetivo es ubicar dónde actuar primero y qué señal explica la prioridad.</div>
-        </div>
-    </div>
-    ''',
-    unsafe_allow_html=True
-)
-
-st.markdown(compact_context_bar(), unsafe_allow_html=True)
-st.markdown(page_flow_note(), unsafe_allow_html=True)
-
-# KPI STRIP
-# Señales ejecutivas clave ocultas como bloque grande para evitar saturación visual.
-# La misma información vive en compact_context_bar() y dentro del tab Resumen Ejecutivo.
-
-# CONTEXTO
-st.markdown(tab_section("Diagnóstico inicial", "Insight accionable + cobertura territorial antes de navegar por tabs", "eye"), unsafe_allow_html=True)
-r1, r2 = st.columns((1.2, 0.8), gap="large")
-with r1:
-    st.markdown(f"""
-    <div class="section-card">
-        <div class="section-title">Insight ejecutivo</div>
-        <div class="section-subtitle">Resumen del periodo filtrado.</div>
-        <div class="insight-card">
-            <div class="insight-title">{insight_title}</div>
-            <div class="insight-body"><b>{insight_title}</b> · {insight_action}</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-with r2:
-    territorio_activo_txt = f"{len(codigos_disponibles_por_territorio):,} CP relacionados".replace(",", ".") if territorial_filters_enabled and (localidad_sel or barrio_sel or ruta_sel or circuito_sel) else f"{df_f['Codigo_postal'].nunique():,} CP en muestra".replace(",", ".")
-    st.markdown(f"""
-    <div class="section-card">
-        <div class="section-title">Contexto territorial</div>
-        <div class="section-subtitle">Universo visible.</div>
-        <div class="rule-card">
-            <div class="territory-value">{territorio_activo_txt}</div>
-            <div class="territory-sub">
-                Localidades: <b>{df_f['LOCALIDAD'].dropna().nunique() if 'LOCALIDAD' in df_f.columns else 0}</b> |
-                Rutas: <b>{df_f['RUTA'].dropna().nunique() if 'RUTA' in df_f.columns else 0}</b> |
-                Circuitos: <b>{df_f['CIRCUITO'].dropna().nunique() if 'CIRCUITO' in df_f.columns else 0}</b>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-st.markdown('</div>', unsafe_allow_html=True)
 
 order_quality = ["Excelente", "Buena", "Aceptable", "Crítica", "Sin medición"]
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["01  Resumen ejecutivo", "02  Operadores", "03  Territorio", "04  Variación", "05  Mercado y Captación"])
@@ -5076,12 +5042,49 @@ with tab1:
 
     st.markdown(tab_section("Señales principales", "KPIs solo dentro del resumen, no estorban la navegación global", "signal"), unsafe_allow_html=True)
     k1, k2, k3, k4 = st.columns(4, gap="medium")
+
+    # Compute conclusions for each KPI
+    if pd.notna(global_median):
+        if global_median >= -70:
+            _rsrp_conclusion = "✅ Señal excelente. La red está en condición óptima para este periodo."
+        elif global_median >= -90:
+            _rsrp_conclusion = "🟡 Señal buena. Desempeño estable, vigilar zonas en límite."
+        elif global_median >= -100:
+            _rsrp_conclusion = "🟠 Señal aceptable. Hay territorios que requieren atención prioritaria."
+        else:
+            _rsrp_conclusion = "🔴 Señal crítica. Se requiere intervención urgente en la red."
+    else:
+        _rsrp_conclusion = "Sin datos suficientes para emitir conclusión."
+
+    if pd.notna(cp_critical_share):
+        if cp_critical_share < 0.10:
+            _cp_conclusion = "✅ Baja exposición crítica. Menos del 10% del territorio en riesgo."
+        elif cp_critical_share < 0.25:
+            _cp_conclusion = "🟡 Exposición moderada. Entre 10% y 25% del territorio con señal crítica."
+        else:
+            _cp_conclusion = "🔴 Alta concentración crítica. Más del 25% del territorio necesita intervención."
+    else:
+        _cp_conclusion = "Sin datos para evaluar criticidad territorial."
+
+    _best_op_conclusion = f"Lidera con score {best_operator['Score_operador']:.1f} y mediana {fmt_dBm(best_operator['RSRP_mediana'])}. Es el referente de calidad en el periodo."
+
+    if worst_zone is not None:
+        _wz_pct = worst_zone['Pct_critica']
+        if _wz_pct >= 50:
+            _zone_conclusion = f"🔴 Zona de máxima urgencia: más del 50% de señal crítica. Intervención inmediata recomendada."
+        elif _wz_pct >= 30:
+            _zone_conclusion = f"🟠 Zona de alta prioridad con {fmt_pct(_wz_pct)} crítica. Debe entrar al próximo plan de mejora."
+        else:
+            _zone_conclusion = f"🟡 Zona prioritaria con {fmt_pct(_wz_pct)} crítica. Monitoreo cercano recomendado."
+    else:
+        _zone_conclusion = "No se identifica zona crítica principal con los filtros activos."
+
     with k1:
         st.markdown(f"""
         <div class="card">
             <div class="kpi-label">RSRP mediano</div>
             <div class="kpi-value">{fmt_dBm(global_median)}</div>
-            <div class="kpi-sub">Indicador agregado del periodo filtrado.</div>
+            <div class="kpi-sub">{_rsrp_conclusion}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -5090,7 +5093,7 @@ with tab1:
         <div class="card">
             <div class="kpi-label">CP críticos</div>
             <div class="kpi-value">{fmt_int(cp_critical_count)}</div>
-            <div class="kpi-sub">{fmt_pct(cp_critical_share)} del territorio visible concentra condición crítica.</div>
+            <div class="kpi-sub">{_cp_conclusion}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -5101,7 +5104,7 @@ with tab1:
             <div class="metric-operator" style="color:{OPERATOR_COLORS.get(best_operator["Operador"], "#FFFFFF")};">
                 {best_operator["Operador"]}
             </div>
-            <div class="kpi-sub">Score {best_operator["Score_operador"]:.1f} | Mediana {fmt_dBm(best_operator["RSRP_mediana"])}</div>
+            <div class="kpi-sub">{_best_op_conclusion}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -5110,7 +5113,7 @@ with tab1:
         <div class="card">
             <div class="kpi-label">Zona crítica</div>
             <div class="kpi-value" style="font-size:1.38rem;">{enrich_cp_label(worst_zone["Codigo_postal"], worst_zone) if worst_zone is not None else "N/D"}</div>
-            <div class="kpi-sub">{fmt_pct(worst_zone["Pct_critica"]) if worst_zone is not None else "N/D"} crítica en la principal zona de atención.</div>
+            <div class="kpi-sub">{_zone_conclusion}</div>
         </div>
         """, unsafe_allow_html=True)
 
