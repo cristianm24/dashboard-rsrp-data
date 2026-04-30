@@ -29,7 +29,7 @@ st.set_page_config(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 AREA_NAME = "GERENCIA R4 PREPAGO"
-DASHBOARD_TITLE = "Panel Ejecutivo de Desempeño de Red y Mercado"
+DASHBOARD_TITLE = "Panel Ejecutivo de Desempeño de Red y Mercado - Prototipo"
 
 DATA_FILE_CANDIDATES = [
     os.path.join(BASE_DIR, "RSRP_COMPLETO.csv"),
