@@ -3763,7 +3763,7 @@ def render_claro_view():
 
         _DIA_C3=28; _MES_C3=30; _F_C3=_MES_C3/_DIA_C3
 
-        # Asesores con mayor brecha (no los mejores — los que más pueden mejorar)
+        # Asesores con menor cumplimiento (meta > umbral mínimo para que sea relevante)
         by_as_c3 = df.groupby(["ASESOR","AGENTE"]).agg(
             pdvs=("ID","count"), meta_nat=("META ALTA NAT (>$2000)","sum"),
             ejec_nat=("EJEC ALTA NAT","sum"), ejec_total=("EJE ALTA TOTAL","sum"),
@@ -3772,7 +3772,11 @@ def render_claro_view():
         by_as_c3["cumpl"]  = (by_as_c3["ejec_nat"]/by_as_c3["meta_nat"].replace(0,np.nan)*100).fillna(0)
         by_as_c3["brecha"] = by_as_c3["meta_nat"] - by_as_c3["ejec_nat"]
         by_as_c3["proy"]   = (by_as_c3["ejec_nat"]*_F_C3/by_as_c3["meta_nat"].replace(0,np.nan)*100).fillna(0)
-        _bottom_as = by_as_c3[by_as_c3["meta_nat"]>0].sort_values("brecha",ascending=False).head(15)
+        # Umbral mínimo de meta para que sea relevante (median de meta para filtrar los muy pequeños)
+        _meta_min_threshold = by_as_c3[by_as_c3["meta_nat"]>0]["meta_nat"].quantile(0.40)
+        # Bottom performers = menor cumplimiento entre los que tienen meta significativa
+        _bottom_as = (by_as_c3[by_as_c3["meta_nat"] >= _meta_min_threshold]
+                      .sort_values("cumpl").head(15))
 
         # Barrios con mayor brecha
         by_bar_c3 = df.groupby("BARRIO").agg(
@@ -3788,23 +3792,25 @@ def render_claro_view():
 
         cm1, cm2 = st.columns(2, gap="large")
         with cm1:
-            st.markdown('<div class="section-card"><div class="section-title">Asesores con mayor brecha de altas</div><div class="section-subtitle">No los que menos venden — los que más altas dejan de ejecutar vs su meta asignada. Son los de mayor impacto si se intervienen.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">Asesores con menor cumplimiento de meta</div><div class="section-subtitle">Los que más necesitan intervención — menor % de cumplimiento entre asesores con meta significativa · color = agente al que pertenecen</div>', unsafe_allow_html=True)
             chart_as_brecha = alt.Chart(_bottom_as).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
-                x=alt.X("brecha:Q",title="Altas que faltan para meta"),
-                y=alt.Y("ASESOR:N",sort="-x",title=None,axis=alt.Axis(labelLimit=200)),
+                x=alt.X("cumpl:Q", title="Cumplimiento de meta (%)"),
+                y=alt.Y("ASESOR:N", sort="x", title=None, axis=alt.Axis(labelLimit=200)),
                 color=alt.Color("AGENTE:N",scale=alt.Scale(domain=list(AGENTE_COLORS.keys()),range=list(AGENTE_COLORS.values())),legend=alt.Legend(title="Agente")),
                 tooltip=[
-                    alt.Tooltip("ASESOR:N",title="Asesor"),
-                    alt.Tooltip("AGENTE:N",title="Agente"),
-                    alt.Tooltip("brecha:Q",format=",.0f",title="Altas pendientes"),
-                    alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %"),
-                    alt.Tooltip("proy:Q",format=".1f",title="Proyección %"),
-                    alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %"),
-                    alt.Tooltip("pdvs:Q",title="PDVs"),
+                    alt.Tooltip("ASESOR:N",       title="Asesor"),
+                    alt.Tooltip("AGENTE:N",        title="Agente"),
+                    alt.Tooltip("cumpl:Q",         format=".1f", title="Cumpl. %"),
+                    alt.Tooltip("brecha:Q",        format=",.0f", title="Altas pendientes"),
+                    alt.Tooltip("proy:Q",          format=".1f", title="Proyección %"),
+                    alt.Tooltip("ejec_total:Q",    format=",.0f", title="Altas ejecutadas"),
+                    alt.Tooltip("cuota_alta:Q",    format=".1f", title="Cuota alta %"),
+                    alt.Tooltip("pdvs:Q",          title="PDVs"),
                 ]
             ).properties(height=340)
-            st.altair_chart(style_chart(chart_as_brecha), use_container_width=True, theme=None)
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Color = agente al que pertenece · el asesor más a la derecha es el de mayor oportunidad de recuperación</div>', unsafe_allow_html=True)
+            _rule_70 = alt.Chart(pd.DataFrame({"x":[70]})).mark_rule(color="#EF4444",strokeDash=[5,3],strokeWidth=1.5).encode(x="x:Q")
+            st.altair_chart(style_chart(chart_as_brecha + _rule_70), use_container_width=True, theme=None)
+            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Línea 🔴 = 70% de cumplimiento (umbral de alerta) · los asesores a la izquierda de la línea necesitan intervención inmediata</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with cm2:
@@ -4180,33 +4186,49 @@ def render_claro_view():
 
         b3a, b3b = st.columns(2, gap="large")
         with b3a:
-            _rsrp_sorted   = _rsrp_ag.sort_values("rsrp_medio", ascending=False)
-            _rsrp_y_min    = float(_rsrp_ag["rsrp_medio"].min()) - 2
-            _rsrp_y_max    = -88.0  # show a bit above -90 so bars are clearly visible
-            st.markdown('<div class="section-card"><div class="section-title">RSRP medio por agente</div><div class="section-subtitle">🟢 ≥-90 dBm Buena · 🟡 -90 a -100 Aceptable · 🔴 &lt;-100 Crítica · más cerca de cero = mejor señal</div>', unsafe_allow_html=True)
-            _ch_rsrp = alt.Chart(_rsrp_sorted).mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
-                x=alt.X("AGENTE:N", sort=list(_rsrp_sorted["AGENTE"]), title=None, axis=alt.Axis(labelAngle=-20)),
-                y=alt.Y("rsrp_medio:Q", title="RSRP medio (dBm)",
-                        scale=alt.Scale(domain=[_rsrp_y_min, _rsrp_y_max])),
+            # RSRP values are all negative (-93 to -107) — use horizontal bars with abs value
+            # so bars go left→right and are visible. More to the right = worse signal.
+            _rsrp_sorted = _rsrp_ag.sort_values("rsrp_medio", ascending=True).copy()  # worst first = bottom
+            _rsrp_sorted["rsrp_abs"]   = _rsrp_sorted["rsrp_medio"].abs()
+            _rsrp_sorted["rsrp_label"] = _rsrp_sorted["rsrp_medio"].apply(lambda v: f"{v:.1f} dBm")
+            _abs_min = float(_rsrp_sorted["rsrp_abs"].min()) - 1
+            _abs_max = float(_rsrp_sorted["rsrp_abs"].max()) + 1
+
+            st.markdown('<div class="section-card"><div class="section-title">RSRP medio por agente</div><div class="section-subtitle">Barra más larga = peor señal · 🟡 Aceptable (-90 a -100 dBm) · 🔴 Crítica (&lt;-100 dBm) · ningún agente tiene señal Buena o Excelente en este portafolio</div>', unsafe_allow_html=True)
+            _ch_rsrp = alt.Chart(_rsrp_sorted).mark_bar(
+                cornerRadiusTopLeft=5, cornerRadiusTopRight=5
+            ).encode(
+                y=alt.Y("AGENTE:N", sort=list(_rsrp_sorted["AGENTE"]), title=None),
+                x=alt.X("rsrp_abs:Q", title="Intensidad señal — valor absoluto (mayor = peor señal)",
+                        scale=alt.Scale(domain=[_abs_min, _abs_max])),
                 color=alt.Color("color_rsrp:N", scale=None, legend=None),
                 tooltip=[
                     alt.Tooltip("AGENTE:N"),
-                    alt.Tooltip("rsrp_medio:Q", format=".1f", title="RSRP medio (dBm)"),
-                    alt.Tooltip("rsrp_min:Q",   format=".1f", title="Peor PDV (dBm)"),
-                    alt.Tooltip("rsrp_max:Q",   format=".1f", title="Mejor PDV (dBm)"),
-                    alt.Tooltip("pct_criticos:Q", format=".1f", title="% PDVs críticos"),
-                    alt.Tooltip("pdvs_total:Q", title="PDVs con datos de señal"),
+                    alt.Tooltip("rsrp_medio:Q",     format=".1f", title="RSRP real (dBm)"),
+                    alt.Tooltip("rsrp_min:Q",        format=".1f", title="Peor PDV (dBm)"),
+                    alt.Tooltip("rsrp_max:Q",        format=".1f", title="Mejor PDV (dBm)"),
+                    alt.Tooltip("pct_criticos:Q",    format=".1f", title="% PDVs críticos"),
+                    alt.Tooltip("pdvs_total:Q",      title="PDVs con señal"),
                 ]
-            ).properties(height=280)
-            _val_labels = alt.Chart(_rsrp_sorted).mark_text(dy=-8, fontSize=11, fontWeight="bold", color="#F8FAFC").encode(
-                x=alt.X("AGENTE:N", sort=list(_rsrp_sorted["AGENTE"])),
-                y=alt.Y("rsrp_medio:Q"),
-                text=alt.Text("rsrp_medio:Q", format=".1f")
             )
-            _r_crit = alt.Chart(pd.DataFrame({"y": [-100]})).mark_rule(color="#EF4444", strokeDash=[5,3], strokeWidth=1.5).encode(y="y:Q")
-            _r_acep = alt.Chart(pd.DataFrame({"y": [-90]})).mark_rule(color="#F59E0B", strokeDash=[5,3], strokeWidth=1.5).encode(y="y:Q")
-            st.altair_chart(style_chart(_ch_rsrp + _val_labels + _r_crit + _r_acep), use_container_width=True, theme=None)
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Línea 🔴 = umbral crítico (-100 dBm) · línea 🟡 = umbral aceptable (-90 dBm)</div>', unsafe_allow_html=True)
+            _val_lbl = alt.Chart(_rsrp_sorted).mark_text(
+                align="left", dx=4, fontSize=11, fontWeight="bold", color="#F8FAFC"
+            ).encode(
+                y=alt.Y("AGENTE:N", sort=list(_rsrp_sorted["AGENTE"])),
+                x=alt.X("rsrp_abs:Q"),
+                text="rsrp_label:N"
+            )
+            _rule_100 = alt.Chart(pd.DataFrame({"x": [100.0]})).mark_rule(
+                color="#EF4444", strokeDash=[5,3], strokeWidth=2
+            ).encode(x="x:Q")
+            _rule_90 = alt.Chart(pd.DataFrame({"x": [90.0]})).mark_rule(
+                color="#F59E0B", strokeDash=[5,3], strokeWidth=1.5
+            ).encode(x="x:Q")
+            st.altair_chart(
+                style_chart((_ch_rsrp + _val_lbl + _rule_90 + _rule_100).properties(height=220)),
+                use_container_width=True, theme=None
+            )
+            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Barra más larga = peor señal · línea 🔴 = umbral crítico (100 abs = -100 dBm) · línea 🟡 = -90 dBm · agente arriba = peor señal</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with b3b:
