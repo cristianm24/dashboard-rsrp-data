@@ -3353,38 +3353,49 @@ def render_claro_view():
     _sem_c         = lambda v: "#22C55E" if v>=100 else "#F59E0B" if v>=70 else "#EF4444"
     _dot           = lambda v: f'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{_sem_c(v)};margin-right:5px;flex-shrink:0;"></span>'
 
+    # SVG icons — professional, no emojis
+    def _nav_icon(name):
+        icons = {
+            "chart": '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+            "users": '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+            "map":   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>',
+            "trend": '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>',
+            "target":'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+        }
+        return icons.get(name, "")
+
     # ── Franja de navegación visual ───────────────────────────────────────────
     st.markdown(f"""
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0 4px 0;">
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:12px 14px;cursor:pointer;">
-            <div style="font-size:1.1rem;margin-bottom:4px;">📊</div>
-            <div style="font-size:.78rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;">¿Cómo vamos?</div>
-            <div style="font-size:.70rem;color:#94A3B8;margin-bottom:6px;">Estado del mes y proyección</div>
-            <div style="display:flex;align-items:center;font-size:.72rem;font-weight:800;color:{_sem_c(_proy_global)};">{_dot(_proy_global)}Proyección {_proy_global:.0f}%</div>
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+            <div style="margin-bottom:6px;">{_nav_icon("chart")}</div>
+            <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;line-height:1.3;">¿Cómo vamos?</div>
+            <div style="font-size:.66rem;color:#64748B;margin-bottom:6px;line-height:1.3;">Estado del mes y proyección</div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:.70rem;font-weight:800;color:{_sem_c(_proy_global)};">{_dot(_proy_global)}Proy. {_proy_global:.0f}%</div>
         </div>
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:12px 14px;">
-            <div style="font-size:1.1rem;margin-bottom:4px;">👥</div>
-            <div style="font-size:.78rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;">¿Quién cumple?</div>
-            <div style="font-size:.70rem;color:#94A3B8;margin-bottom:6px;">Agentes vs su meta</div>
-            <div style="display:flex;align-items:center;font-size:.72rem;font-weight:800;color:{_sem_c(100 if _ag_riesgo==0 else 70 if _ag_riesgo<=2 else 0)};">{_dot(100 if _ag_riesgo==0 else 70 if _ag_riesgo<=2 else 0)}{_ag_riesgo} agente{'s' if _ag_riesgo!=1 else ''} en riesgo</div>
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+            <div style="margin-bottom:6px;">{_nav_icon("users")}</div>
+            <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;line-height:1.3;">¿Quién cumple?</div>
+            <div style="font-size:.66rem;color:#64748B;margin-bottom:6px;line-height:1.3;">Agentes vs su meta</div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:.70rem;font-weight:800;color:{_sem_c(100 if _ag_riesgo==0 else 70 if _ag_riesgo<=2 else 0)};">{_dot(100 if _ag_riesgo==0 else 70 if _ag_riesgo<=2 else 0)}{_ag_riesgo} en riesgo</div>
         </div>
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:12px 14px;">
-            <div style="font-size:1.1rem;margin-bottom:4px;">📍</div>
-            <div style="font-size:.78rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;">¿Dónde está la brecha?</div>
-            <div style="font-size:.70rem;color:#94A3B8;margin-bottom:6px;">PDVs y circuitos críticos</div>
-            <div style="display:flex;align-items:center;font-size:.72rem;font-weight:800;color:{_sem_c(0 if _pdvs_riesgo>5000 else 70 if _pdvs_riesgo>2000 else 100)};">{_dot(0 if _pdvs_riesgo>5000 else 70 if _pdvs_riesgo>2000 else 100)}{_pdvs_riesgo:,} PDVs con brecha</div>
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+            <div style="margin-bottom:6px;">{_nav_icon("map")}</div>
+            <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;line-height:1.3;">Brecha</div>
+            <div style="font-size:.66rem;color:#64748B;margin-bottom:6px;line-height:1.3;">PDVs y circuitos críticos</div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:.70rem;font-weight:800;color:{_sem_c(0 if _pdvs_riesgo>5000 else 70 if _pdvs_riesgo>2000 else 100)};">{_dot(0 if _pdvs_riesgo>5000 else 70 if _pdvs_riesgo>2000 else 100)}{_pdvs_riesgo:,} PDVs</div>
         </div>
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:12px 14px;">
-            <div style="font-size:1.1rem;margin-bottom:4px;">📈</div>
-            <div style="font-size:.78rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;">¿Sube el ritmo?</div>
-            <div style="font-size:.70rem;color:#94A3B8;margin-bottom:6px;">Curva semanal de ventas</div>
-            <div style="display:flex;align-items:center;font-size:.72rem;font-weight:800;color:{'#22C55E' if _tendencia_ok else '#EF4444'};">{'▲' if _tendencia_ok else '▼'} {'Tendencia positiva' if _tendencia_ok else 'Tendencia a la baja'}</div>
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+            <div style="margin-bottom:6px;">{_nav_icon("trend")}</div>
+            <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;line-height:1.3;">¿Sube el ritmo?</div>
+            <div style="font-size:.66rem;color:#64748B;margin-bottom:6px;line-height:1.3;">Curva semanal de ventas</div>
+            <div style="font-size:.70rem;font-weight:800;color:{'#22C55E' if _tendencia_ok else '#EF4444'};">{'▲ Positiva' if _tendencia_ok else '▼ A la baja'}</div>
         </div>
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:12px 14px;">
-            <div style="font-size:1.1rem;margin-bottom:4px;">🎯</div>
-            <div style="font-size:.78rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;">¿Dónde ganar más?</div>
-            <div style="font-size:.70rem;color:#94A3B8;margin-bottom:6px;">Cuota de altas y señal</div>
-            <div style="display:flex;align-items:center;font-size:.72rem;font-weight:800;color:#38BDF8;">→ Ver oportunidades</div>
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+            <div style="margin-bottom:6px;">{_nav_icon("target")}</div>
+            <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;line-height:1.3;">¿Dónde ganar más?</div>
+            <div style="font-size:.66rem;color:#64748B;margin-bottom:6px;line-height:1.3;">Cuota de altas y señal</div>
+            <div style="font-size:.70rem;font-weight:800;color:#38BDF8;">Ver oportunidades →</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -3393,11 +3404,11 @@ def render_claro_view():
     # TABS
     # =========================================================
     tc1, tc2, tc3, tc4, tc5 = st.tabs([
-        "📊  ¿Cómo vamos?",
-        "👥  ¿Quién cumple?",
-        "📍  ¿Dónde está la brecha?",
-        "📈  ¿Sube el ritmo?",
-        "🎯  ¿Dónde ganar más?",
+        "01  ¿Cómo vamos?",
+        "02  ¿Quién cumple?",
+        "03  ¿Dónde está la brecha?",
+        "04  ¿Sube el ritmo?",
+        "05  ¿Dónde ganar más?",
     ])
 
     # -------------------------------------------------------
@@ -3979,8 +3990,7 @@ def render_claro_view():
                 </div>
             </div>
             <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:10px;">
-                <span style="font-size:1.1rem;">{"📈" if _tendencia_c4 else "📉"}</span>
-                <span style="font-size:.82rem;font-weight:800;color:{"#22C55E" if _tendencia_c4 else "#EF4444"};">{"Tendencia positiva — el ritmo crece semana a semana" if _tendencia_c4 else f"Tendencia a la baja — {_mejor_s} fue el pico, {_peor_s} el punto más bajo"}</span>
+                <span style="font-size:.82rem;font-weight:800;color:{"#22C55E" if _tendencia_c4 else "#EF4444"};"> {"▲ Tendencia positiva — el ritmo crece semana a semana" if _tendencia_c4 else f"▼ Tendencia a la baja — {_mejor_s} fue el pico, {_peor_s} el punto más bajo"}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
