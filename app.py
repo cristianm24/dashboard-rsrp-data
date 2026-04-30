@@ -4065,37 +4065,56 @@ def render_claro_view():
         def _sc5(v): return "#22C55E" if v>=50 else "#F59E0B" if v>=40 else "#EF4444"
 
         # ── BLOQUE 1: ¿Cómo está Claro en el mercado? — 4 KPIs ───────────────
+        # KPIs con valores reales y conclusión clara
+        _pdvs_cuota_baja  = int((pd.to_numeric(df["CUOTA DE ALTA"],errors="coerce")<30).sum())
+        _pct_cuota_baja   = (_pdvs_cuota_baja/len(df)*100) if len(df)>0 else 0
+        _pdvs_cuota_dom   = int((pd.to_numeric(df["CUOTA DE ALTA"],errors="coerce")>=60).sum())
+        _pct_cuota_dom    = (_pdvs_cuota_dom/len(df)*100) if len(df)>0 else 0
+        _rsrp_criticos_n  = int((pd.to_numeric(df["RSRP"],errors="coerce")<-100).sum())
+        _pct_rsrp_crit    = (_rsrp_criticos_n/len(df)*100) if len(df)>0 else 0
+
         k5a,k5b,k5c,k5d = st.columns(4,gap="medium")
         with k5a:
-            _vt_a = (f'{"↓" if pd.notna(_var_alta_m1) and _var_alta_m1<0 else "↑"}{abs(_var_alta_m1):.1f}pp vs mes ant.'
-                     if pd.notna(_var_alta_m1) else "")
+            _c_alta5 = "#22C55E" if cuota_alta_media>=50 else "#F59E0B" if cuota_alta_media>=40 else "#EF4444"
+            _vt_a5   = (f'{"↓" if pd.notna(_var_alta_m1) and _var_alta_m1<0 else "↑"}{abs(_var_alta_m1):.1f}pp vs mes ant.'
+                        if pd.notna(_var_alta_m1) else "")
+            _vcolor5 = "#EF4444" if pd.notna(_var_alta_m1) and _var_alta_m1<0 else "#22C55E"
+            _concl_alta = ("✅ Claro domina la captación" if cuota_alta_media>=50
+                           else "🟡 La competencia capta más en promedio")
             st.markdown(f"""
             <div class="card" style="min-height:0;">
                 <div class="kpi-label">Cuota de altas media</div>
-                <div class="kpi-value" style="color:{_sc5(cuota_alta_media)};">{fmt_pct_c(cuota_alta_media)}</div>
-                <div class="kpi-sub">% ventas nuevas que son Claro <span style="color:{_vc5(_var_alta_m1)};">{_vt_a}</span></div>
+                <div class="kpi-value" style="color:{_c_alta5};">{fmt_pct_c(cuota_alta_media)}</div>
+                <div class="kpi-sub">{_concl_alta}<br><span style="color:{_vcolor5};">{_vt_a5}</span></div>
             </div>""", unsafe_allow_html=True)
         with k5b:
-            _c_mkt5 = "#22C55E" if cuota_mkt_media>=60 else "#F59E0B" if cuota_mkt_media>=50 else "#EF4444"
+            _c_mkt5  = "#22C55E" if cuota_mkt_media>=60 else "#F59E0B" if cuota_mkt_media>=50 else "#EF4444"
+            _concl_mkt = ("✅ Base instalada sólida" if cuota_mkt_media>=60
+                          else "🟡 Liderazgo estrecho en mercado" if cuota_mkt_media>=50
+                          else "🔴 Competencia domina la base")
             st.markdown(f"""
             <div class="card" style="min-height:0;">
                 <div class="kpi-label">Cuota de mercado media</div>
                 <div class="kpi-value" style="color:{_c_mkt5};">{fmt_pct_c(cuota_mkt_media)}</div>
-                <div class="kpi-sub">Base instalada Claro en PDVs</div>
+                <div class="kpi-sub">{_concl_mkt} · {fmt_int(_pdvs_cuota_dom)} PDVs con cuota &gt;60%</div>
             </div>""", unsafe_allow_html=True)
         with k5c:
+            _c_baja5 = "#EF4444" if _pct_cuota_baja>40 else "#F59E0B" if _pct_cuota_baja>20 else "#22C55E"
+            _concl_baja = (f"🔴 {_pct_cuota_baja:.0f}% del portafolio con cuota &lt;30% — alta oportunidad"
+                           if _pct_cuota_baja>20 else f"✅ Pocos PDVs con cuota baja")
             st.markdown(f"""
             <div class="card" style="min-height:0;">
-                <div class="kpi-label">PDVs donde Claro lidera</div>
-                <div class="kpi-value" style="color:#38BDF8;">{fmt_int(_cuota_alta_50)}</div>
-                <div class="kpi-sub">{_cuota_alta_50_pct:.0f}% del portafolio con cuota alta &gt;50%</div>
+                <div class="kpi-label">PDVs con cuota de altas &lt;30%</div>
+                <div class="kpi-value" style="color:{_c_baja5};">{fmt_int(_pdvs_cuota_baja)}</div>
+                <div class="kpi-sub">{_concl_baja}</div>
             </div>""", unsafe_allow_html=True)
         with k5d:
+            _c_rsrp5 = "#EF4444" if _pct_rsrp_crit>10 else "#F59E0B"
             st.markdown(f"""
             <div class="card" style="min-height:0;">
-                <div class="kpi-label">RSRP promedio PDVs</div>
-                <div class="kpi-value" style="color:#F59E0B;">{fmt_dBm(rsrp_media)}</div>
-                <div class="kpi-sub">Toda la red opera en zona Aceptable o Crítica</div>
+                <div class="kpi-label">PDVs con señal crítica</div>
+                <div class="kpi-value" style="color:{_c_rsrp5};">{fmt_int(_rsrp_criticos_n)}</div>
+                <div class="kpi-sub">{_pct_rsrp_crit:.1f}% del portafolio bajo -100 dBm · afecta captación</div>
             </div>""", unsafe_allow_html=True)
 
         # ── BLOQUE 2: ¿Qué posición tiene cada agente? ───────────────────────
@@ -4161,25 +4180,33 @@ def render_claro_view():
 
         b3a, b3b = st.columns(2, gap="large")
         with b3a:
-            _rsrp_sorted = _rsrp_ag.sort_values("rsrp_medio",ascending=False)
-            st.markdown('<div class="section-card"><div class="section-title">RSRP medio por agente</div><div class="section-subtitle">🟢 ≥-90 dBm Buena · 🟡 -90 a -100 Aceptable · 🔴 &lt;-100 Crítica · líneas de referencia marcan los umbrales</div>', unsafe_allow_html=True)
-            _ch_rsrp = alt.Chart(_rsrp_sorted).mark_bar(cornerRadiusTopLeft=6,cornerRadiusTopRight=6).encode(
-                x=alt.X("AGENTE:N",sort=list(_rsrp_sorted["AGENTE"]),title=None,axis=alt.Axis(labelAngle=-20)),
-                y=alt.Y("rsrp_medio:Q",title="RSRP medio (dBm)",scale=alt.Scale(domain=[-115,-85])),
-                color=alt.Color("color_rsrp:N",scale=None,legend=None),
+            _rsrp_sorted   = _rsrp_ag.sort_values("rsrp_medio", ascending=False)
+            _rsrp_y_min    = float(_rsrp_ag["rsrp_medio"].min()) - 2
+            _rsrp_y_max    = -88.0  # show a bit above -90 so bars are clearly visible
+            st.markdown('<div class="section-card"><div class="section-title">RSRP medio por agente</div><div class="section-subtitle">🟢 ≥-90 dBm Buena · 🟡 -90 a -100 Aceptable · 🔴 &lt;-100 Crítica · más cerca de cero = mejor señal</div>', unsafe_allow_html=True)
+            _ch_rsrp = alt.Chart(_rsrp_sorted).mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
+                x=alt.X("AGENTE:N", sort=list(_rsrp_sorted["AGENTE"]), title=None, axis=alt.Axis(labelAngle=-20)),
+                y=alt.Y("rsrp_medio:Q", title="RSRP medio (dBm)",
+                        scale=alt.Scale(domain=[_rsrp_y_min, _rsrp_y_max])),
+                color=alt.Color("color_rsrp:N", scale=None, legend=None),
                 tooltip=[
                     alt.Tooltip("AGENTE:N"),
-                    alt.Tooltip("rsrp_medio:Q",format=".1f",title="RSRP medio (dBm)"),
-                    alt.Tooltip("rsrp_min:Q",format=".1f",title="Peor PDV (dBm)"),
-                    alt.Tooltip("rsrp_max:Q",format=".1f",title="Mejor PDV (dBm)"),
-                    alt.Tooltip("pct_criticos:Q",format=".1f",title="% PDVs críticos"),
-                    alt.Tooltip("pdvs_total:Q",title="PDVs con datos de señal"),
+                    alt.Tooltip("rsrp_medio:Q", format=".1f", title="RSRP medio (dBm)"),
+                    alt.Tooltip("rsrp_min:Q",   format=".1f", title="Peor PDV (dBm)"),
+                    alt.Tooltip("rsrp_max:Q",   format=".1f", title="Mejor PDV (dBm)"),
+                    alt.Tooltip("pct_criticos:Q", format=".1f", title="% PDVs críticos"),
+                    alt.Tooltip("pdvs_total:Q", title="PDVs con datos de señal"),
                 ]
             ).properties(height=280)
-            _r_crit = alt.Chart(pd.DataFrame({"y":[-100]})).mark_rule(color="#EF4444",strokeDash=[5,3],strokeWidth=1.5).encode(y="y:Q")
-            _r_acep = alt.Chart(pd.DataFrame({"y":[-90]})).mark_rule(color="#F59E0B",strokeDash=[5,3],strokeWidth=1.5).encode(y="y:Q")
-            st.altair_chart(style_chart(_ch_rsrp+_r_crit+_r_acep), use_container_width=True, theme=None)
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Más cerca de cero = mejor señal · línea 🔴 = umbral crítico (-100 dBm) · línea 🟡 = umbral aceptable (-90 dBm)</div>', unsafe_allow_html=True)
+            _val_labels = alt.Chart(_rsrp_sorted).mark_text(dy=-8, fontSize=11, fontWeight="bold", color="#F8FAFC").encode(
+                x=alt.X("AGENTE:N", sort=list(_rsrp_sorted["AGENTE"])),
+                y=alt.Y("rsrp_medio:Q"),
+                text=alt.Text("rsrp_medio:Q", format=".1f")
+            )
+            _r_crit = alt.Chart(pd.DataFrame({"y": [-100]})).mark_rule(color="#EF4444", strokeDash=[5,3], strokeWidth=1.5).encode(y="y:Q")
+            _r_acep = alt.Chart(pd.DataFrame({"y": [-90]})).mark_rule(color="#F59E0B", strokeDash=[5,3], strokeWidth=1.5).encode(y="y:Q")
+            st.altair_chart(style_chart(_ch_rsrp + _val_labels + _r_crit + _r_acep), use_container_width=True, theme=None)
+            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Línea 🔴 = umbral crítico (-100 dBm) · línea 🟡 = umbral aceptable (-90 dBm)</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with b3b:
