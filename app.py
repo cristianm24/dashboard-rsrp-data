@@ -4187,57 +4187,46 @@ def render_claro_view():
         b3a, b3b = st.columns(2, gap="large")
         with b3a:
             _rsrp_plot = _rsrp_ag[["AGENTE","rsrp_medio","pct_criticos","pdvs_total","rsrp_min","rsrp_max"]].copy()
-            _rsrp_plot["rsrp_abs"]   = _rsrp_plot["rsrp_medio"].abs()
-            _rsrp_plot["rsrp_label"] = _rsrp_plot["rsrp_medio"].round(1).astype(str)
-            _rsrp_plot = _rsrp_plot.sort_values("rsrp_abs", ascending=True).reset_index(drop=True)
-            _xmin = float(_rsrp_plot["rsrp_abs"].min()) - 1.5
-            _xmax = float(_rsrp_plot["rsrp_abs"].max()) + 1.5
-            _agent_order = list(_rsrp_plot["AGENTE"])
+            _rsrp_plot = _rsrp_plot.sort_values("rsrp_medio", ascending=False).reset_index(drop=True)
+            # Build pure HTML bar chart — no Altair dependency
+            _rsrp_abs_min = float(_rsrp_plot["rsrp_medio"].abs().min())
+            _rsrp_abs_max = float(_rsrp_plot["rsrp_medio"].abs().max())
+            _rsrp_range   = max(_rsrp_abs_max - _rsrp_abs_min, 1)
 
-            st.markdown('<div class="section-card"><div class="section-title">RSRP medio por agente</div><div class="section-subtitle">Barra más larga = peor señal · 🟡 Aceptable (-90 a -100 dBm) · 🔴 Crítica (&lt;-100 dBm)</div>', unsafe_allow_html=True)
+            rows_html = ""
+            for _, rr in _rsrp_plot.iterrows():
+                _v      = float(rr["rsrp_medio"])
+                _abs_v  = abs(_v)
+                _bar_w  = int((_abs_v - _rsrp_abs_min) / _rsrp_range * 100)  # 0-100%
+                _color  = "#EF4444" if _v < -100 else "#F59E0B" if _v < -90 else "#22C55E"
+                _band   = "Crítica" if _v < -100 else "Aceptable" if _v < -90 else "Buena"
+                _crit_p = float(rr["pct_criticos"])
+                _pdvs   = int(rr["pdvs_total"])
+                rows_html += f"""
+                <div style="margin-bottom:10px;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                        <span style="font-size:.78rem;font-weight:800;color:#E2E8F0;">{rr["AGENTE"]}</span>
+                        <span style="font-size:.78rem;font-weight:900;color:{_color};">{_v:.1f} dBm &nbsp;
+                            <span style="font-size:.66rem;background:{_color}22;border:1px solid {_color}44;border-radius:6px;padding:1px 6px;color:{_color};">{_band}</span>
+                        </span>
+                    </div>
+                    <div style="width:100%;height:10px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden;">
+                        <div style="width:{_bar_w}%;height:100%;background:{_color};border-radius:99px;"></div>
+                    </div>
+                    <div style="font-size:.67rem;color:#64748B;margin-top:2px;">{_pdvs:,} PDVs medidos · {_crit_p:.1f}% en señal crítica</div>
+                </div>"""
 
-            _base_rsrp = alt.Chart(_rsrp_plot).mark_bar(
-                cornerRadiusTopLeft=5, cornerRadiusTopRight=5
-            ).transform_calculate(
-                color_banda="datum.rsrp_medio < -100 ? '#EF4444' : datum.rsrp_medio < -90 ? '#F59E0B' : '#22C55E'"
-            ).encode(
-                y=alt.Y("AGENTE:N", sort=_agent_order, title=None),
-                x=alt.X("rsrp_abs:Q",
-                        title="Valor absoluto de señal (mayor número = peor señal)",
-                        scale=alt.Scale(domain=[_xmin, _xmax])),
-                color=alt.Color("color_banda:N", scale=None, legend=None),
-                tooltip=[
-                    alt.Tooltip("AGENTE:N",       title="Agente"),
-                    alt.Tooltip("rsrp_medio:Q",   format=".1f", title="RSRP (dBm)"),
-                    alt.Tooltip("pct_criticos:Q", format=".1f", title="% PDVs críticos"),
-                    alt.Tooltip("pdvs_total:Q",   title="PDVs medidos"),
-                    alt.Tooltip("rsrp_min:Q",     format=".1f", title="Peor PDV (dBm)"),
-                    alt.Tooltip("rsrp_max:Q",     format=".1f", title="Mejor PDV (dBm)"),
-                ]
-            )
-
-            _txt_rsrp = alt.Chart(_rsrp_plot).mark_text(
-                align="left", dx=5, fontSize=11, fontWeight="bold", color="#F8FAFC"
-            ).encode(
-                y=alt.Y("AGENTE:N", sort=_agent_order),
-                x=alt.X("rsrp_abs:Q"),
-                text="rsrp_label:N"
-            )
-
-            _rule_crit = alt.Chart(pd.DataFrame({"x": [100.0]})).mark_rule(
-                color="#EF4444", strokeDash=[4,3], strokeWidth=2
-            ).encode(x="x:Q")
-
-            _rule_acep = alt.Chart(pd.DataFrame({"x": [90.0]})).mark_rule(
-                color="#F59E0B", strokeDash=[4,3], strokeWidth=1.5
-            ).encode(x="x:Q")
-
-            st.altair_chart(
-                style_chart((_base_rsrp + _txt_rsrp + _rule_acep + _rule_crit).properties(height=240)),
-                use_container_width=True, theme=None
-            )
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Línea 🔴 = umbral crítico (-100 dBm) · línea 🟡 = umbral aceptable (-90 dBm) · número = RSRP real del agente</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class="section-card">
+                <div class="section-title">RSRP medio por agente</div>
+                <div class="section-subtitle">Barra más larga = peor señal · 🟡 Aceptable (-90 a -100 dBm) · 🔴 Crítica (&lt;-100 dBm)</div>
+                <div style="margin-top:12px;">{rows_html}</div>
+                <div style="font-size:.68rem;color:#64748B;margin-top:8px;border-top:1px solid rgba(255,255,255,0.06);padding-top:6px;">
+                    La barra representa la posición relativa entre agentes — no el valor absoluto.
+                    El número a la derecha es el RSRP real en dBm.
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
         with b3b:
             _band_long_ag = _rsrp_ag[["AGENTE","criticos","aceptables","buenos","excelentes","pdvs_total"]].copy()
