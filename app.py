@@ -4056,41 +4056,36 @@ def render_claro_view():
     # -------------------------------------------------------
     # TAB C5 — ¿DÓNDE GANAR MÁS?
     # -------------------------------------------------------
-    with tc5:
-        # ── Cálculos protagonistas ────────────────────────────────────────────
-        _cuota_alta_50 = (pd.to_numeric(df["CUOTA DE ALTA"],errors="coerce")>50).sum()
-        _cuota_alta_50_pct = (_cuota_alta_50 / len(df) * 100) if len(df)>0 else 0
-        _cuota_mkt_50  = (pd.to_numeric(df["CUOTA DE MERCADO"],errors="coerce")>50).sum()
-        _var_alta_m1   = pd.to_numeric(df["VR_M-1.1"],errors="coerce").mean() if "VR_M-1.1" in df.columns else np.nan
-        _var_mkt_m1    = pd.to_numeric(df["VR_M-1"],errors="coerce").mean()   if "VR_M-1" in df.columns else np.nan
+        # ── Cálculos globales ─────────────────────────────────────────────────
+        _cuota_alta_50    = (pd.to_numeric(df["CUOTA DE ALTA"],errors="coerce")>50).sum()
+        _cuota_alta_50_pct= (_cuota_alta_50/len(df)*100) if len(df)>0 else 0
+        _var_alta_m1      = pd.to_numeric(df["VR_M-1.1"],errors="coerce").mean() if "VR_M-1.1" in df.columns else np.nan
+        def _vc5(v): return "#EF4444" if pd.notna(v) and v<0 else "#22C55E"
+        def _sc5(v): return "#22C55E" if v>=50 else "#F59E0B" if v>=40 else "#EF4444"
 
-        def _sc5(v): return "#22C55E" if v >= 100 else "#F59E0B" if v >= 70 else "#EF4444"
-        def _vc(v):  return "#EF4444" if pd.notna(v) and v < 0 else "#22C55E"
-
-        # ── 4 KPIs protagonistas ──────────────────────────────────────────────
-        k5a, k5b, k5c, k5d = st.columns(4, gap="medium")
+        # ── BLOQUE 1: ¿Cómo está Claro en el mercado? — 4 KPIs ───────────────
+        k5a,k5b,k5c,k5d = st.columns(4,gap="medium")
         with k5a:
-            _c_alta = "#22C55E" if cuota_alta_media >= 50 else "#F59E0B" if cuota_alta_media >= 40 else "#EF4444"
-            _vt_a = (f"{"↓" if pd.notna(_var_alta_m1) and _var_alta_m1 < 0 else "↑"}{abs(_var_alta_m1):.1f}pp vs mes ant."
+            _vt_a = (f'{"↓" if pd.notna(_var_alta_m1) and _var_alta_m1<0 else "↑"}{abs(_var_alta_m1):.1f}pp vs mes ant.'
                      if pd.notna(_var_alta_m1) else "")
             st.markdown(f"""
             <div class="card" style="min-height:0;">
                 <div class="kpi-label">Cuota de altas media</div>
-                <div class="kpi-value" style="color:{_c_alta};">{fmt_pct_c(cuota_alta_media)}</div>
-                <div class="kpi-sub">% ventas nuevas que son Claro <span style="color:{_vc(_var_alta_m1)};">{_vt_a}</span></div>
+                <div class="kpi-value" style="color:{_sc5(cuota_alta_media)};">{fmt_pct_c(cuota_alta_media)}</div>
+                <div class="kpi-sub">% ventas nuevas que son Claro <span style="color:{_vc5(_var_alta_m1)};">{_vt_a}</span></div>
             </div>""", unsafe_allow_html=True)
         with k5b:
-            _c_mkt = "#22C55E" if cuota_mkt_media >= 60 else "#F59E0B" if cuota_mkt_media >= 50 else "#EF4444"
+            _c_mkt5 = "#22C55E" if cuota_mkt_media>=60 else "#F59E0B" if cuota_mkt_media>=50 else "#EF4444"
             st.markdown(f"""
             <div class="card" style="min-height:0;">
                 <div class="kpi-label">Cuota de mercado media</div>
-                <div class="kpi-value" style="color:{_c_mkt};">{fmt_pct_c(cuota_mkt_media)}</div>
+                <div class="kpi-value" style="color:{_c_mkt5};">{fmt_pct_c(cuota_mkt_media)}</div>
                 <div class="kpi-sub">Base instalada Claro en PDVs</div>
             </div>""", unsafe_allow_html=True)
         with k5c:
             st.markdown(f"""
             <div class="card" style="min-height:0;">
-                <div class="kpi-label">PDVs donde Claro lidera captación</div>
+                <div class="kpi-label">PDVs donde Claro lidera</div>
                 <div class="kpi-value" style="color:#38BDF8;">{fmt_int(_cuota_alta_50)}</div>
                 <div class="kpi-sub">{_cuota_alta_50_pct:.0f}% del portafolio con cuota alta &gt;50%</div>
             </div>""", unsafe_allow_html=True)
@@ -4102,14 +4097,14 @@ def render_claro_view():
                 <div class="kpi-sub">Toda la red opera en zona Aceptable o Crítica</div>
             </div>""", unsafe_allow_html=True)
 
-        # ── Sección 1: Cuota de altas y mercado ──────────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Posición competitiva por agente</div>', unsafe_allow_html=True)
-        c5a, c5b = st.columns(2, gap="large")
-        with c5a:
-            cuota_by_ag = df.groupby("AGENTE").agg(
-                cuota_mkt=("CUOTA DE MERCADO","mean"), cuota_alta=("CUOTA DE ALTA","mean"), n=("ID","count"),
-            ).reset_index()
-            st.markdown('<div class="section-card"><div class="section-title">Cuota de altas vs mercado por agente</div><div class="section-subtitle">🔵 Cuota altas (captación activa) · 🔴 Cuota mercado (base instalada) · si azul &gt; rojo, el agente gana participación</div>', unsafe_allow_html=True)
+        # ── BLOQUE 2: ¿Qué posición tiene cada agente? ───────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">Posición competitiva por agente</div>', unsafe_allow_html=True)
+        cuota_by_ag = df.groupby("AGENTE").agg(
+            cuota_mkt=("CUOTA DE MERCADO","mean"), cuota_alta=("CUOTA DE ALTA","mean"), n=("ID","count"),
+        ).reset_index()
+        b2a, b2b = st.columns(2, gap="large")
+        with b2a:
+            st.markdown('<div class="section-card"><div class="section-title">Cuota de altas vs cuota de mercado por agente</div><div class="section-subtitle">🔵 Cuota altas = ventas nuevas que son Claro · 🔴 Cuota mercado = base instalada · si azul supera al rojo, el agente gana participación activamente</div>', unsafe_allow_html=True)
             cuota_melt = cuota_by_ag[["AGENTE","cuota_mkt","cuota_alta"]].melt("AGENTE",var_name="Indicador",value_name="Valor")
             cuota_melt["Indicador"] = cuota_melt["Indicador"].map({"cuota_mkt":"Cuota Mercado","cuota_alta":"Cuota Altas"})
             chart_cuota = alt.Chart(cuota_melt).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
@@ -4121,11 +4116,10 @@ def render_claro_view():
             ).properties(height=280)
             st.altair_chart(style_chart(chart_cuota), use_container_width=True, theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
-
-        with c5b:
+        with b2b:
             cuota_vals = pd.to_numeric(df["CUOTA DE MERCADO"],errors="coerce").dropna()
             df_hist = pd.DataFrame({"Cuota": cuota_vals})
-            st.markdown('<div class="section-card"><div class="section-title">Distribución de cuota de mercado Claro</div><div class="section-subtitle">Cada barra = cuántos PDVs tienen esa cuota · barra alta a la derecha = muchos PDVs donde Claro domina · a la izquierda = oportunidad</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">¿Cómo se distribuye la cuota de mercado Claro?</div><div class="section-subtitle">Cada barra = cuántos PDVs tienen ese % de cuota · masa a la derecha = Claro domina en esos puntos · masa a la izquierda = oportunidad de crecimiento</div>', unsafe_allow_html=True)
             if not df_hist.empty:
                 chart_hist = alt.Chart(df_hist).mark_bar(color="#E10600",opacity=0.82).encode(
                     x=alt.X("Cuota:Q",bin=alt.Bin(maxbins=20),title="Cuota mercado Claro (%)"),
@@ -4135,160 +4129,22 @@ def render_claro_view():
                 st.altair_chart(style_chart(chart_hist), use_container_width=True, theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── Sección 2: Señal vs Cuota ─────────────────────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Relación entre calidad de señal y cuota de altas</div>', unsafe_allow_html=True)
-        c5c, c5d = st.columns(2, gap="large")
-        with c5c:
-            df_sc = df[["CUOTA DE ALTA","CUOTA DE MERCADO","RSRP","AGENTE","CATEGORIA","ID"]].copy()
-            df_sc["RSRP_num"]   = pd.to_numeric(df_sc["RSRP"],errors="coerce")
-            df_sc["CUOTA_ALTA"] = pd.to_numeric(df_sc["CUOTA DE ALTA"],errors="coerce")
-            df_sc = df_sc.dropna(subset=["RSRP_num","CUOTA_ALTA"]).copy()
+        # ── BLOQUE 3: ¿Cómo es la señal de cada agente? ──────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">Calidad de señal RSRP por agente</div>', unsafe_allow_html=True)
 
-            def rsrp_band_v2(v):
-                if v >= -70:  return "Excelente (≥ -70 dBm)"
-                if v >= -90:  return "Buena (-70 a -90 dBm)"
-                if v >= -100: return "Aceptable (-90 a -100 dBm)"
-                return "Crítica (< -100 dBm)"
-
-            band_order_v2  = ["Excelente (≥ -70 dBm)","Buena (-70 a -90 dBm)","Aceptable (-90 a -100 dBm)","Crítica (< -100 dBm)"]
-            band_colors_v2 = ["#22C55E","#84CC16","#F59E0B","#EF4444"]
-            df_sc["Banda RSRP"] = df_sc["RSRP_num"].apply(rsrp_band_v2)
-            df_sc["Banda RSRP"] = pd.Categorical(df_sc["Banda RSRP"],categories=band_order_v2,ordered=True)
-            by_band_v2 = df_sc.groupby("Banda RSRP",observed=True).agg(
-                cuota_alta_media=("CUOTA_ALTA","mean"), pdvs=("CUOTA_ALTA","count"), rsrp_media=("RSRP_num","mean"),
-            ).reset_index()
-            by_band_v2["Banda RSRP"] = by_band_v2["Banda RSRP"].astype(str)
-            _bandas_ausentes = [b for b in band_order_v2 if b not in by_band_v2["Banda RSRP"].tolist()]
-
-            st.markdown(f'<div class="section-card"><div class="section-title">Calidad de señal vs cuota de altas</div><div class="section-subtitle">{"⚠️ Ningún PDV tiene señal Excelente ni Buena — toda la red opera en Aceptable o Crítica · " if _bandas_ausentes else ""}Bandas: Excelente ≥-70 · Buena -70 a -90 · Aceptable -90 a -100 · Crítica &lt;-100 dBm</div>', unsafe_allow_html=True)
-            if not by_band_v2.empty:
-                _y_max = max(by_band_v2["cuota_alta_media"].max()*1.25, 60)
-                chart_band_v2 = alt.Chart(by_band_v2).mark_bar(cornerRadiusTopLeft=7,cornerRadiusTopRight=7).encode(
-                    x=alt.X("Banda RSRP:N",sort=band_order_v2,title=None,axis=alt.Axis(labelAngle=-12,labelLimit=220)),
-                    y=alt.Y("cuota_alta_media:Q",title="Cuota altas (%)",scale=alt.Scale(domain=[0,_y_max])),
-                    color=alt.Color("Banda RSRP:N",scale=alt.Scale(domain=band_order_v2,range=band_colors_v2),legend=None),
-                    tooltip=[alt.Tooltip("Banda RSRP:N",title="Banda de señal"),alt.Tooltip("pdvs:Q",title="PDVs"),alt.Tooltip("rsrp_media:Q",title="RSRP medio",format=".1f"),alt.Tooltip("cuota_alta_media:Q",title="Cuota altas %",format=".1f")]
-                ).properties(height=260)
-                r50b = alt.Chart(pd.DataFrame({"y":[50]})).mark_rule(color="#38BDF8",strokeDash=[5,3],strokeWidth=1.5).encode(y="y:Q")
-                t_b  = alt.Chart(by_band_v2).mark_text(dy=-14,fontSize=12,fontWeight="bold",color="#F8FAFC").encode(
-                    x=alt.X("Banda RSRP:N",sort=band_order_v2), y=alt.Y("cuota_alta_media:Q"),
-                    text=alt.Text("cuota_alta_media:Q",format=".1f")
-                )
-                st.altair_chart(style_chart(chart_band_v2+r50b+t_b), use_container_width=True, theme=None)
-                if _bandas_ausentes:
-                    st.markdown(f'<div style="font-size:.72rem;color:#FCA5A5;background:rgba(239,68,68,0.10);border:1px solid rgba(239,68,68,0.22);border-radius:10px;padding:6px 10px;margin-top:4px;">⚠️ Bandas ausentes: <b>{", ".join(_bandas_ausentes)}</b></div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        with c5d:
-            cuota_cat = df.groupby("CATEGORIA").agg(
-                cuota_mkt=("CUOTA DE MERCADO","mean"), cuota_alta=("CUOTA DE ALTA","mean"), n=("ID","count"),
-            ).reset_index()
-            cuota_cat["CATEGORIA"] = pd.Categorical(cuota_cat["CATEGORIA"],categories=["DIAMANTE","PLATINO","ORO","PLATA","BRONCE"],ordered=True)
-            cuota_cat = cuota_cat.sort_values("CATEGORIA")
-            st.markdown('<div class="section-card"><div class="section-title">¿En qué categoría capta más Claro?</div><div class="section-subtitle">Cuota de altas por categoría · línea azul = 50% (paridad con competencia)</div>', unsafe_allow_html=True)
-            if not cuota_cat.empty:
-                chart_calt = alt.Chart(cuota_cat).mark_bar(cornerRadiusTopLeft=6,cornerRadiusTopRight=6).encode(
-                    x=alt.X("CATEGORIA:N",sort=["DIAMANTE","PLATINO","ORO","PLATA","BRONCE"],title=None),
-                    y=alt.Y("cuota_alta:Q",title="Cuota alta Claro (%)"),
-                    color=alt.Color("CATEGORIA:N",scale=alt.Scale(domain=list(CATEGORIA_COLORS.keys()),range=list(CATEGORIA_COLORS.values())),legend=None),
-                    tooltip=[alt.Tooltip("CATEGORIA:N"),alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %"),alt.Tooltip("cuota_mkt:Q",format=".1f",title="Cuota mkt %"),alt.Tooltip("n:Q",title="PDVs")]
-                ).properties(height=260)
-                r50c = alt.Chart(pd.DataFrame({"y":[50]})).mark_rule(color="#38BDF8",strokeDash=[5,3],strokeWidth=1.5).encode(y="y:Q")
-                st.altair_chart(style_chart(chart_calt+r50c), use_container_width=True, theme=None)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        # ── Sección 3: KPIs de oportunidad ───────────────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Puntos de mejora — priorización por oportunidad</div>', unsafe_allow_html=True)
-        _df_opp5 = df.copy()
-        _df_opp5["RSRP_n"]       = pd.to_numeric(_df_opp5["RSRP"],errors="coerce")
-        _df_opp5["CUOTA_ALTA_n"] = pd.to_numeric(_df_opp5["CUOTA DE ALTA"],errors="coerce")
-        _df_opp5["META_n"]       = pd.to_numeric(_df_opp5["META ALTA NAT (>$2000)"],errors="coerce")
-        _df_opp5["EJEC_n"]       = pd.to_numeric(_df_opp5["EJEC ALTA NAT"],errors="coerce")
-        _df_opp5["cumpl_o"]      = (_df_opp5["EJEC_n"]/_df_opp5["META_n"].replace(0,np.nan)*100).fillna(0)
-        _df_opp5["banda_r"]      = _df_opp5["RSRP_n"].apply(lambda v: rsrp_band_v2(v) if pd.notna(v) else "Sin datos")
-        _cuota_media5 = _df_opp5["CUOTA_ALTA_n"].mean()
-        _n_crit_bc5   = int(((_df_opp5["banda_r"]=="Crítica (< -100 dBm)") & (_df_opp5["CUOTA_ALTA_n"]<_cuota_media5)).sum())
-        _n_acep_bc5   = int(((_df_opp5["banda_r"]=="Aceptable (-90 a -100 dBm)") & (_df_opp5["META_n"]>0) & (_df_opp5["cumpl_o"]<70)).sum())
-        _n_baja_c5    = int((_df_opp5["CUOTA_ALTA_n"]<30).sum())
-        _pct_crit5    = (_df_opp5["banda_r"]=="Crítica (< -100 dBm)").mean()*100
-
-        op1c5, op2c5, op3c5, op4c5 = st.columns(4, gap="medium")
-        with op1c5:
-            _cc5 = "#EF4444" if _pct_crit5 > 10 else "#F59E0B"
-            st.markdown(f"""
-            <div class="card" style="min-height:0;">
-                <div class="kpi-label">PDVs señal crítica</div>
-                <div class="kpi-value" style="color:{_cc5};">{_pct_crit5:.1f}%</div>
-                <div class="kpi-sub">{fmt_int((_df_opp5["banda_r"]=="Crítica (< -100 dBm)").sum())} PDVs bajo -100 dBm</div>
-            </div>""", unsafe_allow_html=True)
-        with op2c5:
-            st.markdown(f"""
-            <div class="card" style="min-height:0;">
-                <div class="kpi-label">Críticos + cuota baja</div>
-                <div class="kpi-value" style="color:#EF4444;">{fmt_int(_n_crit_bc5)}</div>
-                <div class="kpi-sub">Señal crítica Y cuota bajo la media — máxima prioridad</div>
-            </div>""", unsafe_allow_html=True)
-        with op3c5:
-            st.markdown(f"""
-            <div class="card" style="min-height:0;">
-                <div class="kpi-label">Aceptable + bajo 70%</div>
-                <div class="kpi-value" style="color:#F59E0B;">{fmt_int(_n_acep_bc5)}</div>
-                <div class="kpi-sub">Señal aceptable pero meta sin cumplir — recuperables</div>
-            </div>""", unsafe_allow_html=True)
-        with op4c5:
-            st.markdown(f"""
-            <div class="card" style="min-height:0;">
-                <div class="kpi-label">Cuota altas &lt; 30%</div>
-                <div class="kpi-value" style="color:#F59E0B;">{fmt_int(_n_baja_c5)}</div>
-                <div class="kpi-sub">PDVs donde la competencia domina — potencial sin aprovechar</div>
-            </div>""", unsafe_allow_html=True)
-
-
-        # Tabla circuitos+barrios por oportunidad
-        if "CIRCUITO" in _df_opp5.columns:
-            _group_cols5 = [c for c in ["BARRIO","CIRCUITO","AGENTE"] if c in _df_opp5.columns]
-            _circ_opp5 = _df_opp5[_df_opp5["META_n"]>0].groupby(_group_cols5).agg(
-                pdvs=("ID","count"), rsrp_medio=("RSRP_n","mean"), cuota_alta=("CUOTA_ALTA_n","mean"),
-                cumpl=("cumpl_o","mean"), pdvs_criticos=("banda_r", lambda x: (x=="Crítica (< -100 dBm)").sum()),
-                meta=("META_n","sum"), ejec=("EJEC_n","sum"),
-            ).reset_index()
-            _circ_opp5["brecha"] = _circ_opp5["meta"] - _circ_opp5["ejec"]
-            _circ_opp5["score"] = (
-                (_circ_opp5["pdvs_criticos"]/_circ_opp5["pdvs"].replace(0,np.nan)*40).fillna(0) +
-                ((50-_circ_opp5["cuota_alta"].clip(0,50))*0.6) +
-                ((70-_circ_opp5["cumpl"].clip(0,70))*0.4)
-            )
-            _circ_show5 = _circ_opp5.sort_values("score",ascending=False).head(20)
-            st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 6px 0;">Top circuitos y barrios con mayor oportunidad de mejora (señal + cuota + cumplimiento)</div>', unsafe_allow_html=True)
-            _rename5 = {"BARRIO":"Barrio","CIRCUITO":"Circuito","AGENTE":"Agente","pdvs":"PDVs","rsrp_medio":"RSRP medio","cuota_alta":"Cuota alta %","cumpl":"Cumpl. %","pdvs_criticos":"PDVs críticos","meta":"Meta","ejec":"Ejecutado","brecha":"Brecha","score":"Score"}
-            _show_cols5 = [c for c in _rename5.keys() if c in _circ_show5.columns]
-            _cs = safe_round_columns(_circ_show5[_show_cols5].copy(),["rsrp_medio","cuota_alta","cumpl","brecha","score"])
-            _cs = _cs.rename(columns={k:v for k,v in _rename5.items() if k in _cs.columns})
-            st.dataframe(_cs, use_container_width=True, height=320)
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Mayor score = mayor prioridad · incluye barrio para facilitar gestión en campo · score combina señal crítica + cuota baja + bajo cumplimiento</div>', unsafe_allow_html=True)
-
-
-        # ── Sección RSRP por agente ───────────────────────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">Intensidad de señal (RSRP) por agente — ¿dónde la red ayuda y dónde obstaculiza?</div>', unsafe_allow_html=True)
-
-        # Cálculos RSRP por agente
-        def rsrp_band_tc5(v):
+        _df_rsrp = df.copy()
+        _df_rsrp["RSRP_n"]      = pd.to_numeric(_df_rsrp["RSRP"],errors="coerce")
+        _df_rsrp["CUOTA_ALTA_n"]= pd.to_numeric(_df_rsrp["CUOTA DE ALTA"],errors="coerce")
+        def _rband(v):
             if pd.isna(v): return "Sin datos"
-            if v >= -70:  return "Excelente"
-            if v >= -90:  return "Buena"
-            if v >= -100: return "Aceptable"
+            if v>=-70: return "Excelente"
+            if v>=-90: return "Buena"
+            if v>=-100: return "Aceptable"
             return "Crítica"
+        _df_rsrp["banda"] = _df_rsrp["RSRP_n"].apply(_rband)
 
-        _df_rsrp_ag = df.copy()
-        _df_rsrp_ag["RSRP_n"] = pd.to_numeric(_df_rsrp_ag["RSRP"], errors="coerce")
-        _df_rsrp_ag["banda"]  = _df_rsrp_ag["RSRP_n"].apply(rsrp_band_tc5)
-        _df_rsrp_ag["CUOTA_ALTA_n"] = pd.to_numeric(_df_rsrp_ag["CUOTA DE ALTA"], errors="coerce")
-
-        # Por agente: RSRP medio + distribución de bandas
-        _rsrp_ag = _df_rsrp_ag.groupby("AGENTE").agg(
-            rsrp_medio=("RSRP_n","mean"),
-            rsrp_min=("RSRP_n","min"),
-            rsrp_max=("RSRP_n","max"),
+        _rsrp_ag = _df_rsrp.groupby("AGENTE").agg(
+            rsrp_medio=("RSRP_n","mean"), rsrp_min=("RSRP_n","min"), rsrp_max=("RSRP_n","max"),
             pdvs_total=("RSRP_n","count"),
             criticos=("banda", lambda x: (x=="Crítica").sum()),
             aceptables=("banda", lambda x: (x=="Aceptable").sum()),
@@ -4296,153 +4152,187 @@ def render_claro_view():
             excelentes=("banda", lambda x: (x=="Excelente").sum()),
             cuota_alta=("CUOTA_ALTA_n","mean"),
         ).reset_index()
-        _rsrp_ag["pct_criticos"] = (_rsrp_ag["criticos"]/_rsrp_ag["pdvs_total"].replace(0,np.nan)*100).fillna(0)
+        _rsrp_ag["pct_criticos"]  = (_rsrp_ag["criticos"]/_rsrp_ag["pdvs_total"].replace(0,np.nan)*100).fillna(0)
         _rsrp_ag["pct_aceptable"] = (_rsrp_ag["aceptables"]/_rsrp_ag["pdvs_total"].replace(0,np.nan)*100).fillna(0)
-        _rsrp_ag["color_rsrp"] = _rsrp_ag["rsrp_medio"].apply(
+        _rsrp_ag["color_rsrp"]    = _rsrp_ag["rsrp_medio"].apply(
             lambda v: "#22C55E" if pd.notna(v) and v>=-90 else "#F59E0B" if pd.notna(v) and v>=-100 else "#EF4444"
         )
 
-        # Gráfica 1: RSRP medio por agente con rango min-max
-        r5a, r5b = st.columns(2, gap="large")
-        with r5a:
-            st.markdown('<div class="section-card"><div class="section-title">RSRP medio por agente</div><div class="section-subtitle">Intensidad de señal promedio en los PDVs de cada agente · 🟢 Buena ≥-90 · 🟡 Aceptable -90 a -100 · 🔴 Crítica &lt;-100 dBm</div>', unsafe_allow_html=True)
-            _rsrp_sorted = _rsrp_ag.sort_values("rsrp_medio", ascending=False)
-            _chart_rsrp_ag = alt.Chart(_rsrp_sorted).mark_bar(cornerRadiusTopLeft=6,cornerRadiusTopRight=6).encode(
-                x=alt.X("AGENTE:N",title=None,sort=list(_rsrp_sorted["AGENTE"]),axis=alt.Axis(labelAngle=-20)),
+        b3a, b3b = st.columns(2, gap="large")
+        with b3a:
+            _rsrp_sorted = _rsrp_ag.sort_values("rsrp_medio",ascending=False)
+            st.markdown('<div class="section-card"><div class="section-title">RSRP medio por agente</div><div class="section-subtitle">🟢 ≥-90 dBm Buena · 🟡 -90 a -100 Aceptable · 🔴 &lt;-100 Crítica · líneas de referencia marcan los umbrales</div>', unsafe_allow_html=True)
+            _ch_rsrp = alt.Chart(_rsrp_sorted).mark_bar(cornerRadiusTopLeft=6,cornerRadiusTopRight=6).encode(
+                x=alt.X("AGENTE:N",sort=list(_rsrp_sorted["AGENTE"]),title=None,axis=alt.Axis(labelAngle=-20)),
                 y=alt.Y("rsrp_medio:Q",title="RSRP medio (dBm)",scale=alt.Scale(domain=[-115,-85])),
                 color=alt.Color("color_rsrp:N",scale=None,legend=None),
                 tooltip=[
-                    alt.Tooltip("AGENTE:N",title="Agente"),
+                    alt.Tooltip("AGENTE:N"),
                     alt.Tooltip("rsrp_medio:Q",format=".1f",title="RSRP medio (dBm)"),
-                    alt.Tooltip("rsrp_min:Q",format=".1f",title="RSRP mín (peor)"),
-                    alt.Tooltip("rsrp_max:Q",format=".1f",title="RSRP máx (mejor)"),
+                    alt.Tooltip("rsrp_min:Q",format=".1f",title="Peor PDV (dBm)"),
+                    alt.Tooltip("rsrp_max:Q",format=".1f",title="Mejor PDV (dBm)"),
                     alt.Tooltip("pct_criticos:Q",format=".1f",title="% PDVs críticos"),
-                    alt.Tooltip("pdvs_total:Q",title="PDVs con señal"),
+                    alt.Tooltip("pdvs_total:Q",title="PDVs con datos de señal"),
                 ]
             ).properties(height=280)
-            _rule_100 = alt.Chart(pd.DataFrame({"y":[-100]})).mark_rule(color="#EF4444",strokeDash=[5,3],strokeWidth=1.5).encode(y="y:Q")
-            _rule_90  = alt.Chart(pd.DataFrame({"y":[-90]})).mark_rule(color="#F59E0B",strokeDash=[5,3],strokeWidth=1.5).encode(y="y:Q")
-            st.altair_chart(style_chart(_chart_rsrp_ag+_rule_100+_rule_90), use_container_width=True, theme=None)
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Línea 🔴 = límite crítico (-100 dBm) · línea 🟡 = límite aceptable (-90 dBm) · más cerca de cero = mejor señal</div>', unsafe_allow_html=True)
+            _r_crit = alt.Chart(pd.DataFrame({"y":[-100]})).mark_rule(color="#EF4444",strokeDash=[5,3],strokeWidth=1.5).encode(y="y:Q")
+            _r_acep = alt.Chart(pd.DataFrame({"y":[-90]})).mark_rule(color="#F59E0B",strokeDash=[5,3],strokeWidth=1.5).encode(y="y:Q")
+            st.altair_chart(style_chart(_ch_rsrp+_r_crit+_r_acep), use_container_width=True, theme=None)
+            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Más cerca de cero = mejor señal · línea 🔴 = umbral crítico (-100 dBm) · línea 🟡 = umbral aceptable (-90 dBm)</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        with r5b:
-            # Distribución de bandas por agente (stacked)
-            _band_melt = _rsrp_ag[["AGENTE","criticos","aceptables","buenos","excelentes","pdvs_total"]].copy()
-            _band_pct = _band_melt.copy()
+        with b3b:
+            _band_long_ag = _rsrp_ag[["AGENTE","criticos","aceptables","buenos","excelentes","pdvs_total"]].copy()
             for col,lbl in [("criticos","Crítica"),("aceptables","Aceptable"),("buenos","Buena"),("excelentes","Excelente")]:
-                _band_pct[lbl] = (_band_melt[col]/_band_melt["pdvs_total"].replace(0,np.nan)*100).fillna(0)
-            _band_long = _band_pct[["AGENTE","Crítica","Aceptable","Buena","Excelente"]].melt("AGENTE",var_name="Banda",value_name="Pct")
-            _band_order = ["Excelente","Buena","Aceptable","Crítica"]
-            _band_cols  = ["#22C55E","#84CC16","#F59E0B","#EF4444"]
-
-            st.markdown('<div class="section-card"><div class="section-title">Distribución de señal por agente</div><div class="section-subtitle">Composición de PDVs por banda de señal · 🔴 Crítica &lt;-100 · 🟡 Aceptable · 🟢 Buena/Excelente</div>', unsafe_allow_html=True)
-            _chart_dist_ag = alt.Chart(_band_long).mark_bar().encode(
-                x=alt.X("Pct:Q",title="% del portafolio",stack="normalize"),
+                _band_long_ag[lbl] = (_band_long_ag[col]/_band_long_ag["pdvs_total"].replace(0,np.nan)*100).fillna(0)
+            _band_melt = _band_long_ag[["AGENTE","Crítica","Aceptable","Buena","Excelente"]].melt("AGENTE",var_name="Banda",value_name="Pct")
+            st.markdown('<div class="section-card"><div class="section-title">Composición de señal por agente</div><div class="section-subtitle">Qué porcentaje del portafolio de cada agente está en cada banda de señal · más rojo = más PDVs en zona crítica</div>', unsafe_allow_html=True)
+            _ch_dist = alt.Chart(_band_melt).mark_bar().encode(
+                x=alt.X("Pct:Q",title="% del portafolio",stack="normalize",axis=alt.Axis(format="%")),
                 y=alt.Y("AGENTE:N",title=None),
-                color=alt.Color("Banda:N",scale=alt.Scale(domain=_band_order,range=_band_cols),legend=alt.Legend(title="",orient="bottom")),
+                color=alt.Color("Banda:N",
+                    scale=alt.Scale(domain=["Excelente","Buena","Aceptable","Crítica"],
+                                    range=["#22C55E","#84CC16","#F59E0B","#EF4444"]),
+                    legend=alt.Legend(title="",orient="bottom")),
                 order=alt.Order("Banda:N",sort="descending"),
                 tooltip=[alt.Tooltip("AGENTE:N"),alt.Tooltip("Banda:N"),alt.Tooltip("Pct:Q",format=".1f",title="%")]
             ).properties(height=280)
-            st.altair_chart(style_chart(_chart_dist_ag), use_container_width=True, theme=None)
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">El agente con más rojo tiene mayor % de PDVs en señal crítica — correlaciona con menor cuota de altas</div>', unsafe_allow_html=True)
+            st.altair_chart(style_chart(_ch_dist), use_container_width=True, theme=None)
+            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">El agente con mayor porción roja tiene más PDVs en señal crítica — afecta directamente la cuota de altas</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── Gráfica 3: RSRP vs Cuota de altas por agente (scatter) ──────────
-        r5c, r5d = st.columns(2, gap="large")
-        with r5c:
-            st.markdown('<div class="section-card"><div class="section-title">¿Mejor señal = más cuota de altas?</div><div class="section-subtitle">Cada punto = un agente · eje X = RSRP medio (más a la derecha = mejor señal) · eje Y = cuota de altas · ¿hay correlación?</div>', unsafe_allow_html=True)
-            _scatter_ag = _rsrp_ag.dropna(subset=["rsrp_medio","cuota_alta"]).copy()
-            _chart_corr_ag = alt.Chart(_scatter_ag).mark_circle(size=120,opacity=0.85).encode(
-                x=alt.X("rsrp_medio:Q",title="RSRP medio (dBm)",scale=alt.Scale(domain=[-115,-85])),
-                y=alt.Y("cuota_alta:Q",title="Cuota de altas Claro (%)"),
-                color=alt.Color("AGENTE:N",scale=alt.Scale(domain=list(AGENTE_COLORS.keys()),range=list(AGENTE_COLORS.values())),legend=alt.Legend(title="Agente")),
-                size=alt.Size("pdvs_total:Q",legend=None),
-                tooltip=[alt.Tooltip("AGENTE:N"),alt.Tooltip("rsrp_medio:Q",format=".1f",title="RSRP medio"),alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %"),alt.Tooltip("pct_criticos:Q",format=".1f",title="% PDVs críticos"),alt.Tooltip("pdvs_total:Q",title="PDVs")]
-            ).properties(height=280)
-            _text_ag = alt.Chart(_scatter_ag).mark_text(dy=-14,fontSize=10,fontWeight="bold").encode(
-                x=alt.X("rsrp_medio:Q"),
-                y=alt.Y("cuota_alta:Q"),
-                text="AGENTE:N",
-                color=alt.Color("AGENTE:N",scale=alt.Scale(domain=list(AGENTE_COLORS.keys()),range=list(AGENTE_COLORS.values())),legend=None)
-            )
-            st.altair_chart(style_chart(_chart_corr_ag+_text_ag), use_container_width=True, theme=None)
-            st.markdown('</div>', unsafe_allow_html=True)
+        # ── BLOQUE 4: ¿La señal afecta la captación? ─────────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">¿La señal afecta la captación de altas?</div>', unsafe_allow_html=True)
+        b4a, b4b = st.columns(2, gap="large")
 
-        with r5d:
-            # % PDVs críticos por agente vs cuota de altas — muestra el impacto de señal en captación
-            st.markdown('<div class="section-card"><div class="section-title">PDVs con señal crítica vs cuota de altas por agente</div><div class="section-subtitle">Más % de PDVs críticos → menor cuota de altas esperada · si hay un agente con muchos críticos y buena cuota, está compensando con gestión comercial</div>', unsafe_allow_html=True)
-            _chart_crit_cuota = alt.Chart(_rsrp_ag).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
+        with b4a:
+            # Señal crítica por agente + cuota de altas superpuesta (doble eje)
+            st.markdown('<div class="section-card"><div class="section-title">PDVs con señal crítica vs cuota de altas por agente</div><div class="section-subtitle">Barra = % PDVs con señal crítica · línea azul = cuota de altas · si barra alta y línea baja, la señal está frenando la captación</div>', unsafe_allow_html=True)
+            _ch_crit = alt.Chart(_rsrp_ag).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
                 x=alt.X("AGENTE:N",title=None,axis=alt.Axis(labelAngle=-20)),
-                y=alt.Y("pct_criticos:Q",title="% PDVs con señal crítica"),
+                y=alt.Y("pct_criticos:Q",title="% PDVs señal crítica"),
                 color=alt.Color("AGENTE:N",scale=alt.Scale(domain=list(AGENTE_COLORS.keys()),range=list(AGENTE_COLORS.values())),legend=None),
-                tooltip=[alt.Tooltip("AGENTE:N"),alt.Tooltip("pct_criticos:Q",format=".1f",title="% críticos"),alt.Tooltip("pct_aceptable:Q",format=".1f",title="% aceptable"),alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %"),alt.Tooltip("criticos:Q",title="PDVs críticos")]
-            ).properties(height=280)
-            _cuota_line = alt.Chart(_rsrp_ag).mark_line(point=True,strokeWidth=2,color="#38BDF8",strokeDash=[4,2]).encode(
+                tooltip=[alt.Tooltip("AGENTE:N"),alt.Tooltip("pct_criticos:Q",format=".1f",title="% críticos"),alt.Tooltip("pct_aceptable:Q",format=".1f",title="% aceptable"),alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %")]
+            )
+            _ch_cuota_line = alt.Chart(_rsrp_ag).mark_line(point=True,strokeWidth=2.5,color="#38BDF8").encode(
                 x=alt.X("AGENTE:N",axis=alt.Axis(labelAngle=-20)),
                 y=alt.Y("cuota_alta:Q",title="Cuota altas %",axis=alt.Axis(titleColor="#38BDF8")),
                 tooltip=[alt.Tooltip("AGENTE:N"),alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %")]
             )
-            _dual_rsrp = alt.layer(_chart_crit_cuota, _cuota_line).resolve_scale(y="independent").properties(height=280)
-            st.altair_chart(style_chart(_dual_rsrp), use_container_width=True, theme=None)
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Barra = % PDVs críticos (eje izq.) · línea azul = cuota de altas (eje der.) · si barra alta y línea baja, la señal está afectando la captación</div>', unsafe_allow_html=True)
+            _dual_c = alt.layer(_ch_crit,_ch_cuota_line).resolve_scale(y="independent").properties(height=280)
+            st.altair_chart(style_chart(_dual_c), use_container_width=True, theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── Zona de mejora por agente: tabla resumen ──────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">Zona de mejora por agente — señal + cuota + cumplimiento</div>', unsafe_allow_html=True)
-        _by_ag_opp = df.groupby("AGENTE").agg(
-            pdvs=("ID","count"),
-            rsrp_medio=("RSRP","mean"),
-            pct_criticos=("RSRP", lambda x: (pd.to_numeric(x,errors="coerce")<-100).mean()*100),
-            cuota_alta=("CUOTA DE ALTA","mean"),
-            cuota_mkt=("CUOTA DE MERCADO","mean"),
-            ejec_nat=("EJEC ALTA NAT","sum"),
-            meta_nat=("META ALTA NAT (>$2000)","sum"),
-        ).reset_index()
-        _by_ag_opp["cumpl"] = (_by_ag_opp["ejec_nat"]/_by_ag_opp["meta_nat"].replace(0,np.nan)*100).fillna(0)
-        _by_ag_opp["proy"]  = (_by_ag_opp["ejec_nat"]*(_DIAS_MES_NAV/_DIA_CORTE_NAV)/_by_ag_opp["meta_nat"].replace(0,np.nan)*100).fillna(0)
-        _by_ag_opp["brecha"]= _by_ag_opp["meta_nat"] - _by_ag_opp["ejec_nat"]
-        _by_ag_opp["score_mejora"] = (
-            (_by_ag_opp["pct_criticos"]*0.35) +
-            ((50-_by_ag_opp["cuota_alta"].clip(0,50))*0.40) +
-            ((70-_by_ag_opp["cumpl"].clip(0,70))*0.25)
-        )
-        _by_ag_opp = _by_ag_opp.sort_values("score_mejora",ascending=False)
+        with b4b:
+            # Señal por banda vs cuota de altas (las bandas reales del portafolio)
+            df_sc5 = df[["CUOTA DE ALTA","CUOTA DE MERCADO","RSRP","AGENTE","CATEGORIA","ID"]].copy()
+            df_sc5["RSRP_n"]    = pd.to_numeric(df_sc5["RSRP"],errors="coerce")
+            df_sc5["CUOTA_A"]   = pd.to_numeric(df_sc5["CUOTA DE ALTA"],errors="coerce")
+            df_sc5 = df_sc5.dropna(subset=["RSRP_n","CUOTA_A"]).copy()
+            def rsrp_band_v2(v):
+                if v>=-70:  return "Excelente (≥-70)"
+                if v>=-90:  return "Buena (-70 a -90)"
+                if v>=-100: return "Aceptable (-90 a -100)"
+                return "Crítica (<-100)"
+            _bo2 = ["Excelente (≥-70)","Buena (-70 a -90)","Aceptable (-90 a -100)","Crítica (<-100)"]
+            _bc2 = ["#22C55E","#84CC16","#F59E0B","#EF4444"]
+            df_sc5["Banda"] = df_sc5["RSRP_n"].apply(rsrp_band_v2)
+            df_sc5["Banda"] = pd.Categorical(df_sc5["Banda"],categories=_bo2,ordered=True)
+            by_band5 = df_sc5.groupby("Banda",observed=True).agg(
+                cuota_alta_media=("CUOTA_A","mean"), pdvs=("CUOTA_A","count"), rsrp_m=("RSRP_n","mean"),
+            ).reset_index()
+            by_band5["Banda"] = by_band5["Banda"].astype(str)
+            _ausentes = [b for b in _bo2 if b not in by_band5["Banda"].tolist()]
+            st.markdown(f'<div class="section-card"><div class="section-title">Cuota de altas por banda de señal</div><div class="section-subtitle">{"⚠️ Sin PDVs en Excelente ni Buena — red opera solo en Aceptable y Crítica · " if _ausentes else ""}¿Los PDVs con mejor señal captan más? · línea azul = referencia 50%</div>', unsafe_allow_html=True)
+            if not by_band5.empty:
+                _ym = max(by_band5["cuota_alta_media"].max()*1.3,60)
+                _ch_band = alt.Chart(by_band5).mark_bar(cornerRadiusTopLeft=7,cornerRadiusTopRight=7).encode(
+                    x=alt.X("Banda:N",sort=_bo2,title=None,axis=alt.Axis(labelAngle=-12,labelLimit=220)),
+                    y=alt.Y("cuota_alta_media:Q",title="Cuota altas (%)",scale=alt.Scale(domain=[0,_ym])),
+                    color=alt.Color("Banda:N",scale=alt.Scale(domain=_bo2,range=_bc2),legend=None),
+                    tooltip=[alt.Tooltip("Banda:N"),alt.Tooltip("pdvs:Q",title="PDVs"),alt.Tooltip("rsrp_m:Q",format=".1f",title="RSRP medio"),alt.Tooltip("cuota_alta_media:Q",format=".1f",title="Cuota alta %")]
+                ).properties(height=280)
+                _r50b = alt.Chart(pd.DataFrame({"y":[50]})).mark_rule(color="#38BDF8",strokeDash=[5,3],strokeWidth=1.5).encode(y="y:Q")
+                _txt_b = alt.Chart(by_band5).mark_text(dy=-14,fontSize=12,fontWeight="bold",color="#F8FAFC").encode(
+                    x=alt.X("Banda:N",sort=_bo2), y=alt.Y("cuota_alta_media:Q"),
+                    text=alt.Text("cuota_alta_media:Q",format=".1f")
+                )
+                st.altair_chart(style_chart(_ch_band+_r50b+_txt_b), use_container_width=True, theme=None)
+                if _ausentes:
+                    st.markdown(f'<div style="font-size:.72rem;color:#FCA5A5;background:rgba(239,68,68,0.10);border-radius:10px;padding:5px 10px;margin-top:4px;">⚠️ Sin PDVs en banda: <b>{", ".join(_ausentes)}</b></div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        # Gráfica de score de mejora por agente
-        st.markdown('<div class="section-card"><div class="section-title">Score de oportunidad de mejora por agente</div><div class="section-subtitle">Combina 3 factores: % PDVs con señal crítica (35%) + cuota de altas baja (40%) + cumplimiento bajo (25%) · mayor score = mayor prioridad de intervención integral</div>', unsafe_allow_html=True)
-        _r5_cols = st.columns(2, gap="large")
-        with _r5_cols[0]:
-            _chart_score_ag = alt.Chart(_by_ag_opp).mark_bar(cornerRadiusTopLeft=6,cornerRadiusTopRight=6).encode(
-                x=alt.X("AGENTE:N",sort=list(_by_ag_opp["AGENTE"]),title=None,axis=alt.Axis(labelAngle=-20)),
-                y=alt.Y("score_mejora:Q",title="Score de oportunidad"),
-                color=alt.Color("AGENTE:N",scale=alt.Scale(domain=list(AGENTE_COLORS.keys()),range=list(AGENTE_COLORS.values())),legend=None),
-                tooltip=[
-                    alt.Tooltip("AGENTE:N"),
-                    alt.Tooltip("score_mejora:Q",format=".1f",title="Score oportunidad"),
-                    alt.Tooltip("pct_criticos:Q",format=".1f",title="% PDVs críticos"),
-                    alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %"),
-                    alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %"),
-                    alt.Tooltip("proy:Q",format=".1f",title="Proyección %"),
-                ]
-            ).properties(height=260)
-            _score_labels = alt.Chart(_by_ag_opp).mark_text(dy=-12,fontSize=11,fontWeight="bold",color="#F8FAFC").encode(
-                x=alt.X("AGENTE:N",sort=list(_by_ag_opp["AGENTE"])),
-                y=alt.Y("score_mejora:Q"),
-                text=alt.Text("score_mejora:Q",format=".0f")
+        # ── BLOQUE 5: Cuota de altas por categoría + tabla zona de mejora ─────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">¿En qué tipo de PDV y agente hay más para ganar?</div>', unsafe_allow_html=True)
+        b5a, b5b = st.columns(2, gap="large")
+        with b5a:
+            cuota_cat5 = df.groupby("CATEGORIA").agg(
+                cuota_mkt=("CUOTA DE MERCADO","mean"), cuota_alta=("CUOTA DE ALTA","mean"), n=("ID","count"),
+            ).reset_index()
+            cuota_cat5["CATEGORIA"] = pd.Categorical(cuota_cat5["CATEGORIA"],categories=["DIAMANTE","PLATINO","ORO","PLATA","BRONCE"],ordered=True)
+            cuota_cat5 = cuota_cat5.sort_values("CATEGORIA")
+            st.markdown('<div class="section-card"><div class="section-title">Cuota de altas por categoría de PDV</div><div class="section-subtitle">¿En qué nivel de PDV capta más Claro? · línea azul = paridad 50% · por debajo = la competencia gana más en esa categoría</div>', unsafe_allow_html=True)
+            _ch_cat5 = alt.Chart(cuota_cat5).mark_bar(cornerRadiusTopLeft=6,cornerRadiusTopRight=6).encode(
+                x=alt.X("CATEGORIA:N",sort=["DIAMANTE","PLATINO","ORO","PLATA","BRONCE"],title=None),
+                y=alt.Y("cuota_alta:Q",title="Cuota alta Claro (%)"),
+                color=alt.Color("CATEGORIA:N",scale=alt.Scale(domain=list(CATEGORIA_COLORS.keys()),range=list(CATEGORIA_COLORS.values())),legend=None),
+                tooltip=[alt.Tooltip("CATEGORIA:N"),alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %"),alt.Tooltip("cuota_mkt:Q",format=".1f",title="Cuota mkt %"),alt.Tooltip("n:Q",title="PDVs")]
+            ).properties(height=280)
+            _r50c5 = alt.Chart(pd.DataFrame({"y":[50]})).mark_rule(color="#38BDF8",strokeDash=[5,3],strokeWidth=1.5).encode(y="y:Q")
+            st.altair_chart(style_chart(_ch_cat5+_r50c5), use_container_width=True, theme=None)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with b5b:
+            # Tabla de zona de mejora por agente — métricas reales validadas, sin score
+            _ag_mejora = df.groupby("AGENTE").agg(
+                pdvs=("ID","count"),
+                rsrp_medio=("RSRP","mean"),
+                pct_criticos=("RSRP", lambda x: (pd.to_numeric(x,errors="coerce")<-100).mean()*100),
+                cuota_alta=("CUOTA DE ALTA","mean"),
+                cuota_mkt=("CUOTA DE MERCADO","mean"),
+                ejec_nat=("EJEC ALTA NAT","sum"),
+                meta_nat=("META ALTA NAT (>$2000)","sum"),
+            ).reset_index()
+            _ag_mejora["cumpl"] = (_ag_mejora["ejec_nat"]/_ag_mejora["meta_nat"].replace(0,np.nan)*100).fillna(0)
+            _ag_mejora["proy"]  = (_ag_mejora["ejec_nat"]*(_DIAS_MES_NAV/_DIA_CORTE_NAV)/_ag_mejora["meta_nat"].replace(0,np.nan)*100).fillna(0)
+            _ag_mejora["brecha"]= _ag_mejora["meta_nat"] - _ag_mejora["ejec_nat"]
+            _ag_mejora = _ag_mejora.sort_values("cuota_alta")
+            st.markdown('<div class="section-card"><div class="section-title">Zona de mejora por agente</div><div class="section-subtitle">Ordenado por menor cuota de altas · muestra señal, captación y cumplimiento en una sola vista para identificar dónde actuar</div>', unsafe_allow_html=True)
+            _show_mej = safe_round_columns(
+                _ag_mejora[["AGENTE","pdvs","rsrp_medio","pct_criticos","cuota_alta","cuota_mkt","cumpl","proy","brecha"]].copy(),
+                ["rsrp_medio","pct_criticos","cuota_alta","cuota_mkt","cumpl","proy","brecha"]
             )
-            st.altair_chart(style_chart(_chart_score_ag+_score_labels), use_container_width=True, theme=None)
+            _show_mej.columns = ["Agente","PDVs","RSRP medio","% PDVs críticos","Cuota alta %","Cuota mkt %","Cumpl. %","Proy. %","Brecha"]
+            st.dataframe(_show_mej, use_container_width=True, height=260)
+            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">El agente arriba de la tabla tiene menor cuota de altas — es donde hay más potencial de captación por ganar · combina con la señal para priorizar</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        with _r5_cols[1]:
-            _show_ag_opp = safe_round_columns(
-                _by_ag_opp[["AGENTE","pdvs","rsrp_medio","pct_criticos","cuota_alta","cuota_mkt","cumpl","proy","brecha","score_mejora"]].copy(),
-                ["rsrp_medio","pct_criticos","cuota_alta","cuota_mkt","cumpl","proy","brecha","score_mejora"]
-            )
-            _show_ag_opp.columns = ["Agente","PDVs","RSRP medio","% PDVs críticos","Cuota alta %","Cuota mkt %","Cumpl. %","Proy. %","Brecha","Score"]
-            st.dataframe(_show_ag_opp, use_container_width=True, height=260)
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Score mayor = más oportunidad de mejora en los 3 frentes: señal, captación y cumplimiento de meta</div>', unsafe_allow_html=True)
+        # ── BLOQUE 6: Tabla circuitos+barrios por oportunidad ─────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">Circuitos y barrios con mayor oportunidad de mejora</div>', unsafe_allow_html=True)
+        if "CIRCUITO" in df.columns:
+            _df_opp5b = df.copy()
+            _df_opp5b["RSRP_n5"]      = pd.to_numeric(_df_opp5b["RSRP"],errors="coerce")
+            _df_opp5b["CUOTA_ALTA_n5"]= pd.to_numeric(_df_opp5b["CUOTA DE ALTA"],errors="coerce")
+            _df_opp5b["META_n5"]      = pd.to_numeric(_df_opp5b["META ALTA NAT (>$2000)"],errors="coerce")
+            _df_opp5b["EJEC_n5"]      = pd.to_numeric(_df_opp5b["EJEC ALTA NAT"],errors="coerce")
+            _df_opp5b["cumpl_5"]      = (_df_opp5b["EJEC_n5"]/_df_opp5b["META_n5"].replace(0,np.nan)*100).fillna(0)
+            _df_opp5b["banda5"]       = _df_opp5b["RSRP_n5"].apply(lambda v: rsrp_band_v2(v) if pd.notna(v) else "Sin datos")
+            _group5b = [c for c in ["BARRIO","CIRCUITO","AGENTE"] if c in _df_opp5b.columns]
+            _circ5b = _df_opp5b[_df_opp5b["META_n5"]>0].groupby(_group5b).agg(
+                pdvs=("ID","count"), rsrp_medio=("RSRP_n5","mean"),
+                cuota_alta=("CUOTA_ALTA_n5","mean"), cumpl=("cumpl_5","mean"),
+                pdvs_criticos=("banda5", lambda x: (x=="Crítica (<-100)").sum()),
+                meta=("META_n5","sum"), ejec=("EJEC_n5","sum"),
+            ).reset_index()
+            _circ5b["brecha"] = _circ5b["meta"] - _circ5b["ejec"]
+            _circ5b = _circ5b[(_circ5b["cuota_alta"]<50) | (_circ5b["cumpl"]<70)].sort_values(["pdvs_criticos","brecha"],ascending=[False,False]).head(20)
+            _rn5b = {"BARRIO":"Barrio","CIRCUITO":"Circuito","AGENTE":"Agente","pdvs":"PDVs","rsrp_medio":"RSRP medio","cuota_alta":"Cuota alta %","cumpl":"Cumpl. %","pdvs_criticos":"PDVs críticos","meta":"Meta","ejec":"Ejecutado","brecha":"Brecha"}
+            _sc5b = [c for c in _rn5b.keys() if c in _circ5b.columns]
+            _show5b = safe_round_columns(_circ5b[_sc5b].copy(),["rsrp_medio","cuota_alta","cumpl","brecha"])
+            _show5b = _show5b.rename(columns={k:v for k,v in _rn5b.items() if k in _show5b.columns})
+            st.dataframe(_show5b, use_container_width=True, height=300)
+            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Filtrados por cuota &lt;50% o cumplimiento &lt;70% · ordenados por PDVs críticos y brecha · incluye barrio para gestión en campo</div>', unsafe_allow_html=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("""
     <div class="section-card" style="margin-top:14px;">
