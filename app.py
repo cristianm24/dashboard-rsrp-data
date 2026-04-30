@@ -3370,7 +3370,7 @@ def render_claro_view():
         </div>
         <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:12px 14px;">
             <div style="font-size:1.1rem;margin-bottom:4px;">📍</div>
-            <div style="font-size:.70rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;">¿Dónde está la brecha?</div>
+            <div style="font-size:.78rem;font-weight:800;color:#F8FAFC;margin-bottom:3px;">¿Dónde está la brecha?</div>
             <div style="font-size:.70rem;color:#94A3B8;margin-bottom:6px;">PDVs y circuitos críticos</div>
             <div style="display:flex;align-items:center;font-size:.72rem;font-weight:800;color:{_sem_c(0 if _pdvs_riesgo>5000 else 70 if _pdvs_riesgo>2000 else 100)};">{_dot(0 if _pdvs_riesgo>5000 else 70 if _pdvs_riesgo>2000 else 100)}{_pdvs_riesgo:,} PDVs con brecha</div>
         </div>
