@@ -4097,51 +4097,77 @@ def render_claro_view():
 
         c5c, c5d = st.columns(2, gap="large")
         with c5c:
-            # Replace scatter: RSRP buckets vs cuota media — much clearer bar chart
-            df_sc = df[["CUOTA DE MERCADO","RSRP","AGENTE","CATEGORIA"]].copy()
-            df_sc["RSRP_num"] = pd.to_numeric(df_sc["RSRP"], errors="coerce")
-            df_sc["CUOTA_num"] = pd.to_numeric(df_sc["CUOTA DE MERCADO"], errors="coerce")
-            df_sc = df_sc.dropna(subset=["RSRP_num","CUOTA_num"]).copy()
+            # Bandas RSRP correctas según el usuario:
+            # >= -70 = Excelente | -70 a -90 = Buena | -90 a -100 = Aceptable | < -100 = Crítica
+            df_sc = df[["CUOTA DE ALTA","CUOTA DE MERCADO","RSRP","AGENTE","CATEGORIA","ID"]].copy()
+            df_sc["RSRP_num"]   = pd.to_numeric(df_sc["RSRP"], errors="coerce")
+            df_sc["CUOTA_ALTA"] = pd.to_numeric(df_sc["CUOTA DE ALTA"], errors="coerce")
+            df_sc = df_sc.dropna(subset=["RSRP_num","CUOTA_ALTA"]).copy()
 
-            # Create RSRP quality bands
-            def rsrp_band(v):
-                if v >= -90: return "Excelente (≥ -90 dBm)"
-                if v >= -95: return "Buena (-95 a -90)"
-                if v >= -100: return "Aceptable (-100 a -95)"
+            def rsrp_band_v2(v):
+                if v >= -70:  return "Excelente (≥ -70 dBm)"
+                if v >= -90:  return "Buena (-70 a -90 dBm)"
+                if v >= -100: return "Aceptable (-90 a -100 dBm)"
                 return "Crítica (< -100 dBm)"
-            band_order = ["Excelente (≥ -90 dBm)", "Buena (-95 a -90)", "Aceptable (-100 a -95)", "Crítica (< -100 dBm)"]
-            band_colors = ["#22C55E", "#84CC16", "#F59E0B", "#EF4444"]
 
-            df_sc["Banda RSRP"] = df_sc["RSRP_num"].apply(rsrp_band)
-            df_sc["Banda RSRP"] = pd.Categorical(df_sc["Banda RSRP"], categories=band_order, ordered=True)
-            by_band = df_sc.groupby("Banda RSRP", observed=True).agg(
-                cuota_media=("CUOTA_num", "mean"),
-                pdvs=("CUOTA_num", "count"),
+            band_order_v2  = ["Excelente (≥ -70 dBm)", "Buena (-70 a -90 dBm)", "Aceptable (-90 a -100 dBm)", "Crítica (< -100 dBm)"]
+            band_colors_v2 = ["#22C55E", "#84CC16", "#F59E0B", "#EF4444"]
+
+            df_sc["Banda RSRP"] = df_sc["RSRP_num"].apply(rsrp_band_v2)
+            df_sc["Banda RSRP"] = pd.Categorical(df_sc["Banda RSRP"], categories=band_order_v2, ordered=True)
+            by_band_v2 = df_sc.groupby("Banda RSRP", observed=True).agg(
+                cuota_alta_media=("CUOTA_ALTA", "mean"),
+                pdvs=("CUOTA_ALTA", "count"),
+                rsrp_media=("RSRP_num", "mean"),
             ).reset_index()
-            by_band["Banda RSRP"] = by_band["Banda RSRP"].astype(str)
+            by_band_v2["Banda RSRP"] = by_band_v2["Banda RSRP"].astype(str)
 
-            st.markdown('<div class="section-card"><div class="section-title">Calidad de señal vs cuota de mercado Claro</div><div class="section-subtitle">Este gráfico responde: <b>¿Los PDVs con mejor señal tienen más cuota de mercado Claro?</b> Los PDVs están agrupados en 4 bandas de calidad de señal RSRP: Excelente, Buena, Aceptable y Crítica. La altura de cada barra = cuota media de Claro en esa banda. Si las barras verdes (mejor señal) son más altas, confirma que la calidad de red impulsa la participación comercial. La línea azul punteada marca el 50% como referencia de liderazgo.</div>', unsafe_allow_html=True)
-            if not by_band.empty:
-                chart_band = alt.Chart(by_band).mark_bar(cornerRadiusTopLeft=7, cornerRadiusTopRight=7).encode(
-                    x=alt.X("Banda RSRP:N", sort=band_order, title=None, axis=alt.Axis(labelAngle=-15, labelLimit=200)),
-                    y=alt.Y("cuota_media:Q", title="Cuota media Claro (%)", scale=alt.Scale(domain=[0, 80])),
+            # Detectar si faltan bandas (ej: sin excelente ni buena)
+            _bandas_presentes = set(by_band_v2["Banda RSRP"].tolist())
+            _bandas_ausentes  = [b for b in band_order_v2 if b not in _bandas_presentes]
+            _alerta_señal = len(_bandas_ausentes) > 0
+
+            _subtitle_band = (
+                "Cuota de altas Claro promedio por banda de calidad de señal RSRP. "
+                "Las bandas se definen así: <b>Excelente</b> ≥ -70 dBm · <b>Buena</b> -70 a -90 · "
+                "<b>Aceptable</b> -90 a -100 · <b>Crítica</b> &lt; -100 dBm. "
+                + (f"⚠️ <b>En este portafolio no hay PDVs con señal Excelente ni Buena</b> — toda la red opera en zona Aceptable o Crítica." if _alerta_señal else "")
+            )
+
+            st.markdown(f'<div class="section-card"><div class="section-title">Calidad de señal vs cuota de altas Claro</div><div class="section-subtitle">{_subtitle_band}</div>', unsafe_allow_html=True)
+            if not by_band_v2.empty:
+                _y_max = max(by_band_v2["cuota_alta_media"].max() * 1.25, 60)
+                chart_band_v2 = alt.Chart(by_band_v2).mark_bar(cornerRadiusTopLeft=7, cornerRadiusTopRight=7).encode(
+                    x=alt.X("Banda RSRP:N", sort=band_order_v2, title=None,
+                            axis=alt.Axis(labelAngle=-12, labelLimit=220)),
+                    y=alt.Y("cuota_alta_media:Q", title="Cuota de altas Claro (%)",
+                            scale=alt.Scale(domain=[0, _y_max])),
                     color=alt.Color("Banda RSRP:N",
-                        scale=alt.Scale(domain=band_order, range=band_colors),
+                        scale=alt.Scale(domain=band_order_v2, range=band_colors_v2),
                         legend=None),
                     tooltip=[
-                        alt.Tooltip("Banda RSRP:N", title="Calidad señal"),
-                        alt.Tooltip("cuota_media:Q", format=".1f", title="Cuota media %"),
-                        alt.Tooltip("pdvs:Q", title="PDVs en esta banda"),
+                        alt.Tooltip("Banda RSRP:N",        title="Banda de señal"),
+                        alt.Tooltip("pdvs:Q",              title="PDVs en esta banda"),
+                        alt.Tooltip("rsrp_media:Q",        title="RSRP medio (dBm)", format=".1f"),
+                        alt.Tooltip("cuota_alta_media:Q",  title="Cuota altas media %", format=".1f"),
                     ]
                 ).properties(height=290)
-                rule50 = alt.Chart(pd.DataFrame({"y":[50]})).mark_rule(color="#38BDF8", strokeDash=[5,3], strokeWidth=1.5).encode(y="y:Q")
-                text_band = alt.Chart(by_band).mark_text(dy=-12, fontSize=11, fontWeight="bold", color="#F8FAFC").encode(
-                    x=alt.X("Banda RSRP:N", sort=band_order),
-                    y=alt.Y("cuota_media:Q"),
-                    text=alt.Text("cuota_media:Q", format=".1f")
+                rule50_b = alt.Chart(pd.DataFrame({"y":[50]})).mark_rule(
+                    color="#38BDF8", strokeDash=[5,3], strokeWidth=1.5).encode(y="y:Q")
+                text_b = alt.Chart(by_band_v2).mark_text(
+                    dy=-14, fontSize=12, fontWeight="bold", color="#F8FAFC"
+                ).encode(
+                    x=alt.X("Banda RSRP:N", sort=band_order_v2),
+                    y=alt.Y("cuota_alta_media:Q"),
+                    text=alt.Text("cuota_alta_media:Q", format=".1f")
                 )
-                st.altair_chart(style_chart(chart_band + rule50 + text_band), use_container_width=True, theme=None)
-                st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:4px;">Línea azul = 50% de referencia. Verde = señal excelente · Rojo = señal crítica. El número encima de cada barra es la cuota media en esa banda.</div>', unsafe_allow_html=True)
+                st.altair_chart(style_chart(chart_band_v2 + rule50_b + text_b), use_container_width=True, theme=None)
+                # Mostrar advertencia si hay bandas vacías
+                if _alerta_señal:
+                    st.markdown(f'<div style="font-size:0.74rem;color:#FCA5A5;margin-top:4px;background:rgba(239,68,68,0.10);border:1px solid rgba(239,68,68,0.22);border-radius:10px;padding:7px 10px;">⚠️ Las bandas <b>{", ".join(_bandas_ausentes)}</b> no tienen PDVs — toda la señal del portafolio está en zona Aceptable o Crítica. Oportunidad de mejora de red.</div>', unsafe_allow_html=True)
+                st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:6px;">Línea azul = 50% referencia. El número encima de cada barra = cuota de altas media en esa banda.</div>', unsafe_allow_html=True)
+            else:
+                st.info("No hay datos de señal disponibles.")
             st.markdown('</div>', unsafe_allow_html=True)
 
         with c5d:
@@ -4154,7 +4180,7 @@ def render_claro_view():
             cuota_cat["CATEGORIA"] = pd.Categorical(cuota_cat["CATEGORIA"], categories=["DIAMANTE","PLATINO","ORO","PLATA","BRONCE"], ordered=True)
             cuota_cat = cuota_cat.sort_values("CATEGORIA")
 
-            st.markdown('<div class="section-card"><div class="section-title">¿En qué categoría de PDV capta más Claro?</div><div class="section-subtitle">Muestra la <b>cuota de altas Claro por categoría de PDV</b> (Diamante → Bronce). Un valor alto significa que en esos PDVs, Claro gana la mayoría de las ventas nuevas frente a otros operadores. Si la cuota de altas en PDVs grandes (Diamante, Platino) es alta, el posicionamiento en puntos ancla es sólido. Si en PDVs pequeños (Bronce, Plata) la cuota cae, hay oportunidad de reforzar presencia en esos puntos de larga cola.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">¿En qué categoría de PDV capta más Claro?</div><div class="section-subtitle">Cuota de altas Claro por categoría (Diamante → Bronce). Un valor alto = Claro gana la mayoría de ventas nuevas en esos PDVs. La línea azul marca el 50%.</div>', unsafe_allow_html=True)
             if not cuota_cat.empty:
                 chart_calt = alt.Chart(cuota_cat).mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
                     x=alt.X("CATEGORIA:N", sort=["DIAMANTE","PLATINO","ORO","PLATA","BRONCE"], title=None),
@@ -4164,20 +4190,110 @@ def render_claro_view():
                         legend=None),
                     tooltip=[alt.Tooltip("CATEGORIA:N"), alt.Tooltip("cuota_alta:Q", format=".1f", title="Cuota alta %"), alt.Tooltip("cuota_mkt:Q", format=".1f", title="Cuota mkt %"), alt.Tooltip("n:Q", title="PDVs")]
                 ).properties(height=280)
-                st.altair_chart(style_chart(chart_calt), use_container_width=True, theme=None)
+                rule50_cat = alt.Chart(pd.DataFrame({"y":[50]})).mark_rule(color="#38BDF8", strokeDash=[5,3], strokeWidth=1.5).encode(y="y:Q")
+                st.altair_chart(style_chart(chart_calt + rule50_cat), use_container_width=True, theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
+
+        # ── KPI de oportunidades de mejora (siempre visible) ──────────────────
+        st.markdown(f'<div style="margin:18px 0 8px 0;font-size:.72rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;">Puntos de mejora identificados</div>', unsafe_allow_html=True)
+
+        _df_opp = df.copy()
+        _df_opp["RSRP_n"]      = pd.to_numeric(_df_opp["RSRP"], errors="coerce")
+        _df_opp["CUOTA_ALTA_n"]= pd.to_numeric(_df_opp["CUOTA DE ALTA"], errors="coerce")
+        _df_opp["CUOTA_MKT_n"] = pd.to_numeric(_df_opp["CUOTA DE MERCADO"], errors="coerce")
+        _df_opp["EJEC_n"]      = pd.to_numeric(_df_opp["EJEC ALTA NAT"], errors="coerce")
+        _df_opp["META_n"]      = pd.to_numeric(_df_opp["META ALTA NAT (>$2000)"], errors="coerce")
+        _df_opp["cumpl_pdv"]   = (_df_opp["EJEC_n"] / _df_opp["META_n"].replace(0, np.nan) * 100).fillna(0)
+        _df_opp["banda_rsrp"]  = _df_opp["RSRP_n"].apply(lambda v: rsrp_band_v2(v) if pd.notna(v) else "Sin datos")
+
+        # Cuadrante 1: señal crítica + cuota alta baja → máxima prioridad
+        _criticos_baja_cuota = _df_opp[
+            (_df_opp["banda_rsrp"] == "Crítica (< -100 dBm)") &
+            (_df_opp["CUOTA_ALTA_n"] < _df_opp["CUOTA_ALTA_n"].mean())
+        ]
+        # Cuadrante 2: señal aceptable + cumplimiento < 70% → oportunidad recuperable
+        _acep_bajo_cumpl = _df_opp[
+            (_df_opp["banda_rsrp"] == "Aceptable (-90 a -100 dBm)") &
+            (_df_opp["META_n"] > 0) & (_df_opp["cumpl_pdv"] < 70)
+        ]
+        # Cuadrante 3: sin señal crítica pero cuota alta muy baja (< 30%) → potencial sin aprovechar
+        _baja_cuota_pura = _df_opp[
+            (_df_opp["CUOTA_ALTA_n"] < 30) & (_df_opp["META_n"] > 0)
+        ]
+
+        _n_crit_bc   = len(_criticos_baja_cuota)
+        _n_acep_bc   = len(_acep_bajo_cumpl)
+        _n_baja_c    = len(_baja_cuota_pura)
+        _cuota_media = _df_opp["CUOTA_ALTA_n"].mean()
+        _pct_criticos= len(_df_opp[_df_opp["banda_rsrp"]=="Crítica (< -100 dBm)"]) / max(len(_df_opp),1) * 100
+        _pct_acept   = len(_df_opp[_df_opp["banda_rsrp"]=="Aceptable (-90 a -100 dBm)"]) / max(len(_df_opp),1) * 100
+
+        op1, op2, op3, op4 = st.columns(4, gap="medium")
+        with op1:
+            _col1 = "#EF4444" if _pct_criticos > 10 else "#F59E0B"
+            st.markdown(f"""
+            <div class="card">
+                <div class="kpi-label">PDVs señal crítica</div>
+                <div class="kpi-value" style="color:{_col1};">{_pct_criticos:.1f}%</div>
+                <div class="kpi-sub">{"🔴 Más del 10% del portafolio en señal crítica." if _pct_criticos > 10 else "🟡 Señal crítica presente."} {fmt_int(len(_df_opp[_df_opp["banda_rsrp"]=="Crítica (< -100 dBm)"]))} PDVs bajo -100 dBm — ningún PDV tiene señal Excelente o Buena en este portafolio.</div>
+            </div>""", unsafe_allow_html=True)
+        with op2:
+            st.markdown(f"""
+            <div class="card">
+                <div class="kpi-label">Críticos + cuota baja</div>
+                <div class="kpi-value" style="color:#EF4444;">{fmt_int(_n_crit_bc)}</div>
+                <div class="kpi-sub">🔴 PDVs con señal crítica <b>y</b> cuota de altas bajo la media ({_cuota_media:.1f}%). Máxima prioridad: doble problema activo.</div>
+            </div>""", unsafe_allow_html=True)
+        with op3:
+            st.markdown(f"""
+            <div class="card">
+                <div class="kpi-label">Aceptable + bajo 70% cumpl.</div>
+                <div class="kpi-value" style="color:#F59E0B;">{fmt_int(_n_acep_bc)}</div>
+                <div class="kpi-sub">🟡 PDVs con señal aceptable que además no cumplen la meta. Son recuperables si se interviene el PDV antes de que la señal empeore.</div>
+            </div>""", unsafe_allow_html=True)
+        with op4:
+            st.markdown(f"""
+            <div class="card">
+                <div class="kpi-label">Cuota altas &lt; 30%</div>
+                <div class="kpi-value" style="color:#F59E0B;">{fmt_int(_n_baja_c)}</div>
+                <div class="kpi-sub">🟡 PDVs donde Claro tiene menos del 30% de las altas. Son puntos con competencia dominante — potencial de mejora comercial sin necesidad de inversión en red.</div>
+            </div>""", unsafe_allow_html=True)
+
+        # Tabla detalle oportunidades por circuito
+        if "CIRCUITO" in _df_opp.columns:
+            _circ_opp = _df_opp[_df_opp["META_n"] > 0].groupby(["CIRCUITO","AGENTE"]).agg(
+                pdvs=("ID","count"),
+                rsrp_medio=("RSRP_n","mean"),
+                cuota_alta=("CUOTA_ALTA_n","mean"),
+                cumpl=("cumpl_pdv","mean"),
+                pdvs_criticos=("banda_rsrp", lambda x: (x == "Crítica (< -100 dBm)").sum()),
+            ).reset_index()
+            _circ_opp["score_opp"] = (
+                (_circ_opp["pdvs_criticos"] / _circ_opp["pdvs"].replace(0, np.nan) * 40).fillna(0) +
+                ((50 - _circ_opp["cuota_alta"].clip(0,50)) * 0.6) +
+                ((70 - _circ_opp["cumpl"].clip(0,70)) * 0.4)
+            )
+            _circ_opp_show = _circ_opp.sort_values("score_opp", ascending=False).head(15)
+            st.markdown(f'<div style="margin:16px 0 6px 0;font-size:.72rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;">Top circuitos con mayor oportunidad de mejora (señal + cuota + cumplimiento)</div>', unsafe_allow_html=True)
+            _circ_display = safe_round_columns(
+                _circ_opp_show[["CIRCUITO","AGENTE","pdvs","rsrp_medio","cuota_alta","cumpl","pdvs_criticos","score_opp"]].copy(),
+                ["rsrp_medio","cuota_alta","cumpl","score_opp"]
+            )
+            _circ_display.columns = ["Circuito","Agente","PDVs","RSRP medio","Cuota alta %","Cumpl. %","PDVs críticos","Score oportunidad"]
+            st.dataframe(_circ_display, use_container_width=True, height=320)
+            st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:4px;">Score oportunidad = combinación de % PDVs con señal crítica + baja cuota de altas + bajo cumplimiento. Mayor score = mayor prioridad de intervención.</div>', unsafe_allow_html=True)
 
         # Insight estratégico cierre
         cuota_alta_50_pct = (pd.to_numeric(df["CUOTA DE ALTA"], errors="coerce") > 50).mean() * 100
         cuota_50_pct = (pd.to_numeric(df["CUOTA DE MERCADO"], errors="coerce") > 50).mean() * 100
         st.markdown(f"""
-        <div class="executive-note">
-            <div class="executive-highlight">{icon_svg("eye",12)} Lectura estratégica</div>
+        <div class="executive-note" style="margin-top:14px;">
+            <div class="executive-highlight">{icon_svg("eye",12)} Conclusión ejecutiva de señal</div>
             <div class="insight-body">
-                Claro supera el 50% de <b>cuota de altas</b> en el <b>{cuota_alta_50_pct:.1f}%</b> de los PDVs —
-                esto indica dominio de captación activa. La cuota de mercado base supera el 50% en el <b>{cuota_50_pct:.1f}%</b> de puntos.
-                RSRP promedio de PDVs: <b>{fmt_dBm(rsrp_media)}</b>. Los agentes con PDVs en zonas de mejor señal
-                deberían concentrar el esfuerzo de captación inducida para maximizar conversión.
+                <b>Ningún PDV del portafolio tiene señal Excelente o Buena</b> — el {_pct_acept:.1f}% opera en zona Aceptable
+                y el {_pct_criticos:.1f}% en zona Crítica. Claro supera el 50% de cuota de altas en el <b>{cuota_alta_50_pct:.1f}%</b> de los PDVs.
+                Los <b>{fmt_int(_n_crit_bc)}</b> PDVs con señal crítica y cuota bajo la media son la prioridad número uno:
+                concentran el peor estado de red <b>y</b> el menor desempeño comercial simultáneamente.
             </div>
         </div>
         """, unsafe_allow_html=True)
