@@ -4056,6 +4056,7 @@ def render_claro_view():
     # -------------------------------------------------------
     # TAB C5 — ¿DÓNDE GANAR MÁS?
     # -------------------------------------------------------
+    with tc5:
         # ── Cálculos globales ─────────────────────────────────────────────────
         _cuota_alta_50    = (pd.to_numeric(df["CUOTA DE ALTA"],errors="coerce")>50).sum()
         _cuota_alta_50_pct= (_cuota_alta_50/len(df)*100) if len(df)>0 else 0
