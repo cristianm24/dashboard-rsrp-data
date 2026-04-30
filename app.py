@@ -4186,49 +4186,59 @@ def render_claro_view():
 
         b3a, b3b = st.columns(2, gap="large")
         with b3a:
-            # RSRP values are all negative (-93 to -107) — use horizontal bars with abs value
-            # so bars go left→right and are visible. More to the right = worse signal.
-            _rsrp_sorted = _rsrp_ag.sort_values("rsrp_medio", ascending=True).copy()  # worst first = bottom
-            _rsrp_sorted["rsrp_abs"]   = _rsrp_sorted["rsrp_medio"].abs()
-            _rsrp_sorted["rsrp_label"] = _rsrp_sorted["rsrp_medio"].apply(lambda v: f"{v:.1f} dBm")
-            _abs_min = float(_rsrp_sorted["rsrp_abs"].min()) - 1
-            _abs_max = float(_rsrp_sorted["rsrp_abs"].max()) + 1
+            _rsrp_plot = _rsrp_ag.copy()
+            _rsrp_plot["rsrp_abs"]   = _rsrp_plot["rsrp_medio"].abs()
+            _rsrp_plot["rsrp_label"] = _rsrp_plot["rsrp_medio"].apply(lambda v: f"{v:.1f}")
+            _rsrp_plot["Señal"]      = _rsrp_plot["rsrp_medio"].apply(
+                lambda v: "Crítica"   if pd.notna(v) and v < -100 else
+                          "Aceptable" if pd.notna(v) and v < -90  else "Buena"
+            )
+            _rsrp_plot = _rsrp_plot.sort_values("rsrp_abs", ascending=True)  # best signal first (top)
+            _abs_x0 = max(float(_rsrp_plot["rsrp_abs"].min()) - 2, 88)
+            _abs_x1 = float(_rsrp_plot["rsrp_abs"].max()) + 2
 
-            st.markdown('<div class="section-card"><div class="section-title">RSRP medio por agente</div><div class="section-subtitle">Barra más larga = peor señal · 🟡 Aceptable (-90 a -100 dBm) · 🔴 Crítica (&lt;-100 dBm) · ningún agente tiene señal Buena o Excelente en este portafolio</div>', unsafe_allow_html=True)
-            _ch_rsrp = alt.Chart(_rsrp_sorted).mark_bar(
-                cornerRadiusTopLeft=5, cornerRadiusTopRight=5
-            ).encode(
-                y=alt.Y("AGENTE:N", sort=list(_rsrp_sorted["AGENTE"]), title=None),
-                x=alt.X("rsrp_abs:Q", title="Intensidad señal — valor absoluto (mayor = peor señal)",
-                        scale=alt.Scale(domain=[_abs_min, _abs_max])),
-                color=alt.Color("color_rsrp:N", scale=None, legend=None),
+            st.markdown('<div class="section-card"><div class="section-title">RSRP medio por agente</div><div class="section-subtitle">Barra más larga = peor señal · 🟡 Aceptable (-90 a -100 dBm) · 🔴 Crítica (&lt;-100 dBm)</div>', unsafe_allow_html=True)
+
+            _ch_rsrp = alt.Chart(_rsrp_plot).mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5).encode(
+                y=alt.Y("AGENTE:N", sort=list(_rsrp_plot["AGENTE"]), title=None),
+                x=alt.X("rsrp_abs:Q",
+                        title="Intensidad de señal en valor absoluto (mayor = peor señal)",
+                        scale=alt.Scale(domain=[_abs_x0, _abs_x1])),
+                color=alt.Color("Señal:N",
+                    scale=alt.Scale(
+                        domain=["Buena","Aceptable","Crítica"],
+                        range=["#22C55E","#F59E0B","#EF4444"]
+                    ),
+                    legend=alt.Legend(title="Banda", orient="bottom")),
                 tooltip=[
-                    alt.Tooltip("AGENTE:N"),
-                    alt.Tooltip("rsrp_medio:Q",     format=".1f", title="RSRP real (dBm)"),
-                    alt.Tooltip("rsrp_min:Q",        format=".1f", title="Peor PDV (dBm)"),
-                    alt.Tooltip("rsrp_max:Q",        format=".1f", title="Mejor PDV (dBm)"),
-                    alt.Tooltip("pct_criticos:Q",    format=".1f", title="% PDVs críticos"),
-                    alt.Tooltip("pdvs_total:Q",      title="PDVs con señal"),
+                    alt.Tooltip("AGENTE:N",           title="Agente"),
+                    alt.Tooltip("rsrp_medio:Q",       format=".1f", title="RSRP (dBm)"),
+                    alt.Tooltip("Señal:N",            title="Banda de señal"),
+                    alt.Tooltip("pct_criticos:Q",     format=".1f", title="% PDVs críticos"),
+                    alt.Tooltip("pdvs_total:Q",       title="PDVs medidos"),
+                    alt.Tooltip("rsrp_min:Q",         format=".1f", title="Peor PDV (dBm)"),
+                    alt.Tooltip("rsrp_max:Q",         format=".1f", title="Mejor PDV (dBm)"),
                 ]
             )
-            _val_lbl = alt.Chart(_rsrp_sorted).mark_text(
-                align="left", dx=4, fontSize=11, fontWeight="bold", color="#F8FAFC"
+            _txt_rsrp = alt.Chart(_rsrp_plot).mark_text(
+                align="left", dx=5, fontSize=11, fontWeight="bold", color="#F8FAFC"
             ).encode(
-                y=alt.Y("AGENTE:N", sort=list(_rsrp_sorted["AGENTE"])),
+                y=alt.Y("AGENTE:N", sort=list(_rsrp_plot["AGENTE"])),
                 x=alt.X("rsrp_abs:Q"),
-                text="rsrp_label:N"
+                text=alt.Text("rsrp_label:N")
             )
-            _rule_100 = alt.Chart(pd.DataFrame({"x": [100.0]})).mark_rule(
-                color="#EF4444", strokeDash=[5,3], strokeWidth=2
+            _rule_crit = alt.Chart(pd.DataFrame({"x": [100.0]})).mark_rule(
+                color="#EF4444", strokeDash=[4,3], strokeWidth=2
             ).encode(x="x:Q")
-            _rule_90 = alt.Chart(pd.DataFrame({"x": [90.0]})).mark_rule(
-                color="#F59E0B", strokeDash=[5,3], strokeWidth=1.5
+            _rule_acep = alt.Chart(pd.DataFrame({"x": [90.0]})).mark_rule(
+                color="#F59E0B", strokeDash=[4,3], strokeWidth=1.5
             ).encode(x="x:Q")
+
             st.altair_chart(
-                style_chart((_ch_rsrp + _val_lbl + _rule_90 + _rule_100).properties(height=220)),
+                style_chart((_ch_rsrp + _txt_rsrp + _rule_acep + _rule_crit).properties(height=240)),
                 use_container_width=True, theme=None
             )
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Barra más larga = peor señal · línea 🔴 = umbral crítico (100 abs = -100 dBm) · línea 🟡 = -90 dBm · agente arriba = peor señal</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Línea 🔴 = umbral crítico · línea 🟡 = umbral aceptable · el número al final de cada barra es el RSRP real en dBm</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with b3b:
