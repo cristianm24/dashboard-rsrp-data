@@ -29,7 +29,7 @@ st.set_page_config(
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 AREA_NAME = "GERENCIA R4 PREPAGO"
-DASHBOARD_TITLE = "Panel Ejecutivo de Desempeño de Red y Mercado - Prototipo"
+DASHBOARD_TITLE = "Panel Ejecutivo de Desempeño de Red y Mercado"
 
 DATA_FILE_CANDIDATES = [
     os.path.join(BASE_DIR, "RSRP_COMPLETO.csv"),
@@ -3333,7 +3333,7 @@ def render_claro_view():
         <div style="position:relative;z-index:2;">
             <div class="hero-badge">{icon_svg("spark",13)} Panel Claro · Agentes y PDVs</div>
             <div style="font-size:0.84rem;color:#94A3B8;font-weight:800;letter-spacing:0.55px;">GERENCIA R4 PREPAGO — SEGUIMIENTO COMERCIAL</div>
-            <div class="hero-title">Agentes Claro · Abril 2026 - Prototipo</div>
+            <div class="hero-title">Agentes Claro · Abril 2026</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -3370,7 +3370,7 @@ def render_claro_view():
         </div>
         <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:12px 14px;">
             <div style="font-size:1.1rem;margin-bottom:4px;">📍</div>
-            <div style="font-size:.78rem;font-weight:800;color:#F8FAFC;margin-bottom:3px;">¿Dónde está la brecha?</div>
+            <div style="font-size:.78rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;">¿Dónde está la brecha?</div>
             <div style="font-size:.70rem;color:#94A3B8;margin-bottom:6px;">PDVs y circuitos críticos</div>
             <div style="display:flex;align-items:center;font-size:.72rem;font-weight:800;color:{_sem_c(0 if _pdvs_riesgo>5000 else 70 if _pdvs_riesgo>2000 else 100)};">{_dot(0 if _pdvs_riesgo>5000 else 70 if _pdvs_riesgo>2000 else 100)}{_pdvs_riesgo:,} PDVs con brecha</div>
         </div>
@@ -3585,34 +3585,47 @@ def render_claro_view():
             </div>""", unsafe_allow_html=True)
 
         # ── Dos gráficas clave ────────────────────────────────────────────────
+        by_ag_full["cumpl_indu"] = (by_ag_full["ejec_indu"]/by_ag_full["meta_indu"].replace(0,np.nan)*100).fillna(0)
+
         a2_l, a2_r = st.columns(2, gap="large")
         with a2_l:
-            st.markdown('<div class="section-card"><div class="section-title">Meta vs ejecución por agente</div><div class="section-subtitle">Barra blanca = meta · barra roja = ejecutado. Si la roja supera la blanca, cumplió.</div>', unsafe_allow_html=True)
-            melt_ag = by_ag_full[["AGENTE","meta_nat","ejec_nat"]].melt(id_vars="AGENTE",var_name="Tipo",value_name="Valor")
-            melt_ag["Tipo"] = melt_ag["Tipo"].map({"meta_nat":"Meta","ejec_nat":"Ejecutado"})
-            chart_ag = alt.Chart(melt_ag).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
+            # Brecha waterfall — cuánto le falta a cada agente y de dónde viene
+            by_ag_full["gap_pct"] = (100 - by_ag_full["cumpl_nat"]).clip(lower=0)
+            st.markdown('<div class="section-card"><div class="section-title">Brecha real vs meta por agente</div><div class="section-subtitle">🔴 Altas ejecutadas · punto blanco = meta · número = altas que faltan para cerrar</div>', unsafe_allow_html=True)
+            _base = alt.Chart(by_ag_full).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5,color="#E10600").encode(
                 x=alt.X("AGENTE:N",title=None,axis=alt.Axis(labelAngle=-20)),
-                y=alt.Y("Valor:Q",title="Altas orgánicas"),
-                color=alt.Color("Tipo:N",scale=alt.Scale(domain=["Meta","Ejecutado"],range=["rgba(255,255,255,0.15)","#E10600"]),legend=alt.Legend(title="",orient="bottom")),
-                xOffset="Tipo:N",
-                tooltip=[alt.Tooltip("AGENTE:N"),alt.Tooltip("Tipo:N"),alt.Tooltip("Valor:Q",format=",.0f",title="Altas")]
+                y=alt.Y("ejec_nat:Q",title="Altas orgánicas"),
+                tooltip=[alt.Tooltip("AGENTE:N"),alt.Tooltip("ejec_nat:Q",format=",.0f",title="Ejecutado"),alt.Tooltip("meta_nat:Q",format=",.0f",title="Meta"),alt.Tooltip("brecha:Q",format=",.0f",title="Faltan")]
             ).properties(height=280)
-            st.altair_chart(style_chart(chart_ag), use_container_width=True, theme=None)
+            _meta_rule = alt.Chart(by_ag_full).mark_tick(color="white",thickness=3,size=28).encode(
+                x=alt.X("AGENTE:N"),
+                y=alt.Y("meta_nat:Q"),
+                tooltip=[alt.Tooltip("AGENTE:N"),alt.Tooltip("meta_nat:Q",format=",.0f",title="Meta")]
+            )
+            _brecha_txt = alt.Chart(by_ag_full).mark_text(dy=-14,fontSize=11,fontWeight="bold",color="#FCA5A5").encode(
+                x=alt.X("AGENTE:N"),
+                y=alt.Y("ejec_nat:Q"),
+                text=alt.Text("brecha:Q",format=",.0f")
+            )
+            st.altair_chart(style_chart(_base+_meta_rule+_brecha_txt), use_container_width=True, theme=None)
+            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Barra roja = ejecutado · guion blanco = meta · número en rojo encima = altas que aún faltan</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with a2_r:
-            st.markdown('<div class="section-card"><div class="section-title">Cumplimiento vs cuota de altas por agente</div><div class="section-subtitle">🔴 Cumplimiento meta nat. · 🔵 Cuota altas Claro · línea verde = 100%</div>', unsafe_allow_html=True)
-            by_ag_dual = by_ag_full[["AGENTE","cumpl_nat","cuota_alta"]].melt("AGENTE",var_name="Indicador",value_name="Valor")
-            by_ag_dual["Indicador"] = by_ag_dual["Indicador"].map({"cumpl_nat":"Cumplimiento %","cuota_alta":"Cuota altas %"})
-            chart_dual = alt.Chart(by_ag_dual).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
+            # Cumplimiento nat vs inducidas — dos frentes del plan
+            _indu_melt = by_ag_full[["AGENTE","cumpl_nat","cumpl_indu"]].melt("AGENTE",var_name="Frente",value_name="Cumpl")
+            _indu_melt["Frente"] = _indu_melt["Frente"].map({"cumpl_nat":"Orgánicas (>$2.000)","cumpl_indu":"Inducidas (≤$2.000)"})
+            st.markdown('<div class="section-card"><div class="section-title">Cumplimiento: orgánicas vs inducidas</div><div class="section-subtitle">Cada agente tiene dos frentes. 🔴 Orgánicas = plan principal · 🔵 Inducidas = captación de bajo valor. La línea verde = 100%</div>', unsafe_allow_html=True)
+            chart_dual2 = alt.Chart(_indu_melt).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
                 y=alt.Y("AGENTE:N",title=None,sort="-x"),
-                x=alt.X("Valor:Q",title="%"),
-                color=alt.Color("Indicador:N",scale=alt.Scale(domain=["Cumplimiento %","Cuota altas %"],range=["#E10600","#38BDF8"]),legend=alt.Legend(title="",orient="bottom")),
-                yOffset="Indicador:N",
-                tooltip=[alt.Tooltip("AGENTE:N"),alt.Tooltip("Indicador:N"),alt.Tooltip("Valor:Q",format=".1f",title="%")]
+                x=alt.X("Cumpl:Q",title="Cumplimiento %"),
+                color=alt.Color("Frente:N",scale=alt.Scale(domain=["Orgánicas (>$2.000)","Inducidas (≤$2.000)"],range=["#E10600","#38BDF8"]),legend=alt.Legend(title="",orient="bottom")),
+                yOffset="Frente:N",
+                tooltip=[alt.Tooltip("AGENTE:N"),alt.Tooltip("Frente:N"),alt.Tooltip("Cumpl:Q",format=".1f",title="Cumpl. %")]
             ).properties(height=280)
-            r100h = alt.Chart(pd.DataFrame({"x":[100]})).mark_rule(color="#22C55E",strokeDash=[5,3],strokeWidth=1.5).encode(x="x:Q")
-            st.altair_chart(style_chart(chart_dual+r100h), use_container_width=True, theme=None)
+            r100_indu = alt.Chart(pd.DataFrame({"x":[100]})).mark_rule(color="#22C55E",strokeDash=[5,3],strokeWidth=1.5).encode(x="x:Q")
+            st.altair_chart(style_chart(chart_dual2+r100_indu), use_container_width=True, theme=None)
+            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Si la barra azul es muy corta, el frente inducido está siendo descuidado — oportunidad de captación de volumen.</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── Tabla resumen compacta ────────────────────────────────────────────
@@ -3622,427 +3635,511 @@ def render_claro_view():
         show_ag.columns = ["Agente","PDVs","Meta","Ejecutado","Cumpl. %","Proy. %","Brecha","Cuota Alta %"]
         st.dataframe(show_ag, use_container_width=True, height=240)
 
+
     # -------------------------------------------------------
-    # TAB C3 — PDVs Y CIRCUITOS
+    # TAB C3 — ¿DÓNDE ESTÁ LA BRECHA?
     # -------------------------------------------------------
     with tc3:
-        st.markdown(stage_header(
-            "03 · PDVs y Circuitos",
-            "Granularidad territorial y comercial",
-            "Desempeño por circuito, tipología de PDV, clasificación comercial y asesores con mayor aporte.",
-            "map", "red", show_badges=False
-        ), unsafe_allow_html=True)
+        # ── Cálculos protagonistas ────────────────────────────────────────────
+        df_opp_c3 = df[df["META ALTA NAT (>$2000)"] > 0].copy()
+        df_opp_c3["cumpl_pdv"] = (df_opp_c3["EJEC ALTA NAT"] / df_opp_c3["META ALTA NAT (>$2000)"] * 100).fillna(0)
+        _n_pdvs_brecha   = int((df_opp_c3["cumpl_pdv"] < 70).sum())
+        _n_pdvs_total_c3 = len(df_opp_c3)
+        _pct_brecha_c3   = (_n_pdvs_brecha / _n_pdvs_total_c3 * 100) if _n_pdvs_total_c3 > 0 else 0
+        _brecha_altas_c3 = int((df_opp_c3["META ALTA NAT (>$2000)"] - df_opp_c3["EJEC ALTA NAT"]).clip(lower=0).sum())
+        _df_bajo70       = df_opp_c3[df_opp_c3["cumpl_pdv"] < 70]
+        _agente_mas_brecha = (_df_bajo70.groupby("AGENTE").size().idxmax() if not _df_bajo70.empty else "N/D")
+        _top_asesor_c3s  = df.groupby("ASESOR")["EJE ALTA TOTAL"].sum()
+        _top_asesor_c3   = _top_asesor_c3s.idxmax() if not _top_asesor_c3s.empty else "N/D"
+        _top_asesor_c3v  = int(_top_asesor_c3s.max()) if not _top_asesor_c3s.empty else 0
 
-        # Top asesores
+        def _sc3(v): return "#22C55E" if v >= 100 else "#F59E0B" if v >= 70 else "#EF4444"
+        def _bar3(pct, color):
+            w = min(max(pct, 0), 100)
+            return f'<div style="width:100%;height:5px;background:rgba(255,255,255,0.07);border-radius:99px;margin-top:5px;overflow:hidden;"><div style="width:{w}%;height:100%;background:{color};border-radius:99px;"></div></div>'
+
+        # ── 4 KPIs protagonistas ──────────────────────────────────────────────
+        h1c3, h2c3, h3c3, h4c3 = st.columns(4, gap="medium")
+        with h1c3:
+            _cc = _sc3(100 - _pct_brecha_c3)
+            st.markdown(f"""
+            <div class="card" style="min-height:0;">
+                <div class="kpi-label">PDVs con brecha activa</div>
+                <div class="kpi-value" style="color:{_cc};">{fmt_int(_n_pdvs_brecha)}</div>
+                <div class="kpi-sub">{_pct_brecha_c3:.0f}% del portafolio · cumplimiento &lt;70%</div>
+                {_bar3(100-_pct_brecha_c3, _cc)}
+            </div>""", unsafe_allow_html=True)
+        with h2c3:
+            st.markdown(f"""
+            <div class="card" style="min-height:0;">
+                <div class="kpi-label">Altas en juego</div>
+                <div class="kpi-value" style="color:#F59E0B;">{fmt_int(_brecha_altas_c3)}</div>
+                <div class="kpi-sub">Total de altas pendientes en PDVs con brecha</div>
+            </div>""", unsafe_allow_html=True)
+        with h3c3:
+            st.markdown(f"""
+            <div class="card" style="min-height:0;">
+                <div class="kpi-label">Agente con más PDVs en riesgo</div>
+                <div class="kpi-value" style="font-size:1.1rem;color:#EF4444;">{_agente_mas_brecha}</div>
+                <div class="kpi-sub">Mayor concentración de PDVs &lt;70%</div>
+            </div>""", unsafe_allow_html=True)
+        with h4c3:
+            st.markdown(f"""
+            <div class="card" style="min-height:0;">
+                <div class="kpi-label">Asesor líder</div>
+                <div class="kpi-value" style="font-size:1.1rem;color:#22C55E;">{_top_asesor_c3}</div>
+                <div class="kpi-sub">{fmt_int(_top_asesor_c3v)} altas totales vendidas</div>
+            </div>""", unsafe_allow_html=True)
+
+        # ── Sección 1: Top asesores + Top barrios ─────────────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">¿Quién vende más y dónde?</div>', unsafe_allow_html=True)
+        c3a, c3b = st.columns(2, gap="large")
+
         by_asesor = df.groupby(["ASESOR","AGENTE"]).agg(
-            pdvs=("ID", "count"),
-            meta_nat=("META ALTA NAT (>$2000)", "sum"),
-            ejec_nat=("EJEC ALTA NAT", "sum"),
-            ejec_total=("EJE ALTA TOTAL", "sum"),
+            pdvs=("ID","count"), meta_nat=("META ALTA NAT (>$2000)","sum"),
+            ejec_nat=("EJEC ALTA NAT","sum"), ejec_total=("EJE ALTA TOTAL","sum"),
         ).reset_index()
-        by_asesor["cumpl"] = (by_asesor["ejec_nat"] / by_asesor["meta_nat"].replace(0, np.nan) * 100).fillna(0)
+        by_asesor["cumpl"] = (by_asesor["ejec_nat"]/by_asesor["meta_nat"].replace(0,np.nan)*100).fillna(0)
         by_asesor = by_asesor.sort_values("ejec_total", ascending=False).head(20)
 
-        c3a, c3b = st.columns(2, gap="large")
         with c3a:
-            st.markdown('<div class="section-card"><div class="section-title">Top 15 asesores por altas vendidas</div><div class="section-subtitle">Cada barra = un asesor. El color indica a qué agente pertenece. La longitud de la barra = altas totales vendidas (orgánicas + inducidas). Pasa el mouse para ver cumplimiento y PDVs a cargo.</div>', unsafe_allow_html=True)
-            chart_asesor = alt.Chart(by_asesor.head(15)).mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5).encode(
-                x=alt.X("ejec_total:Q", title="Total altas vendidas (orgánicas + inducidas)"),
-                y=alt.Y("ASESOR:N", sort="-x", title=None, axis=alt.Axis(labelLimit=200)),
-                color=alt.Color("AGENTE:N",
-                    scale=alt.Scale(domain=list(AGENTE_COLORS.keys()), range=list(AGENTE_COLORS.values())),
-                    legend=alt.Legend(title="Agente al que pertenece")),
-                tooltip=[
-                    alt.Tooltip("ASESOR:N", title="Asesor"),
-                    alt.Tooltip("AGENTE:N", title="Agente"),
-                    alt.Tooltip("ejec_total:Q", format=",.0f", title="Altas totales ejecutadas"),
-                    alt.Tooltip("ejec_nat:Q", format=",.0f", title="Altas orgánicas (>$2.000)"),
-                    alt.Tooltip("cumpl:Q", format=".1f", title="Cumplimiento meta %"),
-                    alt.Tooltip("pdvs:Q", title="PDVs a cargo"),
-                ]
-            ).properties(height=380)
+            st.markdown('<div class="section-card"><div class="section-title">Top 15 asesores por altas vendidas</div><div class="section-subtitle">Color = agente al que pertenece · barra = altas totales (orgánicas + inducidas)</div>', unsafe_allow_html=True)
+            chart_asesor = alt.Chart(by_asesor.head(15)).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
+                x=alt.X("ejec_total:Q",title="Altas totales"),
+                y=alt.Y("ASESOR:N",sort="-x",title=None,axis=alt.Axis(labelLimit=200)),
+                color=alt.Color("AGENTE:N",scale=alt.Scale(domain=list(AGENTE_COLORS.keys()),range=list(AGENTE_COLORS.values())),legend=alt.Legend(title="Agente")),
+                tooltip=[alt.Tooltip("ASESOR:N"),alt.Tooltip("AGENTE:N"),alt.Tooltip("ejec_total:Q",format=",.0f",title="Altas totales"),alt.Tooltip("ejec_nat:Q",format=",.0f",title="Altas orgánicas"),alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %"),alt.Tooltip("pdvs:Q",title="PDVs")]
+            ).properties(height=360)
             st.altair_chart(style_chart(chart_asesor), use_container_width=True, theme=None)
-            st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:4px;">El color de cada barra indica el agente supervisor. Los asesores de un mismo agente se ven del mismo color.</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with c3b:
-            # Top barrios por ejecución (con circuitos como contexto)
-            barrio_col_exists = "BARRIO" in df.columns
+            barrio_col_exists   = "BARRIO"   in df.columns
             circuito_col_exists = "CIRCUITO" in df.columns
-            group_cols_circ = []
-            if barrio_col_exists:
-                group_cols_circ.append("BARRIO")
-            if circuito_col_exists:
-                group_cols_circ.append("CIRCUITO")
-            if not group_cols_circ:
-                group_cols_circ = ["CIRCUITO"] if circuito_col_exists else ["AGENTE"]
-
+            group_cols_circ = [c for c in ["BARRIO","CIRCUITO"] if c in df.columns] or ["AGENTE"]
             by_barrio = df.groupby(group_cols_circ).agg(
-                pdvs=("ID", "count"),
-                meta_nat=("META ALTA NAT (>$2000)", "sum"),
-                ejec_nat=("EJEC ALTA NAT", "sum"),
-                ejec_total=("EJE ALTA TOTAL", "sum"),
-                cuota_alta=("CUOTA DE ALTA", "mean"),
+                pdvs=("ID","count"), meta_nat=("META ALTA NAT (>$2000)","sum"),
+                ejec_nat=("EJEC ALTA NAT","sum"), ejec_total=("EJE ALTA TOTAL","sum"),
+                cuota_alta=("CUOTA DE ALTA","mean"),
             ).reset_index()
-            by_barrio["cumpl"] = (by_barrio["ejec_nat"] / by_barrio["meta_nat"].replace(0, np.nan) * 100).fillna(0)
+            by_barrio["cumpl"] = (by_barrio["ejec_nat"]/by_barrio["meta_nat"].replace(0,np.nan)*100).fillna(0)
 
             if barrio_col_exists:
                 by_barrio_top = by_barrio.groupby("BARRIO").agg(
-                    ejec_total=("ejec_total", "sum"),
-                    meta_nat=("meta_nat", "sum"),
-                    ejec_nat=("ejec_nat", "sum"),
-                    pdvs=("pdvs", "sum"),
-                    cuota_alta=("cuota_alta", "mean"),
+                    ejec_total=("ejec_total","sum"), meta_nat=("meta_nat","sum"),
+                    ejec_nat=("ejec_nat","sum"), pdvs=("pdvs","sum"), cuota_alta=("cuota_alta","mean"),
                 ).reset_index()
-                by_barrio_top["cumpl"] = (by_barrio_top["ejec_nat"] / by_barrio_top["meta_nat"].replace(0, np.nan) * 100).fillna(0)
-                # Attach list of circuitos per barrio
+                by_barrio_top["cumpl"] = (by_barrio_top["ejec_nat"]/by_barrio_top["meta_nat"].replace(0,np.nan)*100).fillna(0)
                 if circuito_col_exists:
-                    circ_per_barrio = by_barrio.groupby("BARRIO")["CIRCUITO"].apply(lambda x: ", ".join(sorted(x.dropna().unique()))).reset_index()
-                    circ_per_barrio.columns = ["BARRIO", "circuitos_lista"]
-                    by_barrio_top = by_barrio_top.merge(circ_per_barrio, on="BARRIO", how="left")
+                    cpb = by_barrio.groupby("BARRIO")["CIRCUITO"].apply(lambda x: ", ".join(sorted(x.dropna().unique()))).reset_index()
+                    cpb.columns = ["BARRIO","circuitos_lista"]
+                    by_barrio_top = by_barrio_top.merge(cpb, on="BARRIO", how="left")
                 else:
                     by_barrio_top["circuitos_lista"] = ""
                 by_barrio_top = by_barrio_top.sort_values("ejec_total", ascending=False).head(15)
-                y_col = "BARRIO"
-                tooltip_extra = [alt.Tooltip("circuitos_lista:N", title="Circuitos")]
+                y_col = "BARRIO"; tooltip_extra = [alt.Tooltip("circuitos_lista:N",title="Circuitos")]
             else:
                 by_barrio_top = by_barrio.sort_values("ejec_total", ascending=False).head(15)
-                y_col = "CIRCUITO"
-                tooltip_extra = []
+                y_col = "CIRCUITO"; tooltip_extra = []
 
-            st.markdown('<div class="section-card"><div class="section-title">Top barrios por ejecución</div><div class="section-subtitle">Eje Y = barrio principal. Debajo del nombre aparecen los circuitos asociados. El color de semáforo indica si ese barrio cumplió su meta de altas: 🟢 ≥100% · 🟡 70–99% · 🔴 &lt;70%. La longitud de la barra refleja el total de altas ejecutadas.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">Top barrios por ejecución</div><div class="section-subtitle">🟢 ≥100% meta · 🟡 70–99% · 🔴 &lt;70% · pasa el mouse para ver circuitos</div>', unsafe_allow_html=True)
             chart_circ = alt.Chart(by_barrio_top).transform_calculate(
                 color_semaforo="datum.cumpl >= 100 ? '#22C55E' : datum.cumpl >= 70 ? '#F59E0B' : '#EF4444'"
-            ).mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5).encode(
-                x=alt.X("ejec_total:Q", title="Altas totales"),
-                y=alt.Y(f"{y_col}:N", sort="-x", title=None, axis=alt.Axis(labelLimit=220)),
-                color=alt.Color("color_semaforo:N", scale=None, legend=None),
-                tooltip=[
-                    alt.Tooltip(f"{y_col}:N", title="Barrio" if y_col == "BARRIO" else "Circuito"),
-                    alt.Tooltip("pdvs:Q", title="PDVs"),
-                    alt.Tooltip("ejec_total:Q", format=",.0f", title="Ejec. total"),
-                    alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %"),
-                    alt.Tooltip("cuota_alta:Q", format=".1f", title="Cuota alta %"),
-                ] + tooltip_extra
-            ).properties(height=380)
+            ).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
+                x=alt.X("ejec_total:Q",title="Altas totales"),
+                y=alt.Y(f"{y_col}:N",sort="-x",title=None,axis=alt.Axis(labelLimit=220)),
+                color=alt.Color("color_semaforo:N",scale=None,legend=None),
+                tooltip=[alt.Tooltip(f"{y_col}:N",title="Barrio" if y_col=="BARRIO" else "Circuito"),alt.Tooltip("pdvs:Q",title="PDVs"),alt.Tooltip("ejec_total:Q",format=",.0f",title="Ejec. total"),alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %"),alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %")]+tooltip_extra
+            ).properties(height=360)
             st.altair_chart(style_chart(chart_circ), use_container_width=True, theme=None)
             if barrio_col_exists and circuito_col_exists and not by_barrio_top.empty:
-                # Show small table mapping barrio → circuitos below chart
-                st.markdown('<div style="font-size:0.72rem;color:#94A3B8;margin-top:6px;margin-bottom:4px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;">Barrios y sus circuitos:</div>', unsafe_allow_html=True)
-                for _, row_b in by_barrio_top.head(8).iterrows():
-                    circs = row_b.get("circuitos_lista", "")
-                    st.markdown(f'<div style="font-size:0.74rem;color:#F8FAFC;margin-bottom:3px;"><b>{row_b["BARRIO"]}</b> <span style="color:#94A3B8;font-size:0.68rem;">— {circs}</span></div>', unsafe_allow_html=True)
-            st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:6px;">🟢 Verde = meta cumplida · 🟡 Amarillo = 70-99% · 🔴 Rojo = &lt;70%. Pasa el mouse para ver cuota de altas y circuitos del barrio.</div>', unsafe_allow_html=True)
+                for _, row_b in by_barrio_top.head(6).iterrows():
+                    circs = row_b.get("circuitos_lista","")
+                    st.markdown(f'<div style="font-size:.72rem;color:#F8FAFC;margin-bottom:2px;"><b>{row_b["BARRIO"]}</b> <span style="color:#64748B;">— {circs}</span></div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # Clasificación comercial
-        st.markdown(lane_label("Clasificación y tipología de PDVs", "map"), unsafe_allow_html=True)
+        # ── Sección 2: Clasificación + Tipología ─────────────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">¿En qué tipo de PDV está la brecha?</div>', unsafe_allow_html=True)
         c3c, c3d = st.columns(2, gap="large")
-
         with c3c:
             by_clasif = df.groupby("CLASIFICACION").agg(
-                pdvs=("ID", "count"),
-                ejec_nat=("EJEC ALTA NAT", "sum"),
-                meta_nat=("META ALTA NAT (>$2000)", "sum"),
+                pdvs=("ID","count"), ejec_nat=("EJEC ALTA NAT","sum"), meta_nat=("META ALTA NAT (>$2000)","sum"),
             ).reset_index().sort_values("ejec_nat", ascending=False).head(12)
-
-            st.markdown('<div class="section-card"><div class="section-title">Altas por clasificación de PDV</div><div class="section-subtitle">¿En qué tipo de punto de venta se generan más altas? Tiendas, cigarrerías, papelerías, etc. El eje muestra el total acumulado de altas orgánicas.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">Altas por clasificación de PDV</div><div class="section-subtitle">Tiendas, cigarrerías, papelerías, etc. · ordenadas por volumen de altas</div>', unsafe_allow_html=True)
             if not by_clasif.empty:
-                chart_cl = alt.Chart(by_clasif).mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5).encode(
-                    x=alt.X("ejec_nat:Q", title="Altas nat."),
-                    y=alt.Y("CLASIFICACION:N", sort="-x", title=None, axis=alt.Axis(labelLimit=200)),
+                chart_cl = alt.Chart(by_clasif).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
+                    x=alt.X("ejec_nat:Q",title="Altas nat."),
+                    y=alt.Y("CLASIFICACION:N",sort="-x",title=None,axis=alt.Axis(labelLimit=200)),
                     color=alt.value("#38BDF8"),
-                    tooltip=[alt.Tooltip("CLASIFICACION:N"), alt.Tooltip("pdvs:Q", title="PDVs"), alt.Tooltip("ejec_nat:Q", format=",.0f")]
-                ).properties(height=300)
+                    tooltip=[alt.Tooltip("CLASIFICACION:N"),alt.Tooltip("pdvs:Q",title="PDVs"),alt.Tooltip("ejec_nat:Q",format=",.0f")]
+                ).properties(height=280)
                 st.altair_chart(style_chart(chart_cl), use_container_width=True, theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
-
         with c3d:
             by_tipo = df.groupby("TIPOLOGIA").agg(
-                pdvs=("ID", "count"),
-                ejec_nat=("EJEC ALTA NAT", "sum"),
-                meta_nat=("META ALTA NAT (>$2000)", "sum"),
+                pdvs=("ID","count"), ejec_nat=("EJEC ALTA NAT","sum"), meta_nat=("META ALTA NAT (>$2000)","sum"),
             ).reset_index()
-            by_tipo["cumpl"] = (by_tipo["ejec_nat"] / by_tipo["meta_nat"].replace(0, np.nan) * 100).fillna(0)
-
-            st.markdown('<div class="section-card"><div class="section-title">Ejecución por tipología de PDV</div><div class="section-subtitle">Tipología A = PDV más grande y de mayor potencial, D = más pequeño. El color de cada barra indica si ese tipo de PDV está cumpliendo su meta (🟢) o tiene brecha (🔴).</div>', unsafe_allow_html=True)
+            by_tipo["cumpl"] = (by_tipo["ejec_nat"]/by_tipo["meta_nat"].replace(0,np.nan)*100).fillna(0)
+            st.markdown('<div class="section-card"><div class="section-title">Cumplimiento por tipología de PDV</div><div class="section-subtitle">A = mayor potencial · D = menor · color = semáforo de cumplimiento</div>', unsafe_allow_html=True)
             if not by_tipo.empty:
                 chart_tip = alt.Chart(by_tipo).transform_calculate(
                     color_semaforo="datum.cumpl >= 100 ? '#22C55E' : datum.cumpl >= 70 ? '#F59E0B' : '#EF4444'"
-                ).mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
-                    x=alt.X("TIPOLOGIA:N", title=None),
-                    y=alt.Y("ejec_nat:Q", title="Altas nat."),
-                    color=alt.Color("color_semaforo:N", scale=None, legend=None),
-                    tooltip=[alt.Tooltip("TIPOLOGIA:N"), alt.Tooltip("pdvs:Q", title="PDVs"),
-                             alt.Tooltip("ejec_nat:Q", format=",.0f"), alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %")]
-                ).properties(height=300)
+                ).mark_bar(cornerRadiusTopLeft=6,cornerRadiusTopRight=6).encode(
+                    x=alt.X("TIPOLOGIA:N",title=None),
+                    y=alt.Y("ejec_nat:Q",title="Altas nat."),
+                    color=alt.Color("color_semaforo:N",scale=None,legend=None),
+                    tooltip=[alt.Tooltip("TIPOLOGIA:N"),alt.Tooltip("pdvs:Q",title="PDVs"),alt.Tooltip("ejec_nat:Q",format=",.0f"),alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %")]
+                ).properties(height=280)
                 st.altair_chart(style_chart(chart_tip), use_container_width=True, theme=None)
-                st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:4px;">Pasa el mouse para ver cuántos PDVs hay en cada tipología y su % de cumplimiento.</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # Tabla de rutas con mayor oportunidad de mejora
-        st.markdown(lane_label("Rutas con mayor oportunidad de mejora", "target"), unsafe_allow_html=True)
-        ruta_col_exists_opp = "RUTA" in df.columns
-        if ruta_col_exists_opp:
+        # ── Sección 3: Rutas críticas ─────────────────────────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Rutas que necesitan intervención inmediata</div>', unsafe_allow_html=True)
+        if "RUTA" in df.columns:
             df_ruta_opp = df[df["META ALTA NAT (>$2000)"] > 0].copy()
             df_ruta_opp["cumpl_pdv"] = (df_ruta_opp["EJEC ALTA NAT"] / df_ruta_opp["META ALTA NAT (>$2000)"] * 100).fillna(0)
-            ruta_group_cols = ["RUTA"]
-            if "AGENTE" in df_ruta_opp.columns:
-                ruta_group_cols.append("AGENTE")
-            if "BARRIO" in df_ruta_opp.columns:
-                ruta_group_cols.append("BARRIO")
+            ruta_group_cols = [c for c in ["RUTA","AGENTE","BARRIO"] if c in df_ruta_opp.columns]
             ruta_opp = df_ruta_opp.groupby(ruta_group_cols).agg(
-                pdvs_totales=("ID", "count"),
-                pdvs_criticos=("cumpl_pdv", lambda x: (x < 70).sum()),
-                meta_total=("META ALTA NAT (>$2000)", "sum"),
-                ejec_total=("EJEC ALTA NAT", "sum"),
+                pdvs_totales=("ID","count"), pdvs_criticos=("cumpl_pdv", lambda x: (x < 70).sum()),
+                meta_total=("META ALTA NAT (>$2000)","sum"), ejec_total=("EJEC ALTA NAT","sum"),
             ).reset_index()
-            ruta_opp["cumpl_ruta"] = (ruta_opp["ejec_total"] / ruta_opp["meta_total"].replace(0, np.nan) * 100).fillna(0)
-            ruta_opp["brecha"] = ruta_opp["meta_total"] - ruta_opp["ejec_total"]
-            ruta_opp["pct_pdvs_criticos"] = (ruta_opp["pdvs_criticos"] / ruta_opp["pdvs_totales"].replace(0, np.nan) * 100).fillna(0)
+            ruta_opp["cumpl_ruta"]        = (ruta_opp["ejec_total"]/ruta_opp["meta_total"].replace(0,np.nan)*100).fillna(0)
+            ruta_opp["brecha"]            = ruta_opp["meta_total"] - ruta_opp["ejec_total"]
+            ruta_opp["pct_pdvs_criticos"] = (ruta_opp["pdvs_criticos"]/ruta_opp["pdvs_totales"].replace(0,np.nan)*100).fillna(0)
             ruta_opp = ruta_opp[ruta_opp["cumpl_ruta"] < 70].sort_values("brecha", ascending=False).head(20)
-
-            st.markdown(f"""
-            <div class="section-card">
-                <div class="anchor-note">
-                    <div class="anchor-note-body">
-                        <b>¿Para qué sirve esta tabla?</b> Identifica las <b>rutas más críticas</b> que necesitan intervención inmediata:
-                        aquellas con mayor brecha absoluta entre meta y ejecución, con cumplimiento bajo el 70%.
-                        Están ordenadas de mayor a menor brecha — las primeras son las que más impacto tendrían al intervenir.
-                        El campo <b>PDVs críticos</b> indica cuántos puntos de venta en esa ruta también están por debajo del 70%.
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-            st.markdown(table_shell(f"Rutas críticas con mayor oportunidad — {len(ruta_opp)} rutas identificadas"), unsafe_allow_html=True)
             if not ruta_opp.empty:
-                ruta_rename = {"RUTA": "Ruta", "AGENTE": "Agente", "BARRIO": "Barrio",
-                               "pdvs_totales": "PDVs totales", "pdvs_criticos": "PDVs críticos",
-                               "meta_total": "Meta altas", "ejec_total": "Altas ejecutadas",
-                               "cumpl_ruta": "Cumpl. %", "brecha": "Brecha",
-                               "pct_pdvs_criticos": "% PDVs críticos"}
+                ruta_rename = {"RUTA":"Ruta","AGENTE":"Agente","BARRIO":"Barrio","pdvs_totales":"PDVs","pdvs_criticos":"PDVs críticos","meta_total":"Meta","ejec_total":"Ejecutado","cumpl_ruta":"Cumpl. %","brecha":"Brecha","pct_pdvs_criticos":"% críticos"}
                 show_ruta_cols = [c for c in ruta_rename.keys() if c in ruta_opp.columns]
                 show_ruta = safe_round_columns(ruta_opp[show_ruta_cols].copy(), ["meta_total","ejec_total","cumpl_ruta","brecha","pct_pdvs_criticos"])
                 show_ruta = show_ruta.rename(columns={k:v for k,v in ruta_rename.items() if k in show_ruta.columns})
-                st.dataframe(show_ruta, use_container_width=True, height=300)
-                st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:4px;">Ordenado por mayor brecha (meta - ejecución). Las rutas arriba de la lista son las de intervención más urgente.</div>', unsafe_allow_html=True)
+                st.dataframe(show_ruta, use_container_width=True, height=280)
+                st.markdown(f'<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">{len(ruta_opp)} rutas con cumplimiento &lt;70% · ordenadas por mayor brecha</div>', unsafe_allow_html=True)
             else:
                 st.success("✅ No hay rutas con cumplimiento por debajo del 70%.")
+        else:
+            st.info("No se encontró la columna RUTA en los datos.")
+
+        # ── Sección 4: PDVs individuales ──────────────────────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Los 30 PDVs con mayor meta y menor cumplimiento</div>', unsafe_allow_html=True)
+        df_opp2 = df[df["META ALTA NAT (>$2000)"] > 0].copy()
+        df_opp2["cumpl_pdv"] = (df_opp2["EJEC ALTA NAT"] / df_opp2["META ALTA NAT (>$2000)"] * 100).fillna(0)
+        df_opp_show2 = df_opp2[df_opp2["cumpl_pdv"] < 70].sort_values("META ALTA NAT (>$2000)", ascending=False).head(30)
+        if not df_opp_show2.empty:
+            extra_cols2 = [c for c in ["BARRIO","ZONA","RUTA"] if c in df_opp_show2.columns]
+            cols_show2 = [c for c in ["ID","AGENTE","ASESOR","CIRCUITO"]+extra_cols2+["CLASIFICACION","CATEGORIA","META ALTA NAT (>$2000)","EJEC ALTA NAT","cumpl_pdv"] if c in df_opp_show2.columns]
+            show_opp2 = df_opp_show2[cols_show2].copy()
+            show_opp2 = safe_round_columns(show_opp2, ["META ALTA NAT (>$2000)","EJEC ALTA NAT","cumpl_pdv"])
+            rename_opp2 = {"META ALTA NAT (>$2000)":"Meta","EJEC ALTA NAT":"Ejecutado","cumpl_pdv":"Cumpl. %","ID":"ID PDV","AGENTE":"Agente","ASESOR":"Asesor","CIRCUITO":"Circuito","CLASIFICACION":"Clasificación","CATEGORIA":"Categoría","BARRIO":"Barrio","ZONA":"Zona","RUTA":"Ruta"}
+            show_opp2 = show_opp2.rename(columns={k:v for k,v in rename_opp2.items() if k in show_opp2.columns})
+            st.dataframe(show_opp2, use_container_width=True, height=300)
+            st.markdown(f'<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">{len(df_opp_show2)} PDVs · ordenados por mayor meta · usa filtros del sidebar para enfocar</div>', unsafe_allow_html=True)
+        else:
+            st.success("✅ No hay PDVs con cumplimiento por debajo del 70%.")
+
+        # ── Sección 5: Capacidad de mejora — asesores, barrios, cuota alta ───
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:20px 0 8px 0;">Capacidad de mejora — ¿dónde hay más potencial sin aprovechar?</div>', unsafe_allow_html=True)
+
+        _DIA_C3=28; _MES_C3=30; _F_C3=_MES_C3/_DIA_C3
+
+        # Asesores con mayor brecha (no los mejores — los que más pueden mejorar)
+        by_as_c3 = df.groupby(["ASESOR","AGENTE"]).agg(
+            pdvs=("ID","count"), meta_nat=("META ALTA NAT (>$2000)","sum"),
+            ejec_nat=("EJEC ALTA NAT","sum"), ejec_total=("EJE ALTA TOTAL","sum"),
+            cuota_alta=("CUOTA DE ALTA","mean"),
+        ).reset_index()
+        by_as_c3["cumpl"]  = (by_as_c3["ejec_nat"]/by_as_c3["meta_nat"].replace(0,np.nan)*100).fillna(0)
+        by_as_c3["brecha"] = by_as_c3["meta_nat"] - by_as_c3["ejec_nat"]
+        by_as_c3["proy"]   = (by_as_c3["ejec_nat"]*_F_C3/by_as_c3["meta_nat"].replace(0,np.nan)*100).fillna(0)
+        _bottom_as = by_as_c3[by_as_c3["meta_nat"]>0].sort_values("brecha",ascending=False).head(15)
+
+        # Barrios con mayor brecha
+        by_bar_c3 = df.groupby("BARRIO").agg(
+            pdvs=("ID","count"), meta_nat=("META ALTA NAT (>$2000)","sum"),
+            ejec_nat=("EJEC ALTA NAT","sum"), cuota_alta=("CUOTA DE ALTA","mean"),
+        ).reset_index()
+        by_bar_c3["cumpl"]  = (by_bar_c3["ejec_nat"]/by_bar_c3["meta_nat"].replace(0,np.nan)*100).fillna(0)
+        by_bar_c3["brecha"] = by_bar_c3["meta_nat"] - by_bar_c3["ejec_nat"]
+        _bottom_bar = by_bar_c3[by_bar_c3["meta_nat"]>0].sort_values("brecha",ascending=False).head(20)
+
+        # Barrios con menor cuota de alta (potencial competitivo)
+        _baja_cuota_bar = by_bar_c3[by_bar_c3["pdvs"]>=5].sort_values("cuota_alta").head(20)
+
+        cm1, cm2 = st.columns(2, gap="large")
+        with cm1:
+            st.markdown('<div class="section-card"><div class="section-title">Asesores con mayor brecha de altas</div><div class="section-subtitle">No los que menos venden — los que más altas dejan de ejecutar vs su meta asignada. Son los de mayor impacto si se intervienen.</div>', unsafe_allow_html=True)
+            chart_as_brecha = alt.Chart(_bottom_as).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
+                x=alt.X("brecha:Q",title="Altas que faltan para meta"),
+                y=alt.Y("ASESOR:N",sort="-x",title=None,axis=alt.Axis(labelLimit=200)),
+                color=alt.Color("AGENTE:N",scale=alt.Scale(domain=list(AGENTE_COLORS.keys()),range=list(AGENTE_COLORS.values())),legend=alt.Legend(title="Agente")),
+                tooltip=[
+                    alt.Tooltip("ASESOR:N",title="Asesor"),
+                    alt.Tooltip("AGENTE:N",title="Agente"),
+                    alt.Tooltip("brecha:Q",format=",.0f",title="Altas pendientes"),
+                    alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %"),
+                    alt.Tooltip("proy:Q",format=".1f",title="Proyección %"),
+                    alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %"),
+                    alt.Tooltip("pdvs:Q",title="PDVs"),
+                ]
+            ).properties(height=340)
+            st.altair_chart(style_chart(chart_as_brecha), use_container_width=True, theme=None)
+            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Color = agente al que pertenece · el asesor más a la derecha es el de mayor oportunidad de recuperación</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
-        else:
-            st.info("No se encontró la columna RUTA en los datos para calcular oportunidades por ruta.")
 
-        # Tabla PDVs con bajo cumplimiento
-        st.markdown(lane_label("PDVs con oportunidad de mejora", "target"), unsafe_allow_html=True)
-        df_opp = df[df["META ALTA NAT (>$2000)"] > 0].copy()
-        df_opp["cumpl_pdv"] = (df_opp["EJEC ALTA NAT"] / df_opp["META ALTA NAT (>$2000)"] * 100).fillna(0)
-        df_opp_show = df_opp[df_opp["cumpl_pdv"] < 70].sort_values("META ALTA NAT (>$2000)", ascending=False).head(30)
+        with cm2:
+            st.markdown('<div class="section-card"><div class="section-title">Barrios con mayor brecha de altas</div><div class="section-subtitle">Los barrios donde más altas se pierden vs la meta. No necesariamente los de menor cumplimiento — sino los de mayor volumen de oportunidad sin capturar.</div>', unsafe_allow_html=True)
+            chart_bar_brecha = alt.Chart(_bottom_bar).transform_calculate(
+                color_c="datum.cumpl >= 70 ? '#F59E0B' : '#EF4444'"
+            ).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
+                x=alt.X("brecha:Q",title="Altas pendientes"),
+                y=alt.Y("BARRIO:N",sort="-x",title=None,axis=alt.Axis(labelLimit=200)),
+                color=alt.Color("color_c:N",scale=None,legend=None),
+                tooltip=[
+                    alt.Tooltip("BARRIO:N",title="Barrio"),
+                    alt.Tooltip("pdvs:Q",title="PDVs"),
+                    alt.Tooltip("brecha:Q",format=",.0f",title="Brecha altas"),
+                    alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %"),
+                    alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %"),
+                ]
+            ).properties(height=340)
+            st.altair_chart(style_chart(chart_bar_brecha), use_container_width=True, theme=None)
+            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">🟡 Amarillo = cumpl 70-99% (recuperable) · 🔴 Rojo = &lt;70% (crítico)</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        st.markdown(f'<div class="section-card"><div class="anchor-note"><div class="anchor-note-body"><b>¿Para qué sirve esta tabla?</b> Muestra los PDVs que tienen meta asignada pero aún están por debajo del 70% de cumplimiento. Son los puntos donde hay mayor oportunidad de recuperar ventas. Están ordenados por meta: los de mayor meta arriba.</div></div>', unsafe_allow_html=True)
-        st.markdown(table_shell(f"PDVs con cumplimiento por debajo del 70% — {len(df_opp_show)} PDVs identificados"), unsafe_allow_html=True)
-        if not df_opp_show.empty:
-            extra_cols = [c for c in ["BARRIO", "ZONA", "RUTA"] if c in df_opp_show.columns]
-            cols_show = [c for c in ["ID", "AGENTE", "ASESOR", "CIRCUITO"] + extra_cols + ["CLASIFICACION", "CATEGORIA",
-                                     "META ALTA NAT (>$2000)", "EJEC ALTA NAT", "cumpl_pdv"] if c in df_opp_show.columns]
-            show_opp = df_opp_show[cols_show].copy()
-            show_opp = safe_round_columns(show_opp, ["META ALTA NAT (>$2000)", "EJEC ALTA NAT", "cumpl_pdv"])
-            rename_opp = {"META ALTA NAT (>$2000)": "Meta altas", "EJEC ALTA NAT": "Altas ejecutadas",
-                          "cumpl_pdv": "Cumpl. %", "ID": "ID PDV", "AGENTE": "Agente", "ASESOR": "Asesor",
-                          "CIRCUITO": "Circuito", "CLASIFICACION": "Clasificación", "CATEGORIA": "Categoría",
-                          "BARRIO": "Barrio", "ZONA": "Zona", "RUTA": "Ruta"}
-            show_opp = show_opp.rename(columns={k:v for k,v in rename_opp.items() if k in show_opp.columns})
-            st.dataframe(show_opp, use_container_width=True, height=320)
-            st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:4px;">Solo se muestran los 30 PDVs con mayor meta entre los que aún tienen brecha. Usa los filtros del sidebar para enfocar por agente, barrio o circuito.</div>', unsafe_allow_html=True)
-        else:
-            st.success("✅ No hay PDVs con cumplimiento por debajo del 70% en el universo visible.")
-        st.markdown('</div></div>', unsafe_allow_html=True)
+        # Barrios con menor cuota de alta — oportunidad competitiva
+        st.markdown('<div class="section-card" style="margin-top:8px;"><div class="section-title">Barrios con menor cuota de altas Claro — mayor potencial competitivo</div><div class="section-subtitle">Barrios donde Claro tiene menor participación en ventas nuevas vs la competencia. Bajo porcentaje = mucho espacio para crecer sin necesidad de más PDVs · mínimo 5 PDVs por barrio</div>', unsafe_allow_html=True)
+        chart_baja_cuota = alt.Chart(_baja_cuota_bar).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5,color="#38BDF8").encode(
+            x=alt.X("cuota_alta:Q",title="Cuota de altas Claro (%)"),
+            y=alt.Y("BARRIO:N",sort="x",title=None,axis=alt.Axis(labelLimit=220)),
+            tooltip=[
+                alt.Tooltip("BARRIO:N",title="Barrio"),
+                alt.Tooltip("pdvs:Q",title="PDVs"),
+                alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %"),
+                alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. meta %"),
+                alt.Tooltip("brecha:Q",format=",.0f",title="Brecha altas"),
+            ]
+        ).properties(height=340)
+        r50_bq = alt.Chart(pd.DataFrame({"x":[50]})).mark_rule(color="#22C55E",strokeDash=[5,3],strokeWidth=1.5).encode(x="x:Q")
+        st.altair_chart(style_chart(chart_baja_cuota+r50_bq), use_container_width=True, theme=None)
+        st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Ordenado de menor a mayor cuota · línea verde = 50% (paridad con competencia) · barrios a la izquierda de la línea son los de mayor oportunidad</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # -------------------------------------------------------
-    # TAB C4 — CURVA SEMANAL
+
+    # -------------------------------------------------------
+    # TAB C4 — ¿SUBE EL RITMO?
     # -------------------------------------------------------
     with tc4:
-        st.markdown(stage_header(
-            "04 · Curva semanal de ejecución",
-            "Ritmo de captación por semana · 1–27 Abril 2026",
-            "Evolución semanal de altas orgánicas e inducidas (S1–S4) por agente, categoría y zona. Ventana: 1 al 27 de Abril 2026. S4 puede estar incompleta al corte.",
-            "trend", "red", show_badges=False
-        ), unsafe_allow_html=True)
+        semanas      = ["S1","S2","S3","S4"]
+        semanas_indu = ["S1.1","S2.1","S3.1","S4.1"]
+        s_totals      = {s: float(df[s].sum()) if s in df.columns else 0.0 for s in semanas}
+        s_indu_totals = {s: float(df[s].sum()) if s in df.columns else 0.0 for s in semanas_indu}
+        _s_list       = [s_totals["S1"],s_totals["S2"],s_totals["S3"],s_totals["S4"]]
+        _mejor_s      = max(semanas, key=lambda s: s_totals[s])
+        _peor_s       = min(semanas, key=lambda s: s_totals[s])
+        _tendencia_c4 = _s_list[2] >= _s_list[1] >= _s_list[0]
+        _var_s2s1     = ((s_totals["S2"]-s_totals["S1"])/s_totals["S1"]*100) if s_totals["S1"]>0 else 0
+        _var_s3s2     = ((s_totals["S3"]-s_totals["S2"])/s_totals["S2"]*100) if s_totals["S2"]>0 else 0
+        _var_s4s3     = ((s_totals["S4"]-s_totals["S3"])/s_totals["S3"]*100) if s_totals["S3"]>0 else 0
 
-        semanas = ["S1", "S2", "S3", "S4"]
-        s_totals = {s: df[s].sum() if s in df.columns else 0 for s in semanas}
+        def _sc4(v): return "#22C55E" if v >= 0 else "#EF4444"
+        def _arrow(v): return "↑" if v >= 0 else "↓"
 
-        st.markdown(tab_kpi_context([
-            {"icon": "trend", "label": "S1", "value": fmt_int(s_totals["S1"]), "sub": "Altas semana 1"},
-            {"icon": "trend", "label": "S2", "value": fmt_int(s_totals["S2"]), "sub": "Altas semana 2"},
-            {"icon": "trend", "label": "S3", "value": fmt_int(s_totals["S3"]), "sub": "Altas semana 3"},
-            {"icon": "trend", "label": "S4", "value": fmt_int(s_totals["S4"]), "sub": "Altas semana 4"},
-        ]), unsafe_allow_html=True)
-
-        # Curva agregada por semana
-        df_semana = pd.DataFrame({
-            "Semana": semanas,
-            "Total": [s_totals[s] for s in semanas],
-        })
-
-        c4a, c4b = st.columns(2, gap="large")
-        with c4a:
-            st.markdown('<div class="section-card"><div class="section-title">Curva de ejecución semanal</div><div class="section-subtitle">¿Cómo fue avanzando la venta semana a semana? S1 = primera semana del periodo, S4 = última. Una curva creciente indica buen ritmo de captación.</div>', unsafe_allow_html=True)
-            chart_sem = alt.Chart(df_semana).mark_line(point=True, strokeWidth=3, color="#E10600").encode(
-                x=alt.X("Semana:N", title=None, sort=semanas),
-                y=alt.Y("Total:Q", title="Altas"),
-                tooltip=[alt.Tooltip("Semana:N"), alt.Tooltip("Total:Q", format=",.0f")]
-            ).properties(height=280)
-            area_sem = alt.Chart(df_semana).mark_area(opacity=0.12, color="#E10600").encode(
-                x=alt.X("Semana:N", sort=semanas),
-                y=alt.Y("Total:Q")
-            )
-            st.altair_chart(style_chart(area_sem + chart_sem), use_container_width=True, theme=None)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        with c4b:
-            # Curva por agente
-            sem_by_ag = []
-            for s in semanas:
-                if s in df.columns:
-                    grp = df.groupby("AGENTE")[s].sum().reset_index()
-                    grp["Semana"] = s
-                    grp = grp.rename(columns={s: "Altas"})
-                    sem_by_ag.append(grp)
-            df_sem_ag = pd.concat(sem_by_ag, ignore_index=True) if sem_by_ag else pd.DataFrame()
-
-            st.markdown('<div class="section-card"><div class="section-title">Ritmo semanal por agente</div><div class="section-subtitle">Cada línea = un agente. Si la línea sube, ese agente aceleró esa semana. Si baja, tuvo menos ventas. Útil para detectar quién sostuvo el ritmo y quién lo perdió.</div>', unsafe_allow_html=True)
-            if not df_sem_ag.empty:
-                chart_sem_ag = alt.Chart(df_sem_ag).mark_line(point=True, strokeWidth=2).encode(
-                    x=alt.X("Semana:N", sort=semanas, title=None),
-                    y=alt.Y("Altas:Q", title="Altas orgánicas"),
-                    color=alt.Color("AGENTE:N",
-                        scale=alt.Scale(domain=list(AGENTE_COLORS.keys()), range=list(AGENTE_COLORS.values())),
-                        legend=alt.Legend(title="Agente")),
-                    tooltip=[alt.Tooltip("Semana:N"), alt.Tooltip("AGENTE:N"), alt.Tooltip("Altas:Q", format=",.0f")]
-                ).properties(height=280)
-                st.altair_chart(style_chart(chart_sem_ag), use_container_width=True, theme=None)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        # Semanas inducidas
-        semanas_indu = ["S1.1", "S2.1", "S3.1", "S4.1"]
-        s_indu_totals = {s: df[s].sum() if s in df.columns else 0 for s in semanas_indu}
-        df_sem_indu = pd.DataFrame({
-            "Semana": ["S1", "S2", "S3", "S4"],
-            "Inducidas": [s_indu_totals[s] for s in semanas_indu],
-            "Orgánicas": [s_totals[s2] for s2 in semanas],
-        })
-        df_sem_indu_long = df_sem_indu.melt("Semana", var_name="Tipo", value_name="Altas")
-
-        c4c, c4d = st.columns(2, gap="large")
-        with c4c:
-            st.markdown('<div class="section-card"><div class="section-title">Altas orgánicas vs inducidas por semana</div><div class="section-subtitle">Orgánicas = planes por encima de $2.000 (mayor valor). Inducidas = planes de hasta $2.000. Cada semana muestra cuántas ventas hubo de cada tipo.</div>', unsafe_allow_html=True)
-            chart_comp = alt.Chart(df_sem_indu_long).mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5).encode(
-                x=alt.X("Semana:N", sort=["S1","S2","S3","S4"], title=None),
-                y=alt.Y("Altas:Q", title="Altas"),
-                color=alt.Color("Tipo:N",
-                    scale=alt.Scale(domain=["Orgánicas","Inducidas"], range=["#E10600","#38BDF8"]),
-                    legend=alt.Legend(title="")),
-                xOffset="Tipo:N",
-                tooltip=[alt.Tooltip("Semana:N"), alt.Tooltip("Tipo:N"), alt.Tooltip("Altas:Q", format=",.0f")]
-            ).properties(height=260)
-            st.altair_chart(style_chart(chart_comp), use_container_width=True, theme=None)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        with c4d:
-            # Ritmo acumulado
-            df_sem_indu["Acum_org"] = df_sem_indu["Orgánicas"].cumsum()
-            df_sem_indu["Acum_indu"] = df_sem_indu["Inducidas"].cumsum()
-            df_acum = df_sem_indu[["Semana","Acum_org","Acum_indu"]].melt("Semana", var_name="Tipo", value_name="Acumulado")
-            df_acum["Tipo"] = df_acum["Tipo"].map({"Acum_org": "Orgánicas", "Acum_indu": "Inducidas"})
-
-            st.markdown('<div class="section-card"><div class="section-title">Avance acumulado de ventas</div><div class="section-subtitle">La línea muestra el total acumulado al cierre de cada semana. Compara las dos líneas: si la roja (orgánicas) crece más rápido, la captación de calidad va bien.</div>', unsafe_allow_html=True)
-            chart_acum = alt.Chart(df_acum).mark_line(point=True, strokeWidth=3).encode(
-                x=alt.X("Semana:N", sort=["S1","S2","S3","S4"], title=None),
-                y=alt.Y("Acumulado:Q", title="Altas acumuladas"),
-                color=alt.Color("Tipo:N",
-                    scale=alt.Scale(domain=["Orgánicas","Inducidas"], range=["#E10600","#38BDF8"]),
-                    legend=alt.Legend(title="")),
-                tooltip=[alt.Tooltip("Semana:N"), alt.Tooltip("Tipo:N"), alt.Tooltip("Acumulado:Q", format=",.0f")]
-            ).properties(height=260)
-            st.altair_chart(style_chart(chart_acum), use_container_width=True, theme=None)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        # Nota de contexto temporal — ventana 1–27 de Abril
+        # ── Headline: semana a semana ─────────────────────────────────────────
         st.markdown(f"""
-        <div class="executive-note" style="margin-top:10px;">
-            <div class="executive-highlight">{icon_svg("trend",12)} Contexto de la curva semanal</div>
-            <div class="insight-body">
-                La información de esta curva corresponde a la <b>ventana del 1 al 27 de Abril 2026</b>.
-                Las semanas S1–S4 reflejan el avance acumulado dentro de ese periodo. S4 puede estar incompleta
-                dado que el corte es al 27 de abril. Compara la curva orgánica vs inducida para identificar
-                dónde se concentró el esfuerzo de captación.
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.96),rgba(10,18,34,0.98));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:20px 28px;margin-bottom:16px;">
+            <div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:14px;">Evolución semanal · 1–27 Abril 2026</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;">
+                <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
+                    <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 1</div>
+                    <div style="font-size:2rem;font-weight:950;color:#F8FAFC;">{fmt_int(s_totals["S1"])}</div>
+                    <div style="font-size:.72rem;color:#64748B;margin-top:2px;">altas</div>
+                </div>
+                <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
+                    <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 2</div>
+                    <div style="font-size:2rem;font-weight:950;color:#F8FAFC;">{fmt_int(s_totals["S2"])}</div>
+                    <div style="font-size:.72rem;color:{_sc4(_var_s2s1)};margin-top:2px;">{_arrow(_var_s2s1)} {abs(_var_s2s1):.0f}% vs S1</div>
+                </div>
+                <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
+                    <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 3</div>
+                    <div style="font-size:2rem;font-weight:950;color:#F8FAFC;">{fmt_int(s_totals["S3"])}</div>
+                    <div style="font-size:.72rem;color:{_sc4(_var_s3s2)};margin-top:2px;">{_arrow(_var_s3s2)} {abs(_var_s3s2):.0f}% vs S2</div>
+                </div>
+                <div style="text-align:center;padding:0 12px;">
+                    <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 4</div>
+                    <div style="font-size:2rem;font-weight:950;color:#F8FAFC;">{fmt_int(s_totals["S4"])}</div>
+                    <div style="font-size:.72rem;color:{_sc4(_var_s4s3)};margin-top:2px;">{_arrow(_var_s4s3)} {abs(_var_s4s3):.0f}% vs S3</div>
+                </div>
+            </div>
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:10px;">
+                <span style="font-size:1.1rem;">{"📈" if _tendencia_c4 else "📉"}</span>
+                <span style="font-size:.82rem;font-weight:800;color:{"#22C55E" if _tendencia_c4 else "#EF4444"};">{"Tendencia positiva — el ritmo crece semana a semana" if _tendencia_c4 else f"Tendencia a la baja — {_mejor_s} fue el pico, {_peor_s} el punto más bajo"}</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
+        # ── Gráficas ──────────────────────────────────────────────────────────
+        c4a, c4b = st.columns(2, gap="large")
+        df_semana = pd.DataFrame({"Semana": semanas, "Total": [s_totals[s] for s in semanas]})
+
+        with c4a:
+            st.markdown('<div class="section-card"><div class="section-title">Curva de ejecución semanal</div><div class="section-subtitle">↑ subida = aceleración · ↓ bajada = desaceleración · área rellena = volumen acumulado</div>', unsafe_allow_html=True)
+            chart_sem = alt.Chart(df_semana).mark_line(point=True,strokeWidth=3,color="#E10600").encode(
+                x=alt.X("Semana:N",title=None,sort=semanas),
+                y=alt.Y("Total:Q",title="Altas"),
+                tooltip=[alt.Tooltip("Semana:N"),alt.Tooltip("Total:Q",format=",.0f")]
+            ).properties(height=260)
+            area_sem = alt.Chart(df_semana).mark_area(opacity=0.12,color="#E10600").encode(
+                x=alt.X("Semana:N",sort=semanas), y=alt.Y("Total:Q")
+            )
+            st.altair_chart(style_chart(area_sem+chart_sem), use_container_width=True, theme=None)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with c4b:
+            sem_by_ag = []
+            for s in semanas:
+                if s in df.columns:
+                    grp = df.groupby("AGENTE")[s].sum().reset_index()
+                    grp["Semana"] = s; grp = grp.rename(columns={s:"Altas"})
+                    sem_by_ag.append(grp)
+            df_sem_ag = pd.concat(sem_by_ag, ignore_index=True) if sem_by_ag else pd.DataFrame()
+            st.markdown('<div class="section-card"><div class="section-title">Ritmo semanal por agente</div><div class="section-subtitle">Cada línea = un agente · línea que sube = aceleró · línea que baja = perdió ritmo</div>', unsafe_allow_html=True)
+            if not df_sem_ag.empty:
+                chart_sem_ag = alt.Chart(df_sem_ag).mark_line(point=True,strokeWidth=2).encode(
+                    x=alt.X("Semana:N",sort=semanas,title=None),
+                    y=alt.Y("Altas:Q",title="Altas orgánicas"),
+                    color=alt.Color("AGENTE:N",scale=alt.Scale(domain=list(AGENTE_COLORS.keys()),range=list(AGENTE_COLORS.values())),legend=alt.Legend(title="Agente")),
+                    tooltip=[alt.Tooltip("Semana:N"),alt.Tooltip("AGENTE:N"),alt.Tooltip("Altas:Q",format=",.0f")]
+                ).properties(height=260)
+                st.altair_chart(style_chart(chart_sem_ag), use_container_width=True, theme=None)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        # ── Orgánicas vs Inducidas ────────────────────────────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Orgánicas vs inducidas — composición semanal</div>', unsafe_allow_html=True)
+        df_sem_indu = pd.DataFrame({
+            "Semana": ["S1","S2","S3","S4"],
+            "Inducidas": [s_indu_totals[s] for s in semanas_indu],
+            "Orgánicas": [s_totals[s2] for s2 in semanas],
+        })
+        df_sem_indu["Acum_org"]  = df_sem_indu["Orgánicas"].cumsum()
+        df_sem_indu["Acum_indu"] = df_sem_indu["Inducidas"].cumsum()
+        df_sem_indu_long = df_sem_indu.melt("Semana", var_name="Tipo", value_name="Altas",
+                                             value_vars=["Orgánicas","Inducidas"])
+        df_acum = df_sem_indu[["Semana","Acum_org","Acum_indu"]].melt("Semana",var_name="Tipo",value_name="Acumulado")
+        df_acum["Tipo"] = df_acum["Tipo"].map({"Acum_org":"Orgánicas","Acum_indu":"Inducidas"})
+
+        c4c, c4d = st.columns(2, gap="large")
+        with c4c:
+            st.markdown('<div class="section-card"><div class="section-title">Orgánicas vs inducidas por semana</div><div class="section-subtitle">🔴 Orgánicas = planes &gt;$2.000 (mayor valor) · 🔵 Inducidas = planes ≤$2.000</div>', unsafe_allow_html=True)
+            chart_comp = alt.Chart(df_sem_indu_long).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
+                x=alt.X("Semana:N",sort=["S1","S2","S3","S4"],title=None),
+                y=alt.Y("Altas:Q",title="Altas"),
+                color=alt.Color("Tipo:N",scale=alt.Scale(domain=["Orgánicas","Inducidas"],range=["#E10600","#38BDF8"]),legend=alt.Legend(title="")),
+                xOffset="Tipo:N",
+                tooltip=[alt.Tooltip("Semana:N"),alt.Tooltip("Tipo:N"),alt.Tooltip("Altas:Q",format=",.0f")]
+            ).properties(height=240)
+            st.altair_chart(style_chart(chart_comp), use_container_width=True, theme=None)
+            st.markdown('</div>', unsafe_allow_html=True)
+        with c4d:
+            st.markdown('<div class="section-card"><div class="section-title">Avance acumulado</div><div class="section-subtitle">Si la línea 🔴 crece más rápido que la 🔵, la captación de calidad va bien</div>', unsafe_allow_html=True)
+            chart_acum = alt.Chart(df_acum).mark_line(point=True,strokeWidth=3).encode(
+                x=alt.X("Semana:N",sort=["S1","S2","S3","S4"],title=None),
+                y=alt.Y("Acumulado:Q",title="Altas acumuladas"),
+                color=alt.Color("Tipo:N",scale=alt.Scale(domain=["Orgánicas","Inducidas"],range=["#E10600","#38BDF8"]),legend=alt.Legend(title="")),
+                tooltip=[alt.Tooltip("Semana:N"),alt.Tooltip("Tipo:N"),alt.Tooltip("Acumulado:Q",format=",.0f")]
+            ).properties(height=240)
+            st.altair_chart(style_chart(chart_acum), use_container_width=True, theme=None)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+
     # -------------------------------------------------------
-    # TAB C5 — MERCADO Y SEÑAL
+    # TAB C5 — ¿DÓNDE GANAR MÁS?
     # -------------------------------------------------------
     with tc5:
-        st.markdown(stage_header(
-            "05 · Mercado y Señal en PDVs",
-            "Cuota, presencia de mercado e intensidad de señal",
-            "Distribución de cuota de mercado, cuota de altas y calidad de señal RSRP en el portafolio de PDVs visible.",
-            "briefcase", "red", show_badges=False
-        ), unsafe_allow_html=True)
+        # ── Cálculos protagonistas ────────────────────────────────────────────
+        _cuota_alta_50 = (pd.to_numeric(df["CUOTA DE ALTA"],errors="coerce")>50).sum()
+        _cuota_alta_50_pct = (_cuota_alta_50 / len(df) * 100) if len(df)>0 else 0
+        _cuota_mkt_50  = (pd.to_numeric(df["CUOTA DE MERCADO"],errors="coerce")>50).sum()
+        _var_alta_m1   = pd.to_numeric(df["VR_M-1.1"],errors="coerce").mean() if "VR_M-1.1" in df.columns else np.nan
+        _var_mkt_m1    = pd.to_numeric(df["VR_M-1"],errors="coerce").mean()   if "VR_M-1" in df.columns else np.nan
 
-        st.markdown(tab_kpi_context([
-            {"icon": "target", "label": "Cuota de altas media",  "value": fmt_pct_c(cuota_alta_media), "sub": "% de ventas nuevas que son Claro"},
-            {"icon": "signal", "label": "Cuota mercado media",   "value": fmt_pct_c(cuota_mkt_media),  "sub": "Promedio de PDVs visibles"},
-            {"icon": "trend",  "label": "RSRP promedio",         "value": fmt_dBm(rsrp_media), "sub": "Intensidad señal media"},
-            {"icon": "users",  "label": "PDVs cuota alta >50%",  "value": fmt_int((pd.to_numeric(df["CUOTA DE ALTA"],errors="coerce")>50).sum()), "sub": "Claro domina captación"},
-        ]), unsafe_allow_html=True)
+        def _sc5(v): return "#22C55E" if v >= 100 else "#F59E0B" if v >= 70 else "#EF4444"
+        def _vc(v):  return "#EF4444" if pd.notna(v) and v < 0 else "#22C55E"
 
+        # ── 4 KPIs protagonistas ──────────────────────────────────────────────
+        k5a, k5b, k5c, k5d = st.columns(4, gap="medium")
+        with k5a:
+            _c_alta = "#22C55E" if cuota_alta_media >= 50 else "#F59E0B" if cuota_alta_media >= 40 else "#EF4444"
+            _vt_a = (f"{"↓" if pd.notna(_var_alta_m1) and _var_alta_m1 < 0 else "↑"}{abs(_var_alta_m1):.1f}pp vs mes ant."
+                     if pd.notna(_var_alta_m1) else "")
+            st.markdown(f"""
+            <div class="card" style="min-height:0;">
+                <div class="kpi-label">Cuota de altas media</div>
+                <div class="kpi-value" style="color:{_c_alta};">{fmt_pct_c(cuota_alta_media)}</div>
+                <div class="kpi-sub">% ventas nuevas que son Claro <span style="color:{_vc(_var_alta_m1)};">{_vt_a}</span></div>
+            </div>""", unsafe_allow_html=True)
+        with k5b:
+            _c_mkt = "#22C55E" if cuota_mkt_media >= 60 else "#F59E0B" if cuota_mkt_media >= 50 else "#EF4444"
+            st.markdown(f"""
+            <div class="card" style="min-height:0;">
+                <div class="kpi-label">Cuota de mercado media</div>
+                <div class="kpi-value" style="color:{_c_mkt};">{fmt_pct_c(cuota_mkt_media)}</div>
+                <div class="kpi-sub">Base instalada Claro en PDVs</div>
+            </div>""", unsafe_allow_html=True)
+        with k5c:
+            st.markdown(f"""
+            <div class="card" style="min-height:0;">
+                <div class="kpi-label">PDVs donde Claro lidera captación</div>
+                <div class="kpi-value" style="color:#38BDF8;">{fmt_int(_cuota_alta_50)}</div>
+                <div class="kpi-sub">{_cuota_alta_50_pct:.0f}% del portafolio con cuota alta &gt;50%</div>
+            </div>""", unsafe_allow_html=True)
+        with k5d:
+            st.markdown(f"""
+            <div class="card" style="min-height:0;">
+                <div class="kpi-label">RSRP promedio PDVs</div>
+                <div class="kpi-value" style="color:#F59E0B;">{fmt_dBm(rsrp_media)}</div>
+                <div class="kpi-sub">Toda la red opera en zona Aceptable o Crítica</div>
+            </div>""", unsafe_allow_html=True)
+
+        # ── Sección 1: Cuota de altas y mercado ──────────────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Posición competitiva por agente</div>', unsafe_allow_html=True)
         c5a, c5b = st.columns(2, gap="large")
         with c5a:
-            # Cuota de mercado por agente
             cuota_by_ag = df.groupby("AGENTE").agg(
-                cuota_mkt=("CUOTA DE MERCADO", "mean"),
-                cuota_alta=("CUOTA DE ALTA", "mean"),
-                n=("ID", "count"),
+                cuota_mkt=("CUOTA DE MERCADO","mean"), cuota_alta=("CUOTA DE ALTA","mean"), n=("ID","count"),
             ).reset_index()
-
-            st.markdown('<div class="section-card"><div class="section-title">Cuota de altas y mercado por agente</div><div class="section-subtitle"><b>Barra azul = cuota de altas</b> (% de ventas nuevas que son Claro — el indicador más relevante). Barra roja = cuota de mercado (base instalada). Si la azul supera la roja, el agente está ganando participación activamente.</div>', unsafe_allow_html=True)
-            cuota_melt = cuota_by_ag[["AGENTE","cuota_mkt","cuota_alta"]].melt("AGENTE", var_name="Indicador", value_name="Valor")
-            cuota_melt["Indicador"] = cuota_melt["Indicador"].map({"cuota_mkt": "Cuota Mercado (base)", "cuota_alta": "Cuota Altas (captación)"})
-            chart_cuota = alt.Chart(cuota_melt).mark_bar(cornerRadiusTopLeft=5, cornerRadiusTopRight=5).encode(
-                x=alt.X("AGENTE:N", title=None, axis=alt.Axis(labelAngle=-20)),
-                y=alt.Y("Valor:Q", title="Cuota (%)"),
-                color=alt.Color("Indicador:N",
-                    scale=alt.Scale(domain=["Cuota Mercado (base)","Cuota Altas (captación)"], range=["#E10600","#38BDF8"]),
-                    legend=alt.Legend(title="")),
+            st.markdown('<div class="section-card"><div class="section-title">Cuota de altas vs mercado por agente</div><div class="section-subtitle">🔵 Cuota altas (captación activa) · 🔴 Cuota mercado (base instalada) · si azul &gt; rojo, el agente gana participación</div>', unsafe_allow_html=True)
+            cuota_melt = cuota_by_ag[["AGENTE","cuota_mkt","cuota_alta"]].melt("AGENTE",var_name="Indicador",value_name="Valor")
+            cuota_melt["Indicador"] = cuota_melt["Indicador"].map({"cuota_mkt":"Cuota Mercado","cuota_alta":"Cuota Altas"})
+            chart_cuota = alt.Chart(cuota_melt).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
+                x=alt.X("AGENTE:N",title=None,axis=alt.Axis(labelAngle=-20)),
+                y=alt.Y("Valor:Q",title="Cuota (%)"),
+                color=alt.Color("Indicador:N",scale=alt.Scale(domain=["Cuota Mercado","Cuota Altas"],range=["#E10600","#38BDF8"]),legend=alt.Legend(title="")),
                 xOffset="Indicador:N",
-                tooltip=[alt.Tooltip("AGENTE:N"), alt.Tooltip("Indicador:N"), alt.Tooltip("Valor:Q", format=".1f", title="Cuota %")]
-            ).properties(height=300)
+                tooltip=[alt.Tooltip("AGENTE:N"),alt.Tooltip("Indicador:N"),alt.Tooltip("Valor:Q",format=".1f",title="Cuota %")]
+            ).properties(height=280)
             st.altair_chart(style_chart(chart_cuota), use_container_width=True, theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with c5b:
-            # Distribución de cuota de mercado (histograma)
-            cuota_vals = pd.to_numeric(df["CUOTA DE MERCADO"], errors="coerce").dropna()
+            cuota_vals = pd.to_numeric(df["CUOTA DE MERCADO"],errors="coerce").dropna()
             df_hist = pd.DataFrame({"Cuota": cuota_vals})
-
-            st.markdown('<div class="section-card"><div class="section-title">Distribución de cuota de mercado Claro</div><div class="section-subtitle">Este histograma muestra <b>cuántos PDVs tienen cada nivel de cuota de mercado</b>. El eje X representa el porcentaje de cuota de Claro (0% a 100%) y el eje Y muestra cuántos puntos de venta caen en ese rango. Una barra alta en valores bajos indica muchos PDVs donde Claro tiene poca participación — oportunidad de mejora. Una barra alta cerca del 100% indica PDVs donde Claro domina. El objetivo es desplazar la distribución hacia la derecha.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">Distribución de cuota de mercado Claro</div><div class="section-subtitle">Cada barra = cuántos PDVs tienen esa cuota · barra alta a la derecha = muchos PDVs donde Claro domina · a la izquierda = oportunidad</div>', unsafe_allow_html=True)
             if not df_hist.empty:
-                chart_hist = alt.Chart(df_hist).mark_bar(color="#E10600", opacity=0.82).encode(
-                    x=alt.X("Cuota:Q", bin=alt.Bin(maxbins=20), title="Cuota mercado Claro (%)"),
-                    y=alt.Y("count():Q", title="PDVs"),
-                    tooltip=[alt.Tooltip("Cuota:Q", bin=True), alt.Tooltip("count():Q", title="PDVs")]
-                ).properties(height=300)
+                chart_hist = alt.Chart(df_hist).mark_bar(color="#E10600",opacity=0.82).encode(
+                    x=alt.X("Cuota:Q",bin=alt.Bin(maxbins=20),title="Cuota mercado Claro (%)"),
+                    y=alt.Y("count():Q",title="PDVs"),
+                    tooltip=[alt.Tooltip("Cuota:Q",bin=True),alt.Tooltip("count():Q",title="PDVs")]
+                ).properties(height=280)
                 st.altair_chart(style_chart(chart_hist), use_container_width=True, theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
+        # ── Sección 2: Señal vs Cuota ─────────────────────────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Relación entre calidad de señal y cuota de altas</div>', unsafe_allow_html=True)
         c5c, c5d = st.columns(2, gap="large")
         with c5c:
-            # Bandas RSRP correctas según el usuario:
-            # >= -70 = Excelente | -70 a -90 = Buena | -90 a -100 = Aceptable | < -100 = Crítica
             df_sc = df[["CUOTA DE ALTA","CUOTA DE MERCADO","RSRP","AGENTE","CATEGORIA","ID"]].copy()
-            df_sc["RSRP_num"]   = pd.to_numeric(df_sc["RSRP"], errors="coerce")
-            df_sc["CUOTA_ALTA"] = pd.to_numeric(df_sc["CUOTA DE ALTA"], errors="coerce")
+            df_sc["RSRP_num"]   = pd.to_numeric(df_sc["RSRP"],errors="coerce")
+            df_sc["CUOTA_ALTA"] = pd.to_numeric(df_sc["CUOTA DE ALTA"],errors="coerce")
             df_sc = df_sc.dropna(subset=["RSRP_num","CUOTA_ALTA"]).copy()
 
             def rsrp_band_v2(v):
@@ -4051,195 +4148,178 @@ def render_claro_view():
                 if v >= -100: return "Aceptable (-90 a -100 dBm)"
                 return "Crítica (< -100 dBm)"
 
-            band_order_v2  = ["Excelente (≥ -70 dBm)", "Buena (-70 a -90 dBm)", "Aceptable (-90 a -100 dBm)", "Crítica (< -100 dBm)"]
-            band_colors_v2 = ["#22C55E", "#84CC16", "#F59E0B", "#EF4444"]
-
+            band_order_v2  = ["Excelente (≥ -70 dBm)","Buena (-70 a -90 dBm)","Aceptable (-90 a -100 dBm)","Crítica (< -100 dBm)"]
+            band_colors_v2 = ["#22C55E","#84CC16","#F59E0B","#EF4444"]
             df_sc["Banda RSRP"] = df_sc["RSRP_num"].apply(rsrp_band_v2)
-            df_sc["Banda RSRP"] = pd.Categorical(df_sc["Banda RSRP"], categories=band_order_v2, ordered=True)
-            by_band_v2 = df_sc.groupby("Banda RSRP", observed=True).agg(
-                cuota_alta_media=("CUOTA_ALTA", "mean"),
-                pdvs=("CUOTA_ALTA", "count"),
-                rsrp_media=("RSRP_num", "mean"),
+            df_sc["Banda RSRP"] = pd.Categorical(df_sc["Banda RSRP"],categories=band_order_v2,ordered=True)
+            by_band_v2 = df_sc.groupby("Banda RSRP",observed=True).agg(
+                cuota_alta_media=("CUOTA_ALTA","mean"), pdvs=("CUOTA_ALTA","count"), rsrp_media=("RSRP_num","mean"),
             ).reset_index()
             by_band_v2["Banda RSRP"] = by_band_v2["Banda RSRP"].astype(str)
+            _bandas_ausentes = [b for b in band_order_v2 if b not in by_band_v2["Banda RSRP"].tolist()]
 
-            # Detectar si faltan bandas (ej: sin excelente ni buena)
-            _bandas_presentes = set(by_band_v2["Banda RSRP"].tolist())
-            _bandas_ausentes  = [b for b in band_order_v2 if b not in _bandas_presentes]
-            _alerta_señal = len(_bandas_ausentes) > 0
-
-            _subtitle_band = (
-                "Cuota de altas Claro promedio por banda de calidad de señal RSRP. "
-                "Las bandas se definen así: <b>Excelente</b> ≥ -70 dBm · <b>Buena</b> -70 a -90 · "
-                "<b>Aceptable</b> -90 a -100 · <b>Crítica</b> &lt; -100 dBm. "
-                + (f"⚠️ <b>En este portafolio no hay PDVs con señal Excelente ni Buena</b> — toda la red opera en zona Aceptable o Crítica." if _alerta_señal else "")
-            )
-
-            st.markdown(f'<div class="section-card"><div class="section-title">Calidad de señal vs cuota de altas Claro</div><div class="section-subtitle">{_subtitle_band}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-card"><div class="section-title">Calidad de señal vs cuota de altas</div><div class="section-subtitle">{"⚠️ Ningún PDV tiene señal Excelente ni Buena — toda la red opera en Aceptable o Crítica · " if _bandas_ausentes else ""}Bandas: Excelente ≥-70 · Buena -70 a -90 · Aceptable -90 a -100 · Crítica &lt;-100 dBm</div>', unsafe_allow_html=True)
             if not by_band_v2.empty:
-                _y_max = max(by_band_v2["cuota_alta_media"].max() * 1.25, 60)
-                chart_band_v2 = alt.Chart(by_band_v2).mark_bar(cornerRadiusTopLeft=7, cornerRadiusTopRight=7).encode(
-                    x=alt.X("Banda RSRP:N", sort=band_order_v2, title=None,
-                            axis=alt.Axis(labelAngle=-12, labelLimit=220)),
-                    y=alt.Y("cuota_alta_media:Q", title="Cuota de altas Claro (%)",
-                            scale=alt.Scale(domain=[0, _y_max])),
-                    color=alt.Color("Banda RSRP:N",
-                        scale=alt.Scale(domain=band_order_v2, range=band_colors_v2),
-                        legend=None),
-                    tooltip=[
-                        alt.Tooltip("Banda RSRP:N",        title="Banda de señal"),
-                        alt.Tooltip("pdvs:Q",              title="PDVs en esta banda"),
-                        alt.Tooltip("rsrp_media:Q",        title="RSRP medio (dBm)", format=".1f"),
-                        alt.Tooltip("cuota_alta_media:Q",  title="Cuota altas media %", format=".1f"),
-                    ]
-                ).properties(height=290)
-                rule50_b = alt.Chart(pd.DataFrame({"y":[50]})).mark_rule(
-                    color="#38BDF8", strokeDash=[5,3], strokeWidth=1.5).encode(y="y:Q")
-                text_b = alt.Chart(by_band_v2).mark_text(
-                    dy=-14, fontSize=12, fontWeight="bold", color="#F8FAFC"
-                ).encode(
-                    x=alt.X("Banda RSRP:N", sort=band_order_v2),
-                    y=alt.Y("cuota_alta_media:Q"),
-                    text=alt.Text("cuota_alta_media:Q", format=".1f")
+                _y_max = max(by_band_v2["cuota_alta_media"].max()*1.25, 60)
+                chart_band_v2 = alt.Chart(by_band_v2).mark_bar(cornerRadiusTopLeft=7,cornerRadiusTopRight=7).encode(
+                    x=alt.X("Banda RSRP:N",sort=band_order_v2,title=None,axis=alt.Axis(labelAngle=-12,labelLimit=220)),
+                    y=alt.Y("cuota_alta_media:Q",title="Cuota altas (%)",scale=alt.Scale(domain=[0,_y_max])),
+                    color=alt.Color("Banda RSRP:N",scale=alt.Scale(domain=band_order_v2,range=band_colors_v2),legend=None),
+                    tooltip=[alt.Tooltip("Banda RSRP:N",title="Banda de señal"),alt.Tooltip("pdvs:Q",title="PDVs"),alt.Tooltip("rsrp_media:Q",title="RSRP medio",format=".1f"),alt.Tooltip("cuota_alta_media:Q",title="Cuota altas %",format=".1f")]
+                ).properties(height=260)
+                r50b = alt.Chart(pd.DataFrame({"y":[50]})).mark_rule(color="#38BDF8",strokeDash=[5,3],strokeWidth=1.5).encode(y="y:Q")
+                t_b  = alt.Chart(by_band_v2).mark_text(dy=-14,fontSize=12,fontWeight="bold",color="#F8FAFC").encode(
+                    x=alt.X("Banda RSRP:N",sort=band_order_v2), y=alt.Y("cuota_alta_media:Q"),
+                    text=alt.Text("cuota_alta_media:Q",format=".1f")
                 )
-                st.altair_chart(style_chart(chart_band_v2 + rule50_b + text_b), use_container_width=True, theme=None)
-                # Mostrar advertencia si hay bandas vacías
-                if _alerta_señal:
-                    st.markdown(f'<div style="font-size:0.74rem;color:#FCA5A5;margin-top:4px;background:rgba(239,68,68,0.10);border:1px solid rgba(239,68,68,0.22);border-radius:10px;padding:7px 10px;">⚠️ Las bandas <b>{", ".join(_bandas_ausentes)}</b> no tienen PDVs — toda la señal del portafolio está en zona Aceptable o Crítica. Oportunidad de mejora de red.</div>', unsafe_allow_html=True)
-                st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:6px;">Línea azul = 50% referencia. El número encima de cada barra = cuota de altas media en esa banda.</div>', unsafe_allow_html=True)
-            else:
-                st.info("No hay datos de señal disponibles.")
+                st.altair_chart(style_chart(chart_band_v2+r50b+t_b), use_container_width=True, theme=None)
+                if _bandas_ausentes:
+                    st.markdown(f'<div style="font-size:.72rem;color:#FCA5A5;background:rgba(239,68,68,0.10);border:1px solid rgba(239,68,68,0.22);border-radius:10px;padding:6px 10px;margin-top:4px;">⚠️ Bandas ausentes: <b>{", ".join(_bandas_ausentes)}</b></div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with c5d:
-            # Cuota de alta por categoría
             cuota_cat = df.groupby("CATEGORIA").agg(
-                cuota_mkt=("CUOTA DE MERCADO", "mean"),
-                cuota_alta=("CUOTA DE ALTA", "mean"),
-                n=("ID", "count"),
+                cuota_mkt=("CUOTA DE MERCADO","mean"), cuota_alta=("CUOTA DE ALTA","mean"), n=("ID","count"),
             ).reset_index()
-            cuota_cat["CATEGORIA"] = pd.Categorical(cuota_cat["CATEGORIA"], categories=["DIAMANTE","PLATINO","ORO","PLATA","BRONCE"], ordered=True)
+            cuota_cat["CATEGORIA"] = pd.Categorical(cuota_cat["CATEGORIA"],categories=["DIAMANTE","PLATINO","ORO","PLATA","BRONCE"],ordered=True)
             cuota_cat = cuota_cat.sort_values("CATEGORIA")
-
-            st.markdown('<div class="section-card"><div class="section-title">¿En qué categoría de PDV capta más Claro?</div><div class="section-subtitle">Cuota de altas Claro por categoría (Diamante → Bronce). Un valor alto = Claro gana la mayoría de ventas nuevas en esos PDVs. La línea azul marca el 50%.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">¿En qué categoría capta más Claro?</div><div class="section-subtitle">Cuota de altas por categoría · línea azul = 50% (paridad con competencia)</div>', unsafe_allow_html=True)
             if not cuota_cat.empty:
-                chart_calt = alt.Chart(cuota_cat).mark_bar(cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
-                    x=alt.X("CATEGORIA:N", sort=["DIAMANTE","PLATINO","ORO","PLATA","BRONCE"], title=None),
-                    y=alt.Y("cuota_alta:Q", title="Cuota alta Claro (%)"),
-                    color=alt.Color("CATEGORIA:N",
-                        scale=alt.Scale(domain=list(CATEGORIA_COLORS.keys()), range=list(CATEGORIA_COLORS.values())),
-                        legend=None),
-                    tooltip=[alt.Tooltip("CATEGORIA:N"), alt.Tooltip("cuota_alta:Q", format=".1f", title="Cuota alta %"), alt.Tooltip("cuota_mkt:Q", format=".1f", title="Cuota mkt %"), alt.Tooltip("n:Q", title="PDVs")]
-                ).properties(height=280)
-                rule50_cat = alt.Chart(pd.DataFrame({"y":[50]})).mark_rule(color="#38BDF8", strokeDash=[5,3], strokeWidth=1.5).encode(y="y:Q")
-                st.altair_chart(style_chart(chart_calt + rule50_cat), use_container_width=True, theme=None)
+                chart_calt = alt.Chart(cuota_cat).mark_bar(cornerRadiusTopLeft=6,cornerRadiusTopRight=6).encode(
+                    x=alt.X("CATEGORIA:N",sort=["DIAMANTE","PLATINO","ORO","PLATA","BRONCE"],title=None),
+                    y=alt.Y("cuota_alta:Q",title="Cuota alta Claro (%)"),
+                    color=alt.Color("CATEGORIA:N",scale=alt.Scale(domain=list(CATEGORIA_COLORS.keys()),range=list(CATEGORIA_COLORS.values())),legend=None),
+                    tooltip=[alt.Tooltip("CATEGORIA:N"),alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %"),alt.Tooltip("cuota_mkt:Q",format=".1f",title="Cuota mkt %"),alt.Tooltip("n:Q",title="PDVs")]
+                ).properties(height=260)
+                r50c = alt.Chart(pd.DataFrame({"y":[50]})).mark_rule(color="#38BDF8",strokeDash=[5,3],strokeWidth=1.5).encode(y="y:Q")
+                st.altair_chart(style_chart(chart_calt+r50c), use_container_width=True, theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── KPI de oportunidades de mejora (siempre visible) ──────────────────
-        st.markdown(f'<div style="margin:18px 0 8px 0;font-size:.72rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;">Puntos de mejora identificados</div>', unsafe_allow_html=True)
+        # ── Sección 3: KPIs de oportunidad ───────────────────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Puntos de mejora — priorización por oportunidad</div>', unsafe_allow_html=True)
+        _df_opp5 = df.copy()
+        _df_opp5["RSRP_n"]       = pd.to_numeric(_df_opp5["RSRP"],errors="coerce")
+        _df_opp5["CUOTA_ALTA_n"] = pd.to_numeric(_df_opp5["CUOTA DE ALTA"],errors="coerce")
+        _df_opp5["META_n"]       = pd.to_numeric(_df_opp5["META ALTA NAT (>$2000)"],errors="coerce")
+        _df_opp5["EJEC_n"]       = pd.to_numeric(_df_opp5["EJEC ALTA NAT"],errors="coerce")
+        _df_opp5["cumpl_o"]      = (_df_opp5["EJEC_n"]/_df_opp5["META_n"].replace(0,np.nan)*100).fillna(0)
+        _df_opp5["banda_r"]      = _df_opp5["RSRP_n"].apply(lambda v: rsrp_band_v2(v) if pd.notna(v) else "Sin datos")
+        _cuota_media5 = _df_opp5["CUOTA_ALTA_n"].mean()
+        _n_crit_bc5   = int(((_df_opp5["banda_r"]=="Crítica (< -100 dBm)") & (_df_opp5["CUOTA_ALTA_n"]<_cuota_media5)).sum())
+        _n_acep_bc5   = int(((_df_opp5["banda_r"]=="Aceptable (-90 a -100 dBm)") & (_df_opp5["META_n"]>0) & (_df_opp5["cumpl_o"]<70)).sum())
+        _n_baja_c5    = int((_df_opp5["CUOTA_ALTA_n"]<30).sum())
+        _pct_crit5    = (_df_opp5["banda_r"]=="Crítica (< -100 dBm)").mean()*100
 
-        _df_opp = df.copy()
-        _df_opp["RSRP_n"]      = pd.to_numeric(_df_opp["RSRP"], errors="coerce")
-        _df_opp["CUOTA_ALTA_n"]= pd.to_numeric(_df_opp["CUOTA DE ALTA"], errors="coerce")
-        _df_opp["CUOTA_MKT_n"] = pd.to_numeric(_df_opp["CUOTA DE MERCADO"], errors="coerce")
-        _df_opp["EJEC_n"]      = pd.to_numeric(_df_opp["EJEC ALTA NAT"], errors="coerce")
-        _df_opp["META_n"]      = pd.to_numeric(_df_opp["META ALTA NAT (>$2000)"], errors="coerce")
-        _df_opp["cumpl_pdv"]   = (_df_opp["EJEC_n"] / _df_opp["META_n"].replace(0, np.nan) * 100).fillna(0)
-        _df_opp["banda_rsrp"]  = _df_opp["RSRP_n"].apply(lambda v: rsrp_band_v2(v) if pd.notna(v) else "Sin datos")
-
-        # Cuadrante 1: señal crítica + cuota alta baja → máxima prioridad
-        _criticos_baja_cuota = _df_opp[
-            (_df_opp["banda_rsrp"] == "Crítica (< -100 dBm)") &
-            (_df_opp["CUOTA_ALTA_n"] < _df_opp["CUOTA_ALTA_n"].mean())
-        ]
-        # Cuadrante 2: señal aceptable + cumplimiento < 70% → oportunidad recuperable
-        _acep_bajo_cumpl = _df_opp[
-            (_df_opp["banda_rsrp"] == "Aceptable (-90 a -100 dBm)") &
-            (_df_opp["META_n"] > 0) & (_df_opp["cumpl_pdv"] < 70)
-        ]
-        # Cuadrante 3: sin señal crítica pero cuota alta muy baja (< 30%) → potencial sin aprovechar
-        _baja_cuota_pura = _df_opp[
-            (_df_opp["CUOTA_ALTA_n"] < 30) & (_df_opp["META_n"] > 0)
-        ]
-
-        _n_crit_bc   = len(_criticos_baja_cuota)
-        _n_acep_bc   = len(_acep_bajo_cumpl)
-        _n_baja_c    = len(_baja_cuota_pura)
-        _cuota_media = _df_opp["CUOTA_ALTA_n"].mean()
-        _pct_criticos= len(_df_opp[_df_opp["banda_rsrp"]=="Crítica (< -100 dBm)"]) / max(len(_df_opp),1) * 100
-        _pct_acept   = len(_df_opp[_df_opp["banda_rsrp"]=="Aceptable (-90 a -100 dBm)"]) / max(len(_df_opp),1) * 100
-
-        op1, op2, op3, op4 = st.columns(4, gap="medium")
-        with op1:
-            _col1 = "#EF4444" if _pct_criticos > 10 else "#F59E0B"
+        op1c5, op2c5, op3c5, op4c5 = st.columns(4, gap="medium")
+        with op1c5:
+            _cc5 = "#EF4444" if _pct_crit5 > 10 else "#F59E0B"
             st.markdown(f"""
-            <div class="card">
+            <div class="card" style="min-height:0;">
                 <div class="kpi-label">PDVs señal crítica</div>
-                <div class="kpi-value" style="color:{_col1};">{_pct_criticos:.1f}%</div>
-                <div class="kpi-sub">{"🔴 Más del 10% del portafolio en señal crítica." if _pct_criticos > 10 else "🟡 Señal crítica presente."} {fmt_int(len(_df_opp[_df_opp["banda_rsrp"]=="Crítica (< -100 dBm)"]))} PDVs bajo -100 dBm — ningún PDV tiene señal Excelente o Buena en este portafolio.</div>
+                <div class="kpi-value" style="color:{_cc5};">{_pct_crit5:.1f}%</div>
+                <div class="kpi-sub">{fmt_int((_df_opp5["banda_r"]=="Crítica (< -100 dBm)").sum())} PDVs bajo -100 dBm</div>
             </div>""", unsafe_allow_html=True)
-        with op2:
+        with op2c5:
             st.markdown(f"""
-            <div class="card">
+            <div class="card" style="min-height:0;">
                 <div class="kpi-label">Críticos + cuota baja</div>
-                <div class="kpi-value" style="color:#EF4444;">{fmt_int(_n_crit_bc)}</div>
-                <div class="kpi-sub">🔴 PDVs con señal crítica <b>y</b> cuota de altas bajo la media ({_cuota_media:.1f}%). Máxima prioridad: doble problema activo.</div>
+                <div class="kpi-value" style="color:#EF4444;">{fmt_int(_n_crit_bc5)}</div>
+                <div class="kpi-sub">Señal crítica Y cuota bajo la media — máxima prioridad</div>
             </div>""", unsafe_allow_html=True)
-        with op3:
+        with op3c5:
             st.markdown(f"""
-            <div class="card">
-                <div class="kpi-label">Aceptable + bajo 70% cumpl.</div>
-                <div class="kpi-value" style="color:#F59E0B;">{fmt_int(_n_acep_bc)}</div>
-                <div class="kpi-sub">🟡 PDVs con señal aceptable que además no cumplen la meta. Son recuperables si se interviene el PDV antes de que la señal empeore.</div>
+            <div class="card" style="min-height:0;">
+                <div class="kpi-label">Aceptable + bajo 70%</div>
+                <div class="kpi-value" style="color:#F59E0B;">{fmt_int(_n_acep_bc5)}</div>
+                <div class="kpi-sub">Señal aceptable pero meta sin cumplir — recuperables</div>
             </div>""", unsafe_allow_html=True)
-        with op4:
+        with op4c5:
             st.markdown(f"""
-            <div class="card">
+            <div class="card" style="min-height:0;">
                 <div class="kpi-label">Cuota altas &lt; 30%</div>
-                <div class="kpi-value" style="color:#F59E0B;">{fmt_int(_n_baja_c)}</div>
-                <div class="kpi-sub">🟡 PDVs donde Claro tiene menos del 30% de las altas. Son puntos con competencia dominante — potencial de mejora comercial sin necesidad de inversión en red.</div>
+                <div class="kpi-value" style="color:#F59E0B;">{fmt_int(_n_baja_c5)}</div>
+                <div class="kpi-sub">PDVs donde la competencia domina — potencial sin aprovechar</div>
             </div>""", unsafe_allow_html=True)
 
-        # Tabla detalle oportunidades por circuito
-        if "CIRCUITO" in _df_opp.columns:
-            _circ_opp = _df_opp[_df_opp["META_n"] > 0].groupby(["CIRCUITO","AGENTE"]).agg(
-                pdvs=("ID","count"),
-                rsrp_medio=("RSRP_n","mean"),
-                cuota_alta=("CUOTA_ALTA_n","mean"),
-                cumpl=("cumpl_pdv","mean"),
-                pdvs_criticos=("banda_rsrp", lambda x: (x == "Crítica (< -100 dBm)").sum()),
+
+        # Tabla circuitos+barrios por oportunidad
+        if "CIRCUITO" in _df_opp5.columns:
+            _group_cols5 = [c for c in ["BARRIO","CIRCUITO","AGENTE"] if c in _df_opp5.columns]
+            _circ_opp5 = _df_opp5[_df_opp5["META_n"]>0].groupby(_group_cols5).agg(
+                pdvs=("ID","count"), rsrp_medio=("RSRP_n","mean"), cuota_alta=("CUOTA_ALTA_n","mean"),
+                cumpl=("cumpl_o","mean"), pdvs_criticos=("banda_r", lambda x: (x=="Crítica (< -100 dBm)").sum()),
+                meta=("META_n","sum"), ejec=("EJEC_n","sum"),
             ).reset_index()
-            _circ_opp["score_opp"] = (
-                (_circ_opp["pdvs_criticos"] / _circ_opp["pdvs"].replace(0, np.nan) * 40).fillna(0) +
-                ((50 - _circ_opp["cuota_alta"].clip(0,50)) * 0.6) +
-                ((70 - _circ_opp["cumpl"].clip(0,70)) * 0.4)
+            _circ_opp5["brecha"] = _circ_opp5["meta"] - _circ_opp5["ejec"]
+            _circ_opp5["score"] = (
+                (_circ_opp5["pdvs_criticos"]/_circ_opp5["pdvs"].replace(0,np.nan)*40).fillna(0) +
+                ((50-_circ_opp5["cuota_alta"].clip(0,50))*0.6) +
+                ((70-_circ_opp5["cumpl"].clip(0,70))*0.4)
             )
-            _circ_opp_show = _circ_opp.sort_values("score_opp", ascending=False).head(15)
-            st.markdown(f'<div style="margin:16px 0 6px 0;font-size:.72rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;">Top circuitos con mayor oportunidad de mejora (señal + cuota + cumplimiento)</div>', unsafe_allow_html=True)
-            _circ_display = safe_round_columns(
-                _circ_opp_show[["CIRCUITO","AGENTE","pdvs","rsrp_medio","cuota_alta","cumpl","pdvs_criticos","score_opp"]].copy(),
-                ["rsrp_medio","cuota_alta","cumpl","score_opp"]
-            )
-            _circ_display.columns = ["Circuito","Agente","PDVs","RSRP medio","Cuota alta %","Cumpl. %","PDVs críticos","Score oportunidad"]
-            st.dataframe(_circ_display, use_container_width=True, height=320)
-            st.markdown('<div style="font-size:0.74rem;color:#94A3B8;margin-top:4px;">Score oportunidad = combinación de % PDVs con señal crítica + baja cuota de altas + bajo cumplimiento. Mayor score = mayor prioridad de intervención.</div>', unsafe_allow_html=True)
+            _circ_show5 = _circ_opp5.sort_values("score",ascending=False).head(20)
+            st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 6px 0;">Top circuitos y barrios con mayor oportunidad de mejora (señal + cuota + cumplimiento)</div>', unsafe_allow_html=True)
+            _rename5 = {"BARRIO":"Barrio","CIRCUITO":"Circuito","AGENTE":"Agente","pdvs":"PDVs","rsrp_medio":"RSRP medio","cuota_alta":"Cuota alta %","cumpl":"Cumpl. %","pdvs_criticos":"PDVs críticos","meta":"Meta","ejec":"Ejecutado","brecha":"Brecha","score":"Score"}
+            _show_cols5 = [c for c in _rename5.keys() if c in _circ_show5.columns]
+            _cs = safe_round_columns(_circ_show5[_show_cols5].copy(),["rsrp_medio","cuota_alta","cumpl","brecha","score"])
+            _cs = _cs.rename(columns={k:v for k,v in _rename5.items() if k in _cs.columns})
+            st.dataframe(_cs, use_container_width=True, height=320)
+            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Mayor score = mayor prioridad · incluye barrio para facilitar gestión en campo · score combina señal crítica + cuota baja + bajo cumplimiento</div>', unsafe_allow_html=True)
 
-        # Insight estratégico cierre
-        cuota_alta_50_pct = (pd.to_numeric(df["CUOTA DE ALTA"], errors="coerce") > 50).mean() * 100
-        cuota_50_pct = (pd.to_numeric(df["CUOTA DE MERCADO"], errors="coerce") > 50).mean() * 100
-        st.markdown(f"""
-        <div class="executive-note" style="margin-top:14px;">
-            <div class="executive-highlight">{icon_svg("eye",12)} Conclusión ejecutiva de señal</div>
-            <div class="insight-body">
-                <b>Ningún PDV del portafolio tiene señal Excelente o Buena</b> — el {_pct_acept:.1f}% opera en zona Aceptable
-                y el {_pct_criticos:.1f}% en zona Crítica. Claro supera el 50% de cuota de altas en el <b>{cuota_alta_50_pct:.1f}%</b> de los PDVs.
-                Los <b>{fmt_int(_n_crit_bc)}</b> PDVs con señal crítica y cuota bajo la media son la prioridad número uno:
-                concentran el peor estado de red <b>y</b> el menor desempeño comercial simultáneamente.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        # ── Gráfica: barrios con mayor oportunidad en cuota de altas ──────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">Zonas con mayor oportunidad de mejora en cuota de altas</div>', unsafe_allow_html=True)
+        _by_bar5 = df.groupby("BARRIO").agg(
+            pdvs=("ID","count"), cuota_alta=("CUOTA DE ALTA","mean"),
+            cuota_mkt=("CUOTA DE MERCADO","mean"),
+            ejec_nat=("EJEC ALTA NAT","sum"), meta_nat=("META ALTA NAT (>$2000)","sum"),
+        ).reset_index()
+        _by_bar5["cumpl"] = (_by_bar5["ejec_nat"]/_by_bar5["meta_nat"].replace(0,np.nan)*100).fillna(0)
+        _by_bar5_v = _by_bar5[(_by_bar5["pdvs"]>=5) & (_by_bar5["cuota_alta"].notna())].copy()
+        _opp_bar5  = _by_bar5_v.sort_values("cuota_alta").head(25)
 
-    # Cierre
+        # Scatter cuadrantes
+        _med_cuota5 = _by_bar5_v["cuota_alta"].median()
+        _med_cumpl5 = _by_bar5_v["cumpl"].median()
+        def _quad5(r):
+            if r["cuota_alta"] < _med_cuota5 and r["cumpl"] < _med_cumpl5: return "Prioridad máxima"
+            if r["cuota_alta"] < _med_cuota5 and r["cumpl"] >= _med_cumpl5: return "Buena ejecución, baja cuota"
+            if r["cuota_alta"] >= _med_cuota5 and r["cumpl"] < _med_cumpl5: return "Alta cuota, bajo cumpl."
+            return "Sólido"
+        _scatter5 = _by_bar5_v[_by_bar5_v["meta_nat"]>0].copy()
+        _scatter5["Cuadrante"] = _scatter5.apply(_quad5, axis=1)
+        _scatter5 = _scatter5.sample(min(200,len(_scatter5)), random_state=42)
+
+        g5a, g5b = st.columns(2, gap="large")
+        with g5a:
+            st.markdown('<div class="section-card"><div class="section-title">Barrios donde Claro capta menos — mayor oportunidad</div><div class="section-subtitle">Ordenados de menor a mayor cuota de altas · azul = mucho potencial · línea verde = 50%</div>', unsafe_allow_html=True)
+            _chart_ob = alt.Chart(_opp_bar5).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
+                x=alt.X("cuota_alta:Q",title="Cuota altas Claro (%)",scale=alt.Scale(domain=[0,100])),
+                y=alt.Y("BARRIO:N",sort="x",title=None,axis=alt.Axis(labelLimit=200)),
+                color=alt.Color("cuota_alta:Q",scale=alt.Scale(domain=[0,50,100],range=["#38BDF8","#F59E0B","#22C55E"]),legend=None),
+                tooltip=[alt.Tooltip("BARRIO:N",title="Barrio"),alt.Tooltip("pdvs:Q",title="PDVs"),alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %"),alt.Tooltip("cuota_mkt:Q",format=".1f",title="Cuota mkt %"),alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %")]
+            ).properties(height=440)
+            _r50ob = alt.Chart(pd.DataFrame({"x":[50]})).mark_rule(color="#22C55E",strokeDash=[5,3],strokeWidth=1.5).encode(x="x:Q")
+            st.altair_chart(style_chart(_chart_ob+_r50ob), use_container_width=True, theme=None)
+            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Azul = cuota baja (alta oportunidad) · verde = cuota alta (dominio) · mínimo 5 PDVs por barrio</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with g5b:
+            st.markdown('<div class="section-card"><div class="section-title">Cuota de altas vs cumplimiento por barrio</div><div class="section-subtitle">Cada punto = un barrio · 🔴 doble problema (bajo cumpl. + baja cuota) · 🔵 ejecuta bien pero Claro capta poco</div>', unsafe_allow_html=True)
+            _chart_sc5 = alt.Chart(_scatter5).mark_circle(size=55,opacity=0.72).encode(
+                x=alt.X("cuota_alta:Q",title="Cuota altas Claro (%)",scale=alt.Scale(domain=[0,100])),
+                y=alt.Y("cumpl:Q",title="Cumplimiento meta (%)",scale=alt.Scale(domain=[0,150])),
+                color=alt.Color("Cuadrante:N",
+                    scale=alt.Scale(domain=["Prioridad máxima","Buena ejecución, baja cuota","Alta cuota, bajo cumpl.","Sólido"],
+                                    range=["#EF4444","#38BDF8","#F59E0B","#22C55E"]),
+                    legend=alt.Legend(title="",orient="bottom")),
+                tooltip=[alt.Tooltip("BARRIO:N",title="Barrio"),alt.Tooltip("pdvs:Q",title="PDVs"),alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %"),alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %"),alt.Tooltip("Cuadrante:N")]
+            ).properties(height=440)
+            _vl5 = alt.Chart(pd.DataFrame({"x":[_med_cuota5]})).mark_rule(color="rgba(255,255,255,0.15)",strokeDash=[4,3]).encode(x="x:Q")
+            _hl5 = alt.Chart(pd.DataFrame({"y":[_med_cumpl5]})).mark_rule(color="rgba(255,255,255,0.15)",strokeDash=[4,3]).encode(y="y:Q")
+            st.altair_chart(style_chart(_chart_sc5+_vl5+_hl5), use_container_width=True, theme=None)
+            _n_prio5 = (_scatter5["Cuadrante"]=="Prioridad máxima").sum()
+            st.markdown(f'<div style="font-size:.72rem;color:#FCA5A5;background:rgba(239,68,68,0.10);border-radius:10px;padding:5px 10px;margin-top:4px;">🔴 {_n_prio5} barrios con baja cuota de altas Y bajo cumplimiento — intervención prioritaria</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
     st.markdown("""
     <div class="section-card" style="margin-top:14px;">
         <div class="section-title">Cierre ejecutivo — Vista Claro</div>
