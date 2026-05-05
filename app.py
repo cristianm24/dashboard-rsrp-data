@@ -5640,91 +5640,217 @@ with tab4:
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
 # TAB 5 — MERCADO Y CAPTACIÓN
 # ─────────────────────────────────────────────────────────────────────────────
 with tab5:
-    _lm_op  = leader_market["Operador"] if leader_market is not None else "N/D"
-    _lm_pct = leader_market["Cuota_mercado_global"] if leader_market is not None else 0
-    _la_op  = leader_altas["Operador"] if leader_altas is not None else "N/D"
-    _la_pct = leader_altas["Participacion_altas_global"] if leader_altas is not None else 0
-    _lm_c   = OPERATOR_COLORS.get(_lm_op,"#F8FAFC")
-    _la_c   = OPERATOR_COLORS.get(_la_op,"#F8FAFC")
+    _lm_op   = leader_market["Operador"] if leader_market is not None else "N/D"
+    _lm_pct  = float(leader_market["Cuota_mercado_global"]) if leader_market is not None else 0
+    _la_op   = leader_altas["Operador"] if leader_altas is not None else "N/D"
+    _la_pct  = float(leader_altas["Participacion_altas_global"]) if leader_altas is not None else 0
+    _lm_c    = OPERATOR_COLORS.get(_lm_op,"#F8FAFC")
+    _la_c    = OPERATOR_COLORS.get(_la_op,"#F8FAFC")
+    _biz_ok  = business_metrics.get("available", False)
+    _var_mkt = business_metrics.get("variation_market", np.nan)
+    _var_alt = business_metrics.get("variation_altas", np.nan)
 
-    if not business_metrics.get("available",False):
-        st.warning(business_metrics.get("message") or "No hay datos de negocio disponibles.")
+    if not _biz_ok:
+        st.warning(business_metrics.get("message") or "No hay datos de mercado o altas disponibles con los filtros actuales.")
 
-    # Headline
+    # ── BLOQUE 1: 3 KPIs protagonistas ───────────────────────────────────────
     st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">¿Quién lidera el mercado y la captación?</div>', unsafe_allow_html=True)
     t5k1,t5k2,t5k3 = st.columns(3,gap="medium")
+
+    def _vt5(v):
+        if not pd.notna(v): return ""
+        col = "#22C55E" if v>=0 else "#EF4444"
+        arr = "↑" if v>=0 else "↓"
+        return f'<span style="color:{col};font-size:.72rem;font-weight:800;">{arr} {abs(v):.1f} pp vs periodo anterior</span>'
+
     with t5k1:
         st.markdown(f"""
         <div class="card" style="min-height:0;">
             <div class="kpi-label">Líder de mercado</div>
             <div class="kpi-value" style="font-size:1.35rem;color:{_lm_c};">{_lm_op}</div>
-            <div class="kpi-sub">{fmt_pct(_lm_pct)} del mercado total visible</div>
-            {_bar_op(_lm_pct*100 if _lm_pct<1 else _lm_pct, _lm_c)}
+            <div class="kpi-sub">{_lm_pct:.1f}% del mercado total visible</div>
+            {_bar_op(_lm_pct, _lm_c)}
+            <div style="margin-top:4px;">{_vt5(_var_mkt)}</div>
         </div>""", unsafe_allow_html=True)
     with t5k2:
         st.markdown(f"""
         <div class="card" style="min-height:0;">
             <div class="kpi-label">Líder de captación</div>
             <div class="kpi-value" style="font-size:1.35rem;color:{_la_c};">{_la_op}</div>
-            <div class="kpi-sub">{fmt_pct(_la_pct)} de las altas totales visibles</div>
-            {_bar_op(_la_pct*100 if _la_pct<1 else _la_pct, _la_c)}
+            <div class="kpi-sub">{_la_pct:.1f}% de las altas totales visibles</div>
+            {_bar_op(_la_pct, _la_c)}
+            <div style="margin-top:4px;">{_vt5(_var_alt)}</div>
         </div>""", unsafe_allow_html=True)
     with t5k3:
         _focos = risk_count + opportunity_count
+        _fc    = "#EF4444" if risk_count>opportunity_count else "#F59E0B" if risk_count>0 else "#22C55E"
         st.markdown(f"""
         <div class="card" style="min-height:0;">
             <div class="kpi-label">Focos comerciales</div>
-            <div class="kpi-value" style="color:#F59E0B;">{fmt_int(_focos)}</div>
-            <div class="kpi-sub">{risk_count} riesgos · {opportunity_count} oportunidades identificadas</div>
+            <div class="kpi-value" style="color:{_fc};">{fmt_int(_focos)}</div>
+            <div class="kpi-sub">{risk_count} riesgos · {opportunity_count} oportunidades</div>
         </div>""", unsafe_allow_html=True)
 
-    show_market = metric_focus in ["Comparado","Mercado"]
-    show_altas  = metric_focus in ["Comparado","Altas"]
+    if not _biz_ok:
+        st.info("Sube los archivos de mercado y altas para ver las gráficas de este tab.")
+    else:
+        # ── BLOQUE 2: Ranking de operadores por mercado y captación ──────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Ranking de operadores — mercado vs captación</div>', unsafe_allow_html=True)
 
-    # Gráficas principales de mercado/altas (reuse existing charts, strip old boilerplate)
-    if business_metrics.get("available",False):
-        b5c1,b5c2 = st.columns(2,gap="large")
-        with b5c1:
-            if show_market and not market_df.empty:
-                st.markdown('<div class="section-card"><div class="section-title">Evolución de cuota de mercado</div><div class="section-subtitle">Cómo cambió la participación de mercado por operador en el tiempo visible</div>', unsafe_allow_html=True)
-                mkt_ch = alt.Chart(market_df).mark_line(point=True,strokeWidth=2).encode(
-                    x=alt.X("Periodo:T",title=None),
+        if not market_operator.empty or not altas_operator.empty:
+            # Build unified ranking row per operator
+            _mkt_rank = market_operator[["Operador","Cuota_mercado_global"]].copy() if not market_operator.empty else pd.DataFrame()
+            _alt_rank = altas_operator[["Operador","Participacion_altas_global"]].copy() if not altas_operator.empty else pd.DataFrame()
+            if not _mkt_rank.empty and not _alt_rank.empty:
+                _rank_full = _mkt_rank.merge(_alt_rank, on="Operador", how="outer").fillna(0)
+            elif not _mkt_rank.empty:
+                _rank_full = _mkt_rank.copy(); _rank_full["Participacion_altas_global"] = 0
+            else:
+                _rank_full = _alt_rank.copy(); _rank_full["Cuota_mercado_global"] = 0
+            _rank_full = _rank_full.sort_values("Cuota_mercado_global", ascending=False).reset_index(drop=True)
+
+            for _, rr in _rank_full.iterrows():
+                _opc  = OPERATOR_COLORS.get(rr["Operador"],"#64748B")
+                _mktv = float(rr.get("Cuota_mercado_global",0))
+                _altv = float(rr.get("Participacion_altas_global",0))
+                _mktw = min(max(_mktv,0),100)
+                _altw = min(max(_altv,0),100)
+                _diff = _altv - _mktv
+                _dc   = "#22C55E" if _diff>=0 else "#EF4444"
+                _da   = "↑" if _diff>=0 else "↓"
+                st.markdown(f"""
+                <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:10px 14px;margin-bottom:6px;">
+                    <div style="width:140px;flex-shrink:0;display:flex;align-items:center;gap:7px;">
+                        <span style="width:9px;height:9px;border-radius:50%;background:{_opc};display:inline-block;flex-shrink:0;"></span>
+                        <span style="font-size:.80rem;font-weight:800;color:#F8FAFC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{rr["Operador"]}</span>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:.62rem;color:#64748B;margin-bottom:2px;">Mercado</div>
+                        <div style="width:100%;height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;"><div style="width:{_mktw}%;height:100%;background:{_opc};border-radius:99px;opacity:.7;"></div></div>
+                    </div>
+                    <div style="width:50px;text-align:right;font-size:.90rem;font-weight:900;color:{_opc};flex-shrink:0;">{_mktv:.1f}%</div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:.62rem;color:#64748B;margin-bottom:2px;">Captación</div>
+                        <div style="width:100%;height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;"><div style="width:{_altw}%;height:100%;background:{_opc};border-radius:99px;opacity:.9;"></div></div>
+                    </div>
+                    <div style="width:50px;text-align:right;font-size:.90rem;font-weight:900;color:{_opc};flex-shrink:0;">{_altv:.1f}%</div>
+                    <div style="width:100px;text-align:right;font-size:.72rem;color:{_dc};flex-shrink:0;font-weight:800;">{_da} {abs(_diff):.1f} pp diff</div>
+                </div>""", unsafe_allow_html=True)
+            st.markdown('<div style="font-size:.70rem;color:#94A3B8;margin-top:4px;">Mercado = cuota acumulada · Captación = participación en altas · si captación supera mercado el operador está ganando participación activamente</div>', unsafe_allow_html=True)
+
+        # ── BLOQUE 3: Evolución temporal mercado + altas ──────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Evolución en el tiempo</div>', unsafe_allow_html=True)
+        t5c1,t5c2 = st.columns(2,gap="large")
+
+        with t5c1:
+            st.markdown('<div class="section-card"><div class="section-title">Evolución de cuota de mercado</div><div class="section-subtitle">Cómo cambia la participación de mercado por operador mes a mes</div>', unsafe_allow_html=True)
+            if not market_time.empty and "Periodo_Mes" in market_time.columns and "Cuota_mercado" in market_time.columns:
+                mkt_ch = alt.Chart(market_time).mark_line(point=True,strokeWidth=2.5).encode(
+                    x=alt.X("Periodo_Mes:T",title=None),
                     y=alt.Y("Cuota_mercado:Q",title="Cuota de mercado (%)"),
                     color=alt.Color("Operador:N",scale=alt.Scale(domain=list(OPERATOR_COLORS.keys()),range=list(OPERATOR_COLORS.values())),legend=alt.Legend(title="Operador")),
-                    tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Periodo:T",title="Periodo"),alt.Tooltip("Cuota_mercado:Q",title="Cuota %",format=".1f")]
+                    tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Periodo_Mes:T",title="Periodo"),alt.Tooltip("Cuota_mercado:Q",title="Cuota %",format=".1f"),alt.Tooltip("Mercado_total:Q",title="Mercado total",format=",.0f")]
                 ).properties(height=280)
                 st.altair_chart(style_chart(mkt_ch), use_container_width=True, theme=None)
-                st.markdown('</div>', unsafe_allow_html=True)
-        with b5c2:
-            if show_altas and not altas_df.empty:
-                st.markdown('<div class="section-card"><div class="section-title">Evolución de captación (altas)</div><div class="section-subtitle">Participación de cada operador en las altas totales del periodo</div>', unsafe_allow_html=True)
-                alt_ch = alt.Chart(altas_df).mark_line(point=True,strokeWidth=2).encode(
-                    x=alt.X("Periodo:T",title=None),
+                if pd.notna(market_growth_pct):
+                    _mgc = "#22C55E" if market_growth_pct>=0 else "#EF4444"
+                    st.markdown(f'<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Volumen total de mercado: <span style="color:{_mgc};font-weight:800;">{"▲" if market_growth_pct>=0 else "▼"} {abs(market_growth_pct):.1f}%</span> entre {market_period_initial} y {market_period_final}</div>', unsafe_allow_html=True)
+            else:
+                st.info("Sin datos temporales de mercado.")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with t5c2:
+            st.markdown('<div class="section-card"><div class="section-title">Evolución de captación (altas)</div><div class="section-subtitle">Participación de cada operador en las altas totales mes a mes</div>', unsafe_allow_html=True)
+            if not altas_time.empty and "Periodo_Mes" in altas_time.columns and "Participacion_altas" in altas_time.columns:
+                alt_ch = alt.Chart(altas_time).mark_line(point=True,strokeWidth=2.5).encode(
+                    x=alt.X("Periodo_Mes:T",title=None),
                     y=alt.Y("Participacion_altas:Q",title="Participación altas (%)"),
                     color=alt.Color("Operador:N",scale=alt.Scale(domain=list(OPERATOR_COLORS.keys()),range=list(OPERATOR_COLORS.values())),legend=alt.Legend(title="Operador")),
-                    tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Periodo:T",title="Periodo"),alt.Tooltip("Participacion_altas:Q",title="%",format=".1f")]
+                    tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Periodo_Mes:T",title="Periodo"),alt.Tooltip("Participacion_altas:Q",title="%",format=".1f"),alt.Tooltip("Altas_total:Q",title="Altas totales",format=",.0f")]
                 ).properties(height=280)
                 st.altair_chart(style_chart(alt_ch), use_container_width=True, theme=None)
+                if pd.notna(altas_growth_pct):
+                    _agc = "#22C55E" if altas_growth_pct>=0 else "#EF4444"
+                    st.markdown(f'<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Altas totales visibles: <span style="color:{_agc};font-weight:800;">{"▲" if altas_growth_pct>=0 else "▼"} {abs(altas_growth_pct):.1f}%</span> entre {altas_period_initial} y {altas_period_final}</div>', unsafe_allow_html=True)
+            else:
+                st.info("Sin datos temporales de altas.")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        # ── BLOQUE 4: Variación de operadores ─────────────────────────────────
+        if not market_operator_delta.empty or not altas_operator_delta.empty:
+            st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">¿Quién ganó y quién perdió en el periodo?</div>', unsafe_allow_html=True)
+            t5c3,t5c4 = st.columns(2,gap="large")
+            with t5c3:
+                st.markdown('<div class="section-card"><div class="section-title">Variación de cuota de mercado por operador</div><div class="section-subtitle">Cambio entre el primer y último periodo · verde = ganó · rojo = cedió</div>', unsafe_allow_html=True)
+                if not market_operator_delta.empty:
+                    _mod = market_operator_delta.copy()
+                    _mod_ch = alt.Chart(_mod).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
+                        x=alt.X("Operador:N",title=None,sort="-y"),
+                        y=alt.Y("Variacion:Q",title="Variación (pp)"),
+                        color=alt.Color("Operador:N",scale=alt.Scale(domain=list(OPERATOR_COLORS.keys()),range=list(OPERATOR_COLORS.values())),legend=None),
+                        tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Valor_inicial:Q",format=".1f",title="Inicial %"),alt.Tooltip("Valor_final:Q",format=".1f",title="Final %"),alt.Tooltip("Variacion:Q",format="+.1f",title="Variación pp")]
+                    ).properties(height=240)
+                    _zero_m = alt.Chart(pd.DataFrame({"y":[0]})).mark_rule(color="rgba(255,255,255,0.2)",strokeDash=[4,3]).encode(y="y:Q")
+                    st.altair_chart(style_chart(_mod_ch+_zero_m), use_container_width=True, theme=None)
+                else:
+                    st.info("Sin datos de variación de mercado.")
+                st.markdown('</div>', unsafe_allow_html=True)
+            with t5c4:
+                st.markdown('<div class="section-card"><div class="section-title">Variación de captación (altas) por operador</div><div class="section-subtitle">Cambio en participación de altas · verde = gana captación · rojo = cede</div>', unsafe_allow_html=True)
+                if not altas_operator_delta.empty:
+                    _aod = altas_operator_delta.copy()
+                    _aod_ch = alt.Chart(_aod).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
+                        x=alt.X("Operador:N",title=None,sort="-y"),
+                        y=alt.Y("Variacion:Q",title="Variación (pp)"),
+                        color=alt.Color("Operador:N",scale=alt.Scale(domain=list(OPERATOR_COLORS.keys()),range=list(OPERATOR_COLORS.values())),legend=None),
+                        tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Valor_inicial:Q",format=".1f",title="Inicial %"),alt.Tooltip("Valor_final:Q",format=".1f",title="Final %"),alt.Tooltip("Variacion:Q",format="+.1f",title="Variación pp")]
+                    ).properties(height=240)
+                    _zero_a = alt.Chart(pd.DataFrame({"y":[0]})).mark_rule(color="rgba(255,255,255,0.2)",strokeDash=[4,3]).encode(y="y:Q")
+                    st.altair_chart(style_chart(_aod_ch+_zero_a), use_container_width=True, theme=None)
+                else:
+                    st.info("Sin datos de variación de altas.")
                 st.markdown('</div>', unsafe_allow_html=True)
 
-        # Focos comerciales
+        # ── BLOQUE 5: Señal vs Mercado (cross) + Focos ────────────────────────
+        if not cross_operator.empty:
+            st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">¿La señal explica el liderazgo comercial?</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">Señal vs cuota de mercado por operador</div><div class="section-subtitle">¿Los operadores con mejor señal tienen más mercado? · cada barra muestra los 3 indicadores clave</div>', unsafe_allow_html=True)
+            _cross_melt = cross_operator.copy()
+            _cols_to_show = [c for c in ["Score_operador","Cuota_mercado_global","Participacion_altas_global"] if c in _cross_melt.columns]
+            if len(_cols_to_show) >= 2:
+                _cm = _cross_melt[["Operador"]+_cols_to_show].melt("Operador",var_name="Indicador",value_name="Valor")
+                _label_map = {"Score_operador":"Score señal","Cuota_mercado_global":"Cuota mercado %","Participacion_altas_global":"Captación %"}
+                _cm["Indicador"] = _cm["Indicador"].map(_label_map)
+                _cross_ch = alt.Chart(_cm).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
+                    x=alt.X("Operador:N",title=None,axis=alt.Axis(labelAngle=-15)),
+                    y=alt.Y("Valor:Q",title="Valor"),
+                    color=alt.Color("Indicador:N",scale=alt.Scale(domain=["Score señal","Cuota mercado %","Captación %"],range=["#38BDF8","#E10600","#22C55E"]),legend=alt.Legend(title="")),
+                    xOffset="Indicador:N",
+                    tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Indicador:N"),alt.Tooltip("Valor:Q",format=".1f")]
+                ).properties(height=260)
+                st.altair_chart(style_chart(_cross_ch), use_container_width=True, theme=None)
+                st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Score señal (azul) = calidad de red · si un operador tiene alta señal pero baja captación, hay oportunidad comercial sin explotar</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        # Riesgos y oportunidades
         if risk_count>0 or opportunity_count>0:
             st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Focos comerciales — riesgos y oportunidades</div>', unsafe_allow_html=True)
             fc1,fc2 = st.columns(2,gap="large")
             with fc1:
                 st.markdown('<div class="section-card"><div class="section-title">Riesgos identificados</div><div class="section-subtitle">Zonas donde la posición de mercado se deteriora</div>', unsafe_allow_html=True)
-                if not risk_df.empty:
-                    st.dataframe(risk_df, use_container_width=True, height=260)
+                if risk_table is not None and not risk_table.empty:
+                    st.dataframe(risk_table, use_container_width=True, height=240)
                 else:
-                    st.success("✅ Sin riesgos identificados en el universo visible.")
+                    st.success("✅ Sin riesgos identificados.")
                 st.markdown('</div>', unsafe_allow_html=True)
             with fc2:
-                st.markdown('<div class="section-card"><div class="section-title">Oportunidades identificadas</div><div class="section-subtitle">Zonas donde hay potencial de captación sin explotar</div>', unsafe_allow_html=True)
-                if not opportunity_df.empty:
-                    st.dataframe(opportunity_df, use_container_width=True, height=260)
+                st.markdown('<div class="section-card"><div class="section-title">Oportunidades identificadas</div><div class="section-subtitle">Zonas con potencial de captación sin explotar</div>', unsafe_allow_html=True)
+                if opportunity_table is not None and not opportunity_table.empty:
+                    st.dataframe(opportunity_table, use_container_width=True, height=240)
                 else:
                     st.info("Sin oportunidades identificadas con los filtros actuales.")
                 st.markdown('</div>', unsafe_allow_html=True)
