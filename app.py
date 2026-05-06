@@ -5854,150 +5854,167 @@ with tab5:
                 st.info("Sin datos temporales de altas.")
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── BLOQUE 4: Inteligencia competitiva por CP ────────────────────────
+        # ── BLOQUE 4: Inteligencia competitiva — comparativo entre dos operadores ─
         if not territorial_cross.empty:
             st.markdown("""
             <div style="display:flex;align-items:center;gap:10px;margin:20px 0 10px 0;">
                 <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
-                <div style="font-size:.66rem;font-weight:900;color:#64748B;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;padding:0 12px;">Inteligencia competitiva por zona — señal y mercado CP a CP</div>
+                <div style="font-size:.66rem;font-weight:900;color:#64748B;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;padding:0 12px;">Comparativo directo entre dos operadores — CP a CP</div>
                 <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
             </div>
             """, unsafe_allow_html=True)
+            st.markdown('<div style="font-size:.74rem;color:#64748B;margin-bottom:10px;">Selecciona dos operadores para ver CP a CP en qué zonas el segundo le está ganando al primero en mercado, captación o señal — incluso si el primero es globalmente dominante.</div>', unsafe_allow_html=True)
 
             # Prep data
             tc = territorial_cross.copy()
-            tc["RSRP_mediana"]       = pd.to_numeric(tc["RSRP_mediana"],    errors="coerce")
-            tc["Cuota_mercado"]      = pd.to_numeric(tc["Cuota_mercado"],   errors="coerce")
-            tc["Participacion_altas"]= pd.to_numeric(tc["Participacion_altas"], errors="coerce") if "Participacion_altas" in tc.columns else np.nan
-            tc["Buena_o_mejor"]      = pd.to_numeric(tc.get("Buena_o_mejor",np.nan), errors="coerce") if "Buena_o_mejor" in tc.columns else np.nan
-            tc["Critica"]            = pd.to_numeric(tc.get("Critica",np.nan), errors="coerce") if "Critica" in tc.columns else np.nan
+            tc["RSRP_mediana"]        = pd.to_numeric(tc["RSRP_mediana"],        errors="coerce")
+            tc["Cuota_mercado"]       = pd.to_numeric(tc["Cuota_mercado"],       errors="coerce")
+            tc["Participacion_altas"] = pd.to_numeric(tc["Participacion_altas"], errors="coerce") if "Participacion_altas" in tc.columns else np.nan
 
             _ops_avail = sorted(tc["Operador"].dropna().unique().tolist())
 
-            # Selector — which operator to analyze from its own perspective
-            _sel_op = st.selectbox(
-                "Analizar desde la perspectiva de:",
-                options=_ops_avail,
-                index=_ops_avail.index("Claro") if "Claro" in _ops_avail else 0,
-                key="cross_op_sel",
-                help="Selecciona el operador cuyas oportunidades y riesgos quieres ver"
-            )
+            # Two operator selectors
+            sel_col1, sel_col2 = st.columns(2, gap="large")
+            with sel_col1:
+                _op_a = st.selectbox(
+                    "Operador principal (analizar sus oportunidades)",
+                    options=_ops_avail,
+                    index=_ops_avail.index("Claro") if "Claro" in _ops_avail else 0,
+                    key="op_a_sel"
+                )
+            with sel_col2:
+                _remaining = [o for o in _ops_avail if o != _op_a]
+                _op_b = st.selectbox(
+                    "Operador comparador (el que puede estarle ganando terreno)",
+                    options=_remaining,
+                    index=0,
+                    key="op_b_sel"
+                )
 
-            # Split into focal operator and competitors
-            tc_focal = tc[tc["Operador"] == _sel_op].copy()
-            tc_comp  = tc[tc["Operador"] != _sel_op].copy()
+            tc_a = tc[tc["Operador"] == _op_a].copy()
+            tc_b = tc[tc["Operador"] == _op_b].copy()
 
-            if not tc_focal.empty and not tc_comp.empty:
-                # For each CP, get best competitor signal and market
-                comp_best = tc_comp.groupby("Codigo_postal").agg(
-                    comp_rsrp_max=("RSRP_mediana","max"),     # best signal among competitors
-                    comp_cuota_max=("Cuota_mercado","max"),   # highest competitor market share
-                    comp_lider=("Operador","first"),           # dominant competitor
-                ).reset_index()
-                # Dominant competitor = one with highest market share in that CP
-                comp_dom = tc_comp.sort_values("Cuota_mercado",ascending=False).groupby("Codigo_postal").first()[["Operador","Cuota_mercado","RSRP_mediana"]].reset_index()
-                comp_dom.columns = ["Codigo_postal","comp_dom_op","comp_dom_cuota","comp_dom_rsrp"]
+            if not tc_a.empty and not tc_b.empty:
+                # Join both on CP
+                merge_cols = ["Codigo_postal"] + [c for c in ["LOCALIDAD","BARRIO"] if c in tc_a.columns]
+                cp_pair = tc_a[merge_cols + [c for c in ["Cuota_mercado","Participacion_altas","RSRP_mediana","Buena_o_mejor","Critica","Mercado_total","Altas_total"] if c in tc_a.columns]].merge(
+                    tc_b[["Codigo_postal"] + [c for c in ["Cuota_mercado","Participacion_altas","RSRP_mediana","Buena_o_mejor","Critica"] if c in tc_b.columns]],
+                    on="Codigo_postal",
+                    how="inner",
+                    suffixes=(f"_{_op_a.replace(' ','_')}", f"_{_op_b.replace(' ','_')}")
+                )
 
-                # Merge focal + competitor data per CP
-                cp_intel = tc_focal.merge(comp_best, on="Codigo_postal", how="left")
-                cp_intel = cp_intel.merge(comp_dom, on="Codigo_postal", how="left")
+                _col_a_cuota = f"Cuota_mercado_{_op_a.replace(' ','_')}"
+                _col_b_cuota = f"Cuota_mercado_{_op_b.replace(' ','_')}"
+                _col_a_rsrp  = f"RSRP_mediana_{_op_a.replace(' ','_')}"
+                _col_b_rsrp  = f"RSRP_mediana_{_op_b.replace(' ','_')}"
+                _col_a_altas = f"Participacion_altas_{_op_a.replace(' ','_')}"
+                _col_b_altas = f"Participacion_altas_{_op_b.replace(' ','_')}"
 
-                # OPORTUNIDAD: competitor dominates market + focal operator has comparable or better signal
-                # = zones where focal can compete if it improves commercial execution
-                opp_cp = cp_intel[
-                    (cp_intel["comp_dom_cuota"] > cp_intel["Cuota_mercado"]) &  # competitor leads
-                    (cp_intel["RSRP_mediana"] >= cp_intel["comp_dom_rsrp"] - 5) &  # focal signal within 5 dBm
-                    cp_intel["RSRP_mediana"].notna() & cp_intel["Cuota_mercado"].notna()
-                ].copy()
-                opp_cp["cuota_gap"] = opp_cp["comp_dom_cuota"] - opp_cp["Cuota_mercado"]
-                opp_cp = opp_cp.sort_values("cuota_gap", ascending=False)
+                # Compute gaps: positive = B is winning over A
+                if _col_a_cuota in cp_pair.columns and _col_b_cuota in cp_pair.columns:
+                    cp_pair["gap_cuota"]  = cp_pair[_col_b_cuota] - cp_pair[_col_a_cuota]
+                if _col_a_rsrp  in cp_pair.columns and _col_b_rsrp  in cp_pair.columns:
+                    cp_pair["gap_rsrp"]   = cp_pair[_col_b_rsrp]  - cp_pair[_col_a_rsrp]
+                if _col_a_altas in cp_pair.columns and _col_b_altas in cp_pair.columns:
+                    cp_pair["gap_altas"]  = cp_pair[_col_b_altas] - cp_pair[_col_a_altas]
 
-                # RIESGO: focal has high market share but competitor has clearly better signal
-                risk_cp = cp_intel[
-                    (cp_intel["Cuota_mercado"] > cp_intel["comp_dom_cuota"]) &  # focal leads
-                    (cp_intel["RSRP_mediana"] < cp_intel["comp_dom_rsrp"] - 5) &  # competitor has better signal
-                    cp_intel["RSRP_mediana"].notna() & cp_intel["Cuota_mercado"].notna()
-                ].copy()
-                risk_cp = risk_cp.sort_values("Cuota_mercado", ascending=False)
+                # Zones where B beats A in each dimension
+                opp_cuota = cp_pair[cp_pair.get("gap_cuota",pd.Series(dtype=float)) > 0].sort_values("gap_cuota", ascending=False) if "gap_cuota" in cp_pair.columns else pd.DataFrame()
+                opp_rsrp  = cp_pair[cp_pair.get("gap_rsrp", pd.Series(dtype=float)) > 3].sort_values("gap_rsrp",  ascending=False) if "gap_rsrp"  in cp_pair.columns else pd.DataFrame()
+                opp_altas = cp_pair[cp_pair.get("gap_altas",pd.Series(dtype=float)) > 0].sort_values("gap_altas", ascending=False) if "gap_altas" in cp_pair.columns else pd.DataFrame()
 
-                # ZONA EQUILIBRADA: similar market + similar signal (no clear winner)
-                eq_cp = cp_intel[
-                    (abs(cp_intel["Cuota_mercado"] - cp_intel["comp_dom_cuota"]) <= 10) &
-                    (abs(cp_intel["RSRP_mediana"] - cp_intel["comp_dom_rsrp"]) <= 5) &
-                    cp_intel["RSRP_mediana"].notna() & cp_intel["Cuota_mercado"].notna()
-                ].copy()
-
-                _n_opp  = len(opp_cp)
-                _n_risk = len(risk_cp)
-                _n_eq   = len(eq_cp)
-                _top_comp_opp = opp_cp["comp_dom_op"].value_counts().idxmax() if not opp_cp.empty else "N/D"
+                _n_cuota = len(opp_cuota)
+                _n_rsrp  = len(opp_rsrp)
+                _n_altas = len(opp_altas)
 
                 # 3 KPIs
-                st.markdown(f'<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Posición de {_sel_op} frente a la competencia — CP a CP</div>', unsafe_allow_html=True)
-                ci1, ci2, ci3 = st.columns(3, gap="medium")
-                with ci1:
-                    st.markdown(f"""<div class="card" style="min-height:0;border-color:rgba(34,197,94,0.25);">
-                        <div class="kpi-label">Zonas de oportunidad</div>
-                        <div class="kpi-value" style="color:#22C55E;">{_n_opp}</div>
-                        <div class="kpi-sub">CP donde un competidor domina el mercado pero {_sel_op} tiene señal comparable — puede competir</div>
+                st.markdown(f'<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">{_op_b} le gana a {_op_a} en...</div>', unsafe_allow_html=True)
+                k4a,k4b,k4c = st.columns(3, gap="medium")
+                with k4a:
+                    _cc = "#EF4444" if _n_cuota > 20 else "#F59E0B" if _n_cuota > 5 else "#22C55E"
+                    st.markdown(f"""<div class="card" style="min-height:0;border-color:rgba(239,68,68,0.20);">
+                        <div class="kpi-label">CP donde {_op_b} tiene más cuota de mercado</div>
+                        <div class="kpi-value" style="color:{_cc};">{_n_cuota}</div>
+                        <div class="kpi-sub">Zonas donde {_op_b} domina el mercado frente a {_op_a} — {"alta exposición" if _n_cuota>20 else "exposición moderada" if _n_cuota>5 else "exposición baja"}</div>
                     </div>""", unsafe_allow_html=True)
-                with ci2:
-                    st.markdown(f"""<div class="card" style="min-height:0;border-color:rgba(239,68,68,0.25);">
-                        <div class="kpi-label">Zonas en riesgo</div>
-                        <div class="kpi-value" style="color:#EF4444;">{_n_risk}</div>
-                        <div class="kpi-sub">CP donde {_sel_op} lidera el mercado pero un competidor tiene mejor señal — puede perder terreno</div>
+                with k4b:
+                    _rc = "#EF4444" if _n_rsrp > 20 else "#F59E0B" if _n_rsrp > 5 else "#22C55E"
+                    st.markdown(f"""<div class="card" style="min-height:0;border-color:rgba(239,68,68,0.20);">
+                        <div class="kpi-label">CP donde {_op_b} tiene mejor señal</div>
+                        <div class="kpi-value" style="color:{_rc};">{_n_rsrp}</div>
+                        <div class="kpi-sub">Ventaja de señal &gt;3 dBm de {_op_b} sobre {_op_a} — riesgo de pérdida futura</div>
                     </div>""", unsafe_allow_html=True)
-                with ci3:
-                    st.markdown(f"""<div class="card" style="min-height:0;">
-                        <div class="kpi-label">Zonas equilibradas</div>
-                        <div class="kpi-value" style="color:#F59E0B;">{_n_eq}</div>
-                        <div class="kpi-sub">Señal y cuota similares entre {_sel_op} y competidores — batalla activa</div>
+                with k4c:
+                    _ac = "#EF4444" if _n_altas > 20 else "#F59E0B" if _n_altas > 5 else "#22C55E"
+                    st.markdown(f"""<div class="card" style="min-height:0;border-color:rgba(239,68,68,0.20);">
+                        <div class="kpi-label">CP donde {_op_b} capta más altas</div>
+                        <div class="kpi-value" style="color:{_ac};">{_n_altas}</div>
+                        <div class="kpi-sub">{_op_b} gana más clientes nuevos en estas zonas</div>
                     </div>""", unsafe_allow_html=True)
 
-                # Tables
-                st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">Detalle por zona</div>', unsafe_allow_html=True)
-                t4a, t4b = st.columns(2, gap="large")
+                # 3 tabs for each dimension
+                dim_tab1, dim_tab2, dim_tab3 = st.tabs([
+                    f"Cuota de mercado ({_n_cuota} CP)",
+                    f"Señal RSRP ({_n_rsrp} CP)",
+                    f"Captación altas ({_n_altas} CP)",
+                ])
 
-                def _show_intel_table(df, title, subtitle, note):
-                    st.markdown(f'<div class="section-card"><div class="section-title">{title}</div><div class="section-subtitle">{subtitle}</div>', unsafe_allow_html=True)
-                    if not df.empty:
-                        _cols = [c for c in ["Codigo_postal","LOCALIDAD","BARRIO","Cuota_mercado","RSRP_mediana","comp_dom_op","comp_dom_cuota","comp_dom_rsrp","cuota_gap","Buena_o_mejor","Critica"] if c in df.columns]
-                        _ds = safe_round_columns(df[_cols].head(20).copy(), ["Cuota_mercado","RSRP_mediana","comp_dom_cuota","comp_dom_rsrp","cuota_gap","Buena_o_mejor","Critica"])
-                        _rn = {"Codigo_postal":"CP","LOCALIDAD":"Localidad","BARRIO":"Barrio","Cuota_mercado":f"Cuota {_sel_op} %","RSRP_mediana":f"Señal {_sel_op}","comp_dom_op":"Competidor dom.","comp_dom_cuota":"Cuota comp. %","comp_dom_rsrp":"Señal comp.","cuota_gap":"Brecha cuota","Buena_o_mejor":"% Buena+","Critica":"% Crítica"}
-                        _ds = _ds.rename(columns={k:v for k,v in _rn.items() if k in _ds.columns})
-                        st.dataframe(_ds, use_container_width=True, height=320)
-                        st.markdown(f'<div style="font-size:.66rem;color:#94A3B8;margin-top:3px;">{note}</div>', unsafe_allow_html=True)
+                def _build_display_cols(df, col_a_cuota, col_b_cuota, col_a_rsrp, col_b_rsrp, gap_col, extra_cols=None):
+                    base = ["Codigo_postal"] + [c for c in ["LOCALIDAD","BARRIO"] if c in df.columns]
+                    data_cols = [c for c in [col_a_cuota, col_b_cuota, col_a_rsrp, col_b_rsrp, gap_col] + (extra_cols or []) if c and c in df.columns]
+                    show = df[base + data_cols].copy()
+                    rename = {
+                        "Codigo_postal":"CP","LOCALIDAD":"Localidad","BARRIO":"Barrio",
+                        col_a_cuota:f"Cuota {_op_a} %",
+                        col_b_cuota:f"Cuota {_op_b} %",
+                        col_a_rsrp:f"Señal {_op_a} (dBm)",
+                        col_b_rsrp:f"Señal {_op_b} (dBm)",
+                        "gap_cuota":f"Ventaja {_op_b} (cuota pp)",
+                        "gap_rsrp":f"Ventaja {_op_b} (señal dBm)",
+                        "gap_altas":f"Ventaja {_op_b} (altas pp)",
+                    }
+                    show = safe_round_columns(show, [c for c in data_cols if c in show.columns])
+                    return show.rename(columns={k:v for k,v in rename.items() if k in show.columns})
+
+                with dim_tab1:
+                    if not opp_cuota.empty:
+                        st.markdown(f'<div style="font-size:.74rem;color:#64748B;margin:8px 0;">Zonas donde {_op_b} tiene mayor cuota de mercado que {_op_a}. Ordenadas por mayor ventaja del competidor.</div>', unsafe_allow_html=True)
+                        _d1 = _build_display_cols(opp_cuota.head(25), _col_a_cuota, _col_b_cuota, _col_a_rsrp, _col_b_rsrp, "gap_cuota")
+                        st.dataframe(_d1, use_container_width=True, height=340)
+                        st.markdown(f'<div style="font-size:.66rem;color:#94A3B8;margin-top:3px;">{_n_cuota} CP donde {_op_b} supera a {_op_a} en cuota de mercado</div>', unsafe_allow_html=True)
                     else:
-                        st.info(f"Sin zonas en esta categoría para {_sel_op}.")
-                    st.markdown('</div>', unsafe_allow_html=True)
+                        st.success(f"✅ {_op_a} supera a {_op_b} en cuota de mercado en todos los CP compartidos.")
 
-                with t4a:
-                    _show_intel_table(
-                        opp_cp,
-                        f"Oportunidades de {_sel_op}",
-                        f"Zonas donde un competidor domina pero {_sel_op} tiene señal para disputar — ordenadas por mayor brecha de cuota a recuperar",
-                        f"Brecha cuota = cuota del competidor dominante menos cuota de {_sel_op} — mayor valor = mayor potencial"
-                    )
-                with t4b:
-                    _show_intel_table(
-                        risk_cp,
-                        f"Zonas en riesgo para {_sel_op}",
-                        f"{_sel_op} lidera el mercado pero un competidor tiene mejor señal — puede perder estos clientes",
-                        f"Ordenadas por mayor cuota de {_sel_op} — las primeras son las más críticas de defender"
-                    )
+                with dim_tab2:
+                    if not opp_rsrp.empty:
+                        st.markdown(f'<div style="font-size:.74rem;color:#64748B;margin:8px 0;">Zonas donde {_op_b} tiene señal RSRP más de 3 dBm mejor que {_op_a}. Estas zonas son riesgo futuro aunque hoy {_op_a} tenga mercado.</div>', unsafe_allow_html=True)
+                        _d2 = _build_display_cols(opp_rsrp.head(25), _col_a_cuota, _col_b_cuota, _col_a_rsrp, _col_b_rsrp, "gap_rsrp")
+                        st.dataframe(_d2, use_container_width=True, height=340)
+                        st.markdown(f'<div style="font-size:.66rem;color:#94A3B8;margin-top:3px;">{_n_rsrp} CP donde {_op_b} tiene ventaja de señal superior a 3 dBm</div>', unsafe_allow_html=True)
+                    else:
+                        st.success(f"✅ {_op_a} tiene igual o mejor señal que {_op_b} en todos los CP compartidos.")
 
-                # Zona equilibrada en expander
-                if not eq_cp.empty:
-                    with st.expander(f"Ver {_n_eq} zonas equilibradas — batalla activa entre {_sel_op} y competidores"):
-                        _eq_cols = [c for c in ["Codigo_postal","LOCALIDAD","BARRIO","Cuota_mercado","RSRP_mediana","comp_dom_op","comp_dom_cuota","comp_dom_rsrp"] if c in eq_cp.columns]
-                        _eq_show = safe_round_columns(eq_cp[_eq_cols].copy(),["Cuota_mercado","RSRP_mediana","comp_dom_cuota","comp_dom_rsrp"])
-                        _rneq = {"Codigo_postal":"CP","LOCALIDAD":"Localidad","BARRIO":"Barrio","Cuota_mercado":f"Cuota {_sel_op} %","RSRP_mediana":f"Señal {_sel_op}","comp_dom_op":"Competidor","comp_dom_cuota":"Cuota comp. %","comp_dom_rsrp":"Señal comp."}
-                        _eq_show = _eq_show.rename(columns={k:v for k,v in _rneq.items() if k in _eq_show.columns})
-                        st.dataframe(_eq_show, use_container_width=True, height=280)
-                        st.markdown(f'<div style="font-size:.66rem;color:#94A3B8;margin-top:3px;">Diferencia de señal ≤5 dBm y diferencia de cuota ≤10 pp — ninguno tiene ventaja clara</div>', unsafe_allow_html=True)
+                with dim_tab3:
+                    if not opp_altas.empty:
+                        st.markdown(f'<div style="font-size:.74rem;color:#64748B;margin:8px 0;">Zonas donde {_op_b} capta más altas que {_op_a}. Captación = clientes nuevos que se van con el competidor.</div>', unsafe_allow_html=True)
+                        _d3 = _build_display_cols(opp_altas.head(25), _col_a_cuota, _col_b_cuota, _col_a_rsrp, _col_b_rsrp, "gap_altas", [_col_a_altas, _col_b_altas])
+                        st.dataframe(_d3, use_container_width=True, height=340)
+                        st.markdown(f'<div style="font-size:.66rem;color:#94A3B8;margin-top:3px;">{_n_altas} CP donde {_op_b} capta más clientes nuevos que {_op_a}</div>', unsafe_allow_html=True)
+                    else:
+                        st.success(f"✅ {_op_a} capta más altas que {_op_b} en todos los CP compartidos.")
+
+                # CP donde B gana en TODO — máxima urgencia
+                _all_gaps = [c for c in ["gap_cuota","gap_rsrp","gap_altas"] if c in cp_pair.columns]
+                if len(_all_gaps) >= 2:
+                    _worst = cp_pair.copy()
+                    for _g in _all_gaps:
+                        _worst = _worst[_worst[_g] > 0]
+                    if not _worst.empty:
+                        st.markdown(f'<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.20);border-radius:14px;padding:12px 16px;margin-top:10px;"><div style="font-size:.64rem;font-weight:900;color:#FCA5A5;text-transform:uppercase;margin-bottom:5px;">Máxima urgencia para {_op_a}</div><div style="font-size:.80rem;color:#E2E8F0;">{len(_worst)} CP donde {_op_b} supera a {_op_a} en todas las dimensiones disponibles ({", ".join([g.replace("gap_","") for g in _all_gaps])}) simultáneamente — intervención prioritaria.</div></div>', unsafe_allow_html=True)
 
             else:
-                st.info(f"No hay datos suficientes para analizar la posición de {_sel_op} frente a competidores.")
+                st.info(f"No hay CP compartidos entre {_op_a} y {_op_b} en los datos visibles.")
 
         # ── BLOQUE 5: Variación de operadores si hay histórico ────────────────
         if not market_operator_delta.empty or not altas_operator_delta.empty:
