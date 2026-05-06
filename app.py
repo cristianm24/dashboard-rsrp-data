@@ -2241,7 +2241,7 @@ def compact_context_bar():
         <div class="compact-context-item">
             <div class="compact-context-label">{icon_svg("users", 12)} Operador líder</div>
             <div class="compact-context-value">{best_operator["Operador"]}</div>
-            <div class="compact-context-sub">Score {best_operator["Score_operador"]:.1f}</div>
+            <div class="compact-context-sub">Mediana {fmt_dBm(best_operator["RSRP_mediana"])}</div>
         </div>
         <div class="compact-context-item">
             <div class="compact-context-label">{icon_svg("trend", 12)} Variación señal</div>
@@ -4809,8 +4809,8 @@ summary_operator["Score_operador"] = summary_operator.apply(compute_operator_sco
 summary_operator["Clasificacion_score"] = summary_operator["Score_operador"].apply(lambda x: score_label(x)[0])
 summary_operator["Semaforo_operador"] = summary_operator["Buena_o_mejor"].apply(lambda x: quality_status(x)[0])
 
-best_operator = summary_operator.sort_values("Score_operador", ascending=False).iloc[0]
-worst_operator = summary_operator.sort_values("Score_operador", ascending=True).iloc[0]
+best_operator = summary_operator.sort_values("RSRP_mediana", ascending=False).iloc[0]
+worst_operator = summary_operator.sort_values("RSRP_mediana", ascending=True).iloc[0]
 worst_operator_crit = summary_operator.sort_values("Critica", ascending=False).iloc[0]
 
 global_median = df_f["RSRP_valido"].median()
@@ -5019,10 +5019,10 @@ business_executive_summary = build_business_executive_summary(
 
 try:
     score_gap = (
-        best_operator["Score_operador"] - worst_operator["Score_operador"]
+        best_operator["RSRP_mediana"] - worst_operator["RSRP_mediana"]
         if best_operator is not None and worst_operator is not None
-        and pd.notna(best_operator.get("Score_operador", np.nan))
-        and pd.notna(worst_operator.get("Score_operador", np.nan))
+        and pd.notna(best_operator.get("RSRP_mediana", np.nan))
+        and pd.notna(worst_operator.get("RSRP_mediana", np.nan))
         else np.nan
     )
 except Exception:
@@ -5043,8 +5043,8 @@ except Exception:
 
 try:
     _best_op_name = best_operator["Operador"] if best_operator is not None and "Operador" in best_operator.index else "N/D"
-    _gap_text = fmt_num(score_gap, 1) if pd.notna(score_gap) else "N/D"
-    tab2_insight_body = f"{_best_op_name} lidera el score; la brecha frente al operador con menor score es de {_gap_text} puntos."
+    _gap_text = fmt_dBm(score_gap) if pd.notna(score_gap) else "N/D"
+    tab2_insight_body = f"{_best_op_name} lidera en señal con mediana {fmt_dBm(best_operator['RSRP_mediana'])}; la brecha de señal frente al operador más débil es de {_gap_text} dBm."
 except Exception:
     tab2_insight_body = "No hay información suficiente para generar la lectura competitiva."
 
@@ -5276,7 +5276,7 @@ with tab1:
             <div>
                 <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:2px;">Operador líder</div>
                 <div style="font-size:1.1rem;font-weight:900;color:{OPERATOR_COLORS.get(best_operator["Operador"],"#F8FAFC")};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{best_operator["Operador"]}</div>
-                <div style="font-size:.70rem;color:#64748B;">Score {best_operator["Score_operador"]:.1f}</div>
+                <div style="font-size:.70rem;color:#64748B;">Mediana {fmt_dBm(best_operator["RSRP_mediana"])}</div>
             </div>
         </div>
     </div>
@@ -5337,108 +5337,112 @@ with tab1:
 # TAB 2 — OPERADORES
 # ─────────────────────────────────────────────────────────────────────────────
 with tab2:
-    _op_sorted   = summary_operator.sort_values("Score_operador", ascending=False).reset_index(drop=True)
-    _lider       = _op_sorted.iloc[0]
-    _rezago      = _op_sorted.iloc[-1]
-    _brecha_sc   = float(_lider["Score_operador"] - _rezago["Score_operador"])
-    _n_ops       = len(_op_sorted)
+    # Ordenar por RSRP_mediana — dato oficial, sin métricas inventadas
+    _op_sorted  = summary_operator.sort_values("RSRP_mediana", ascending=False).reset_index(drop=True)
+    _lider      = _op_sorted.iloc[0]
+    _rezago     = _op_sorted.iloc[-1]
+    _brecha_med = float(_lider["RSRP_mediana"] - _rezago["RSRP_mediana"])
+    _n_ops      = len(_op_sorted)
 
-    # Headline
-    st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">¿Quién lidera la señal y cuánto es la brecha?</div>', unsafe_allow_html=True)
+    # ── BLOQUE 1: 3 KPIs ─────────────────────────────────────────────────────
+    st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">¿Quién tiene mejor señal y cuánto es la diferencia?</div>', unsafe_allow_html=True)
     op_k1,op_k2,op_k3 = st.columns(3,gap="medium")
+
     with op_k1:
         _op1c = OPERATOR_COLORS.get(_lider["Operador"],"#F8FAFC")
+        _buen_l = float(_lider["Buena_o_mejor"])
         st.markdown(f"""
         <div class="card" style="min-height:0;">
-            <div class="kpi-label">Operador líder</div>
+            <div class="kpi-label">Mejor señal</div>
             <div class="kpi-value" style="font-size:1.35rem;color:{_op1c};">{_lider["Operador"]}</div>
-            <div class="kpi-sub">Score {_lider["Score_operador"]:.1f} · mediana {fmt_dBm(_lider["RSRP_mediana"])}</div>
-            {_bar_op(float(_lider["Buena_o_mejor"]),_op1c)}
-            <div style="font-size:.68rem;color:#64748B;margin-top:3px;">{_lider["Buena_o_mejor"]:.1f}% señal buena o mejor</div>
-        </div>""", unsafe_allow_html=True)
-    with op_k2:
-        _op2c = OPERATOR_COLORS.get(_rezago["Operador"],"#64748B")
-        st.markdown(f"""
-        <div class="card" style="min-height:0;">
-            <div class="kpi-label">Operador rezagado</div>
-            <div class="kpi-value" style="font-size:1.35rem;color:{_op2c};">{_rezago["Operador"]}</div>
-            <div class="kpi-sub">Score {_rezago["Score_operador"]:.1f} · mediana {fmt_dBm(_rezago["RSRP_mediana"])}</div>
-            {_bar_op(float(_rezago["Buena_o_mejor"]),_op2c)}
-            <div style="font-size:.68rem;color:#EF4444;margin-top:3px;">{_rezago["Critica"]:.1f}% señal crítica</div>
-        </div>""", unsafe_allow_html=True)
-    with op_k3:
-        st.markdown(f"""
-        <div class="card" style="min-height:0;">
-            <div class="kpi-label">Brecha competitiva</div>
-            <div class="kpi-value" style="color:#F59E0B;">{_brecha_sc:.1f} pts</div>
-            <div class="kpi-sub">{_n_ops} operadores visibles · diferencia líder vs rezago</div>
+            <div class="kpi-sub">Mediana <b>{fmt_dBm(_lider["RSRP_mediana"])}</b> · {_buen_l:.1f}% señal buena o mejor</div>
+            {_bar_op(_buen_l, _op1c)}
         </div>""", unsafe_allow_html=True)
 
-    # Ranking
-    st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Ranking de operadores — de mejor a peor señal</div>', unsafe_allow_html=True)
+    with op_k2:
+        _op2c = OPERATOR_COLORS.get(_rezago["Operador"],"#64748B")
+        _crit_r = float(_rezago["Critica"])
+        st.markdown(f"""
+        <div class="card" style="min-height:0;">
+            <div class="kpi-label">Señal más débil</div>
+            <div class="kpi-value" style="font-size:1.35rem;color:{_op2c};">{_rezago["Operador"]}</div>
+            <div class="kpi-sub">Mediana <b>{fmt_dBm(_rezago["RSRP_mediana"])}</b> · {_crit_r:.1f}% señal crítica</div>
+            {_bar_op(_crit_r,"#EF4444")}
+        </div>""", unsafe_allow_html=True)
+
+    with op_k3:
+        _bc = "#22C55E" if abs(_brecha_med)<=5 else "#F59E0B" if abs(_brecha_med)<=15 else "#EF4444"
+        _bt = "Brecha moderada" if abs(_brecha_med)<=5 else "Brecha significativa" if abs(_brecha_med)<=15 else "Brecha muy amplia"
+        st.markdown(f"""
+        <div class="card" style="min-height:0;">
+            <div class="kpi-label">Brecha de señal entre operadores</div>
+            <div class="kpi-value" style="color:{_bc};">{abs(_brecha_med):.1f} dBm</div>
+            <div class="kpi-sub">{_bt} · entre el mejor y el peor operador · {_n_ops} operadores visibles</div>
+        </div>""", unsafe_allow_html=True)
+
+    # ── BLOQUE 2: Ranking visual ──────────────────────────────────────────────
+    st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Ranking de operadores — ordenado por señal mediana</div>', unsafe_allow_html=True)
+
     for _, row_op in _op_sorted.iterrows():
         _opc  = OPERATOR_COLORS.get(row_op["Operador"],"#64748B")
-        _scv  = float(row_op["Score_operador"])
-        _scm  = float(_op_sorted["Score_operador"].max())
-        _ww   = int(_scv/_scm*100) if _scm>0 else 0
-        _crit = float(row_op["Critica"])
+        _med  = float(row_op["RSRP_mediana"])
         _buen = float(row_op["Buena_o_mejor"])
-        _crc  = "#EF4444" if _crit>30 else "#F59E0B" if _crit>10 else "#22C55E"
+        _crit = float(row_op["Critica"])
+        _acep = float(row_op["Aceptable"])
+        _nobs = int(row_op["Observaciones"])
+        _ncod = int(row_op["Codigos"])
+        # Bar width = relative position between worst and best signal
+        _med_min = float(_op_sorted["RSRP_mediana"].min())
+        _med_max = float(_op_sorted["RSRP_mediana"].max())
+        _rng = max(_med_max - _med_min, 1)
+        _ww  = int((_med - _med_min) / _rng * 100)
+        _med_c = "#22C55E" if _med>=-90 else "#F59E0B" if _med>=-100 else "#EF4444"
+        _crit_c= "#EF4444" if _crit>30 else "#F59E0B" if _crit>10 else "#22C55E"
+
         st.markdown(f"""
         <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:10px 14px;margin-bottom:6px;">
-            <div style="width:150px;flex-shrink:0;display:flex;align-items:center;gap:7px;">
+            <div style="width:140px;flex-shrink:0;display:flex;align-items:center;gap:7px;">
                 <span style="width:9px;height:9px;border-radius:50%;background:{_opc};display:inline-block;flex-shrink:0;"></span>
                 <span style="font-size:.80rem;font-weight:800;color:#F8FAFC;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{row_op["Operador"]}</span>
             </div>
-            <div style="flex:1;min-width:0;"><div style="width:100%;height:8px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;"><div style="width:{_ww}%;height:100%;background:{_opc};border-radius:99px;opacity:.85;"></div></div></div>
-            <div style="width:55px;text-align:right;font-size:1rem;font-weight:900;color:{_opc};flex-shrink:0;">{_scv:.1f}</div>
-            <div style="width:110px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">Mediana: <b style="color:#E2E8F0;">{fmt_dBm(float(row_op["RSRP_mediana"]))}</b></div>
+            <div style="flex:1;min-width:0;">
+                <div style="width:100%;height:8px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
+                    <div style="width:{_ww}%;height:100%;background:{_med_c};border-radius:99px;opacity:.85;"></div>
+                </div>
+            </div>
+            <div style="width:90px;text-align:right;font-size:.95rem;font-weight:900;color:{_med_c};flex-shrink:0;">{_med:.1f} dBm</div>
             <div style="width:100px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">Buena+: <b style="color:#22C55E;">{_buen:.1f}%</b></div>
-            <div style="width:90px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">Crítica: <b style="color:{_crc};">{_crit:.1f}%</b></div>
+            <div style="width:90px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">Crítica: <b style="color:{_crit_c};">{_crit:.1f}%</b></div>
+            <div style="width:90px;text-align:right;font-size:.72rem;color:#64748B;flex-shrink:0;">{_nobs:,} obs · {_ncod} CP</div>
         </div>""", unsafe_allow_html=True)
 
-    # Score + Composición
-    st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Score y composición de señal</div>', unsafe_allow_html=True)
-    op_c1,op_c2 = st.columns(2,gap="large")
-    with op_c1:
-        st.markdown('<div class="section-card"><div class="section-title">Score por operador</div><div class="section-subtitle">Índice compuesto · mayor score = mejor calidad de señal global</div>', unsafe_allow_html=True)
-        sc_ch = alt.Chart(summary_operator.sort_values("Score_operador",ascending=False)).mark_bar(cornerRadiusTopLeft=6,cornerRadiusTopRight=6).encode(
-            x=alt.X("Operador:N",title=None,sort="-y"),
-            y=alt.Y("Score_operador:Q",title="Score"),
-            color=alt.Color("Operador:N",scale=alt.Scale(domain=list(OPERATOR_COLORS.keys()),range=list(OPERATOR_COLORS.values())),legend=None),
-            tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Score_operador:Q",title="Score",format=".1f"),alt.Tooltip("RSRP_mediana:Q",title="RSRP mediano",format=".1f"),alt.Tooltip("Buena_o_mejor:Q",title="% buena+",format=".1f"),alt.Tooltip("Critica:Q",title="% crítica",format=".1f")]
-        ).properties(height=280)
-        st.altair_chart(style_chart(sc_ch), use_container_width=True, theme=None)
-        st.markdown('</div>', unsafe_allow_html=True)
-    with op_c2:
-        st.markdown('<div class="section-card"><div class="section-title">Composición de señal por operador</div><div class="section-subtitle">Más verde = mejor red · más rojo = mayor exposición crítica</div>', unsafe_allow_html=True)
-        sp_ch = alt.Chart(quality_pct[quality_pct["Categoria_RSRP"].isin(order_quality[:-1])]).mark_bar().encode(
-            x=alt.X("Operador:N",title=None),
-            y=alt.Y("Porcentaje:Q",title="%"),
-            color=alt.Color("Categoria_RSRP:N",scale=alt.Scale(domain=list(QUALITY_COLORS.keys()),range=list(QUALITY_COLORS.values())),legend=alt.Legend(title="Banda")),
-            tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Categoria_RSRP:N",title="Banda"),alt.Tooltip("Porcentaje:Q",title="%",format=".1f")]
-        ).properties(height=280)
-        st.altair_chart(style_chart(sp_ch), use_container_width=True, theme=None)
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div style="font-size:.70rem;color:#94A3B8;margin-top:4px;margin-bottom:16px;">Barra = posición relativa de señal mediana entre operadores · más a la derecha = mejor señal · 🟢 buena+ ≥-90 · 🟡 aceptable -90 a -100 · 🔴 crítica &lt;-100 dBm</div>', unsafe_allow_html=True)
 
-    # RSRP mediano + tabla
-    st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Detalle de señal y tabla ejecutiva</div>', unsafe_allow_html=True)
-    op_c3,op_c4 = st.columns(2,gap="large")
-    with op_c3:
-        _sr = summary_operator.copy()
+    # ── BLOQUE 3: Dos gráficas clave ─────────────────────────────────────────
+    st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Señal mediana y composición por operador</div>', unsafe_allow_html=True)
+    op_c1,op_c2 = st.columns(2,gap="large")
+
+    with op_c1:
+        # RSRP mediano — horizontal bars con abs values
+        _sr = _op_sorted.copy()
         _sr["rsrp_abs"]   = _sr["RSRP_mediana"].abs()
         _sr["rsrp_label"] = _sr["RSRP_mediana"].apply(lambda v: f"{v:.1f}")
-        _sr = _sr.sort_values("rsrp_abs",ascending=True)
-        _xmn = max(float(_sr["rsrp_abs"].min())-2,70)
+        _xmn = max(float(_sr["rsrp_abs"].min())-2, 70)
         _xmx = float(_sr["rsrp_abs"].max())+2
-        st.markdown('<div class="section-card"><div class="section-title">RSRP mediano por operador</div><div class="section-subtitle">Barra más larga = peor señal · más a la izquierda = mejor operador</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-card"><div class="section-title">Señal mediana por operador</div><div class="section-subtitle">Barra más corta = mejor señal · línea 🔴 = crítico (-100 dBm) · línea 🟡 = aceptable (-90 dBm)</div>', unsafe_allow_html=True)
         _ch_sr = alt.Chart(_sr).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).transform_calculate(
             col_r="datum.RSRP_mediana < -100 ? '#EF4444' : datum.RSRP_mediana < -90 ? '#F59E0B' : '#22C55E'"
         ).encode(
             y=alt.Y("Operador:N",sort=list(_sr["Operador"]),title=None),
-            x=alt.X("rsrp_abs:Q",title="Valor absoluto",scale=alt.Scale(domain=[_xmn,_xmx])),
+            x=alt.X("rsrp_abs:Q",title="Valor absoluto (menor = mejor señal)",scale=alt.Scale(domain=[_xmn,_xmx])),
             color=alt.Color("col_r:N",scale=None,legend=None),
-            tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("RSRP_mediana:Q",format=".1f",title="RSRP (dBm)"),alt.Tooltip("Score_operador:Q",format=".1f",title="Score")]
+            tooltip=[
+                alt.Tooltip("Operador:N"),
+                alt.Tooltip("RSRP_mediana:Q",format=".1f",title="Mediana (dBm)"),
+                alt.Tooltip("RSRP_promedio:Q",format=".1f",title="Promedio (dBm)"),
+                alt.Tooltip("Observaciones:Q",format=",",title="Observaciones"),
+                alt.Tooltip("Codigos:Q",title="CP cubiertos"),
+            ]
         )
         _tx_sr = alt.Chart(_sr).mark_text(align="left",dx=5,fontSize=10,fontWeight="bold",color="#F8FAFC").encode(
             y=alt.Y("Operador:N",sort=list(_sr["Operador"])),
@@ -5446,18 +5450,76 @@ with tab2:
         )
         _rl100 = alt.Chart(pd.DataFrame({"x":[100.0]})).mark_rule(color="#EF4444",strokeDash=[4,3],strokeWidth=1.5).encode(x="x:Q")
         _rl90  = alt.Chart(pd.DataFrame({"x":[90.0]})).mark_rule(color="#F59E0B",strokeDash=[4,3],strokeWidth=1.5).encode(x="x:Q")
-        st.altair_chart(style_chart((_ch_sr+_tx_sr+_rl90+_rl100).properties(height=280)), use_container_width=True, theme=None)
+        st.altair_chart(style_chart((_ch_sr+_tx_sr+_rl90+_rl100).properties(height=300)), use_container_width=True, theme=None)
         st.markdown('</div>', unsafe_allow_html=True)
+
+    with op_c2:
+        st.markdown('<div class="section-card"><div class="section-title">Composición de señal por operador</div><div class="section-subtitle">Qué porcentaje del portafolio de cada operador está en cada banda · más verde = mejor red · más rojo = mayor exposición crítica</div>', unsafe_allow_html=True)
+        sp_ch = alt.Chart(quality_pct[quality_pct["Categoria_RSRP"].isin(order_quality[:-1])]).mark_bar().encode(
+            x=alt.X("Operador:N",title=None),
+            y=alt.Y("Porcentaje:Q",title="% de mediciones"),
+            color=alt.Color("Categoria_RSRP:N",
+                scale=alt.Scale(domain=list(QUALITY_COLORS.keys()),range=list(QUALITY_COLORS.values())),
+                legend=alt.Legend(title="Banda de señal",orient="bottom")),
+            tooltip=[
+                alt.Tooltip("Operador:N"),
+                alt.Tooltip("Categoria_RSRP:N",title="Banda"),
+                alt.Tooltip("Porcentaje:Q",title="%",format=".1f"),
+                alt.Tooltip("Cantidad:Q",title="Mediciones",format=","),
+            ]
+        ).properties(height=300)
+        st.altair_chart(style_chart(sp_ch), use_container_width=True, theme=None)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # ── BLOQUE 4: Señal crítica vs Buena — comparativa directa ───────────────
+    st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">% señal crítica vs % señal buena o mejor — la tensión real</div>', unsafe_allow_html=True)
+    op_c3,op_c4 = st.columns(2,gap="large")
+
+    with op_c3:
+        st.markdown('<div class="section-card"><div class="section-title">% señal buena o mejor por operador</div><div class="section-subtitle">Cuánto del portafolio de cada operador está en condición buena o excelente · más alto = mejor posición</div>', unsafe_allow_html=True)
+        _buen_ch = alt.Chart(_op_sorted).mark_bar(cornerRadiusTopLeft=6,cornerRadiusTopRight=6).encode(
+            x=alt.X("Operador:N",sort=list(_op_sorted["Operador"]),title=None,axis=alt.Axis(labelAngle=-15)),
+            y=alt.Y("Buena_o_mejor:Q",title="% buena o mejor"),
+            color=alt.Color("Operador:N",scale=alt.Scale(domain=list(OPERATOR_COLORS.keys()),range=list(OPERATOR_COLORS.values())),legend=None),
+            tooltip=[
+                alt.Tooltip("Operador:N"),
+                alt.Tooltip("Buena_o_mejor:Q",format=".1f",title="% Buena o mejor"),
+                alt.Tooltip("Excelente:Q",format=".1f",title="% Excelente"),
+                alt.Tooltip("Buena:Q",format=".1f",title="% Buena"),
+            ]
+        ).properties(height=260)
+        _r50_buen = alt.Chart(pd.DataFrame({"y":[50]})).mark_rule(color="#38BDF8",strokeDash=[5,3],strokeWidth=1.5).encode(y="y:Q")
+        st.altair_chart(style_chart(_buen_ch+_r50_buen), use_container_width=True, theme=None)
+        st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Línea azul = 50% referencia · operadores sobre la línea tienen mayoría de señal buena o mejor</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
     with op_c4:
-        st.markdown('<div class="section-card"><div class="section-title">Tabla ejecutiva</div><div class="section-subtitle">Score · RSRP mediano · % buena+ · % crítica · ordenado por score</div>', unsafe_allow_html=True)
-        _et = safe_round_columns(
-            summary_operator.sort_values("Score_operador",ascending=False)[["Operador","Score_operador","RSRP_mediana","Buena_o_mejor","Critica","Clasificacion_score"]].copy(),
-            ["Score_operador","RSRP_mediana","Buena_o_mejor","Critica"]
-        )
-        _et.columns = ["Operador","Score","RSRP mediano","% Buena+","% Crítica","Clasificación"]
-        st.dataframe(_et, use_container_width=True, height=280)
-        st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">% Buena+ = Excelente + Buena · % Crítica = señal &lt;-100 dBm</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-card"><div class="section-title">% señal crítica por operador</div><div class="section-subtitle">Cuánto del portafolio está en condición crítica (&lt;-100 dBm) · más alto = mayor urgencia de intervención</div>', unsafe_allow_html=True)
+        _crit_ch = alt.Chart(_op_sorted).mark_bar(cornerRadiusTopLeft=6,cornerRadiusTopRight=6).encode(
+            x=alt.X("Operador:N",sort=list(_op_sorted["Operador"]),title=None,axis=alt.Axis(labelAngle=-15)),
+            y=alt.Y("Critica:Q",title="% señal crítica"),
+            color=alt.Color("Operador:N",scale=alt.Scale(domain=list(OPERATOR_COLORS.keys()),range=list(OPERATOR_COLORS.values())),legend=None),
+            tooltip=[
+                alt.Tooltip("Operador:N"),
+                alt.Tooltip("Critica:Q",format=".1f",title="% Crítica"),
+                alt.Tooltip("Aceptable:Q",format=".1f",title="% Aceptable"),
+                alt.Tooltip("Observaciones:Q",format=",",title="Observaciones totales"),
+            ]
+        ).properties(height=260)
+        _r20_crit = alt.Chart(pd.DataFrame({"y":[20]})).mark_rule(color="#EF4444",strokeDash=[5,3],strokeWidth=1.5).encode(y="y:Q")
+        st.altair_chart(style_chart(_crit_ch+_r20_crit), use_container_width=True, theme=None)
+        st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Línea roja = 20% umbral de alerta · operadores sobre la línea tienen exposición crítica alta</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
+
+    # ── BLOQUE 5: Tabla ejecutiva con datos reales ────────────────────────────
+    st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 6px 0;">Tabla completa de señal por operador</div>', unsafe_allow_html=True)
+    _et = safe_round_columns(
+        _op_sorted[["Operador","RSRP_mediana","RSRP_promedio","Excelente","Buena","Aceptable","Critica","Buena_o_mejor","Observaciones","Codigos"]].copy(),
+        ["RSRP_mediana","RSRP_promedio","Excelente","Buena","Aceptable","Critica","Buena_o_mejor"]
+    )
+    _et.columns = ["Operador","Mediana (dBm)","Promedio (dBm)","% Excelente","% Buena","% Aceptable","% Crítica","% Buena+","Observaciones","CP cubiertos"]
+    st.dataframe(_et, use_container_width=True, height=280)
+    st.markdown('<div style="font-size:.70rem;color:#94A3B8;margin-top:4px;">Ordenado de mejor a peor señal mediana · % Buena+ = Excelente + Buena · % Crítica = mediciones bajo -100 dBm</div>', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB 3 — TERRITORIO
