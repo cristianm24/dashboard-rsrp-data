@@ -5854,164 +5854,150 @@ with tab5:
                 st.info("Sin datos temporales de altas.")
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── BLOQUE 4: Inteligencia por CP — el análisis real accionable ───────
+        # ── BLOQUE 4: Inteligencia competitiva por CP ────────────────────────
         if not territorial_cross.empty:
             st.markdown("""
             <div style="display:flex;align-items:center;gap:10px;margin:20px 0 10px 0;">
                 <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
-                <div style="font-size:.66rem;font-weight:900;color:#64748B;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;padding:0 12px;">Inteligencia por CP — señal + mercado por zona</div>
+                <div style="font-size:.66rem;font-weight:900;color:#64748B;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;padding:0 12px;">Inteligencia competitiva por zona — señal y mercado CP a CP</div>
                 <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
             </div>
             """, unsafe_allow_html=True)
-            st.markdown('<div style="font-size:.74rem;color:#64748B;margin-bottom:12px;">Los promedios globales esconden la realidad. Aquí se ve CP por CP, por operador: dónde hay señal pero no mercado (oportunidad) y dónde hay mercado pero señal deteriorada (riesgo).</div>', unsafe_allow_html=True)
 
-            # Build CP-level intelligence
+            # Prep data
             tc = territorial_cross.copy()
-            tc["RSRP_mediana"]    = pd.to_numeric(tc["RSRP_mediana"], errors="coerce")
-            tc["Cuota_mercado"]   = pd.to_numeric(tc["Cuota_mercado"], errors="coerce")
-            tc["Participacion_altas"] = pd.to_numeric(tc.get("Participacion_altas", np.nan), errors="coerce") if "Participacion_altas" in tc.columns else np.nan
+            tc["RSRP_mediana"]       = pd.to_numeric(tc["RSRP_mediana"],    errors="coerce")
+            tc["Cuota_mercado"]      = pd.to_numeric(tc["Cuota_mercado"],   errors="coerce")
+            tc["Participacion_altas"]= pd.to_numeric(tc["Participacion_altas"], errors="coerce") if "Participacion_altas" in tc.columns else np.nan
+            tc["Buena_o_mejor"]      = pd.to_numeric(tc.get("Buena_o_mejor",np.nan), errors="coerce") if "Buena_o_mejor" in tc.columns else np.nan
+            tc["Critica"]            = pd.to_numeric(tc.get("Critica",np.nan), errors="coerce") if "Critica" in tc.columns else np.nan
 
-            # Percentile thresholds relative to real data
-            _rsrp_p60 = tc["RSRP_mediana"].quantile(0.60)    # top 40% signal = relatively good
-            _rsrp_p40 = tc["RSRP_mediana"].quantile(0.40)    # bottom 40% signal = relatively bad
-            _cuota_p60= tc["Cuota_mercado"].quantile(0.60)   # top 40% market
-            _cuota_p40= tc["Cuota_mercado"].quantile(0.40)   # bottom 40% market
+            _ops_avail = sorted(tc["Operador"].dropna().unique().tolist())
 
-            # OPORTUNIDADES: better relative signal + lower than average market share
-            opp_cp = tc[
-                (tc["RSRP_mediana"] >= _rsrp_p60) &
-                (tc["Cuota_mercado"] <= _cuota_p40) &
-                tc["RSRP_mediana"].notna() & tc["Cuota_mercado"].notna()
-            ].copy()
-            opp_cp["gap_opp"] = opp_cp["RSRP_mediana"] - opp_cp["Cuota_mercado"] * 0.5
-            opp_cp = opp_cp.sort_values("gap_opp", ascending=False)
+            # Selector — which operator to analyze from its own perspective
+            _sel_op = st.selectbox(
+                "Analizar desde la perspectiva de:",
+                options=_ops_avail,
+                index=_ops_avail.index("Claro") if "Claro" in _ops_avail else 0,
+                key="cross_op_sel",
+                help="Selecciona el operador cuyas oportunidades y riesgos quieres ver"
+            )
 
-            # RIESGOS: bad signal + high market share
-            risk_cp = tc[
-                (tc["RSRP_mediana"] < _rsrp_p40) &
-                (tc["Cuota_mercado"] >= _cuota_p60) &
-                tc["RSRP_mediana"].notna() & tc["Cuota_mercado"].notna()
-            ].copy()
-            risk_cp = risk_cp.sort_values("Cuota_mercado", ascending=False)
+            # Split into focal operator and competitors
+            tc_focal = tc[tc["Operador"] == _sel_op].copy()
+            tc_comp  = tc[tc["Operador"] != _sel_op].copy()
 
-            # KPIs de los hallazgos
-            _n_opp_cp = len(opp_cp)
-            _n_risk_cp = len(risk_cp)
-            _top_opp_op = opp_cp["Operador"].value_counts().idxmax() if not opp_cp.empty else "N/D"
-            _top_risk_op = risk_cp["Operador"].value_counts().idxmax() if not risk_cp.empty else "N/D"
+            if not tc_focal.empty and not tc_comp.empty:
+                # For each CP, get best competitor signal and market
+                comp_best = tc_comp.groupby("Codigo_postal").agg(
+                    comp_rsrp_max=("RSRP_mediana","max"),     # best signal among competitors
+                    comp_cuota_max=("Cuota_mercado","max"),   # highest competitor market share
+                    comp_lider=("Operador","first"),           # dominant competitor
+                ).reset_index()
+                # Dominant competitor = one with highest market share in that CP
+                comp_dom = tc_comp.sort_values("Cuota_mercado",ascending=False).groupby("Codigo_postal").first()[["Operador","Cuota_mercado","RSRP_mediana"]].reset_index()
+                comp_dom.columns = ["Codigo_postal","comp_dom_op","comp_dom_cuota","comp_dom_rsrp"]
 
-            i4a, i4b, i4c, i4d = st.columns(4, gap="medium")
-            with i4a:
-                st.markdown(f"""<div class="card" style="min-height:0;border-color:rgba(34,197,94,0.25);">
-                    <div class="kpi-label">CP de oportunidad</div>
-                    <div class="kpi-value" style="color:#22C55E;">{_n_opp_cp}</div>
-                    <div class="kpi-sub">Buena señal + baja cuota de mercado · potencial sin explotar</div>
-                </div>""", unsafe_allow_html=True)
-            with i4b:
-                _topc = OPERATOR_COLORS.get(_top_opp_op,"#22C55E")
-                st.markdown(f"""<div class="card" style="min-height:0;border-color:rgba(34,197,94,0.25);">
-                    <div class="kpi-label">Operador con más CP de oportunidad</div>
-                    <div class="kpi-value" style="font-size:1.05rem;color:{_topc};">{_top_opp_op}</div>
-                    <div class="kpi-sub">Tiene la mayor cantidad de zonas con señal + cuota baja</div>
-                </div>""", unsafe_allow_html=True)
-            with i4c:
-                st.markdown(f"""<div class="card" style="min-height:0;border-color:rgba(239,68,68,0.25);">
-                    <div class="kpi-label">CP en riesgo</div>
-                    <div class="kpi-value" style="color:#EF4444;">{_n_risk_cp}</div>
-                    <div class="kpi-sub">Alta cuota de mercado pero señal deteriorada · riesgo de perder clientes</div>
-                </div>""", unsafe_allow_html=True)
-            with i4d:
-                _riskc = OPERATOR_COLORS.get(_top_risk_op,"#EF4444")
-                st.markdown(f"""<div class="card" style="min-height:0;border-color:rgba(239,68,68,0.25);">
-                    <div class="kpi-label">Operador con más CP en riesgo</div>
-                    <div class="kpi-value" style="font-size:1.05rem;color:{_riskc};">{_top_risk_op}</div>
-                    <div class="kpi-sub">Mayor cantidad de zonas con mercado alto y señal débil</div>
-                </div>""", unsafe_allow_html=True)
+                # Merge focal + competitor data per CP
+                cp_intel = tc_focal.merge(comp_best, on="Codigo_postal", how="left")
+                cp_intel = cp_intel.merge(comp_dom, on="Codigo_postal", how="left")
 
-            # Tablas detalladas con selector de operador
-            st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">Detalle por CP — filtra por operador para ver sus zonas específicas</div>', unsafe_allow_html=True)
+                # OPORTUNIDAD: competitor dominates market + focal operator has comparable or better signal
+                # = zones where focal can compete if it improves commercial execution
+                opp_cp = cp_intel[
+                    (cp_intel["comp_dom_cuota"] > cp_intel["Cuota_mercado"]) &  # competitor leads
+                    (cp_intel["RSRP_mediana"] >= cp_intel["comp_dom_rsrp"] - 5) &  # focal signal within 5 dBm
+                    cp_intel["RSRP_mediana"].notna() & cp_intel["Cuota_mercado"].notna()
+                ].copy()
+                opp_cp["cuota_gap"] = opp_cp["comp_dom_cuota"] - opp_cp["Cuota_mercado"]
+                opp_cp = opp_cp.sort_values("cuota_gap", ascending=False)
 
-            # Operator filter
-            _ops_in_cross = sorted(tc["Operador"].dropna().unique().tolist())
-            _sel_op = st.selectbox("Operador a analizar", options=["Todos"]+_ops_in_cross, index=0, key="cross_op_sel")
+                # RIESGO: focal has high market share but competitor has clearly better signal
+                risk_cp = cp_intel[
+                    (cp_intel["Cuota_mercado"] > cp_intel["comp_dom_cuota"]) &  # focal leads
+                    (cp_intel["RSRP_mediana"] < cp_intel["comp_dom_rsrp"] - 5) &  # competitor has better signal
+                    cp_intel["RSRP_mediana"].notna() & cp_intel["Cuota_mercado"].notna()
+                ].copy()
+                risk_cp = risk_cp.sort_values("Cuota_mercado", ascending=False)
 
-            t4opp, t4risk = st.columns(2, gap="large")
+                # ZONA EQUILIBRADA: similar market + similar signal (no clear winner)
+                eq_cp = cp_intel[
+                    (abs(cp_intel["Cuota_mercado"] - cp_intel["comp_dom_cuota"]) <= 10) &
+                    (abs(cp_intel["RSRP_mediana"] - cp_intel["comp_dom_rsrp"]) <= 5) &
+                    cp_intel["RSRP_mediana"].notna() & cp_intel["Cuota_mercado"].notna()
+                ].copy()
 
-            def _filter_op(df, op):
-                return df if op=="Todos" else df[df["Operador"]==op]
+                _n_opp  = len(opp_cp)
+                _n_risk = len(risk_cp)
+                _n_eq   = len(eq_cp)
+                _top_comp_opp = opp_cp["comp_dom_op"].value_counts().idxmax() if not opp_cp.empty else "N/D"
 
-            def _render_cross_table(df, title, subtitle, color, icon):
-                st.markdown(f'<div class="section-card"><div class="section-title">{icon} {title}</div><div class="section-subtitle">{subtitle}</div>', unsafe_allow_html=True)
-                if not df.empty:
-                    _show_cols = [c for c in ["Codigo_postal","Operador","LOCALIDAD","BARRIO","RSRP_mediana","Cuota_mercado","Participacion_altas","Buena_o_mejor","Critica","Mercado_total","Altas_total"] if c in df.columns]
-                    _df_show = safe_round_columns(df[_show_cols].head(20).copy(), ["RSRP_mediana","Cuota_mercado","Participacion_altas","Buena_o_mejor","Critica"])
-                    _col_rename = {"Codigo_postal":"CP","LOCALIDAD":"Localidad","BARRIO":"Barrio","RSRP_mediana":"Señal (dBm)","Cuota_mercado":"Cuota mkt %","Participacion_altas":"Captac. %","Buena_o_mejor":"% Buena+","Critica":"% Crítica","Mercado_total":"Mercado","Altas_total":"Altas"}
-                    _df_show = _df_show.rename(columns={k:v for k,v in _col_rename.items() if k in _df_show.columns})
-                    st.dataframe(_df_show, use_container_width=True, height=320)
-                    st.markdown(f'<div style="font-size:.66rem;color:#94A3B8;margin-top:3px;">{len(df)} CP identificados · ordenados por mayor impacto</div>', unsafe_allow_html=True)
-                else:
-                    st.info("Sin CP en esta categoría para el operador seleccionado.")
-                st.markdown('</div>', unsafe_allow_html=True)
+                # 3 KPIs
+                st.markdown(f'<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Posición de {_sel_op} frente a la competencia — CP a CP</div>', unsafe_allow_html=True)
+                ci1, ci2, ci3 = st.columns(3, gap="medium")
+                with ci1:
+                    st.markdown(f"""<div class="card" style="min-height:0;border-color:rgba(34,197,94,0.25);">
+                        <div class="kpi-label">Zonas de oportunidad</div>
+                        <div class="kpi-value" style="color:#22C55E;">{_n_opp}</div>
+                        <div class="kpi-sub">CP donde un competidor domina el mercado pero {_sel_op} tiene señal comparable — puede competir</div>
+                    </div>""", unsafe_allow_html=True)
+                with ci2:
+                    st.markdown(f"""<div class="card" style="min-height:0;border-color:rgba(239,68,68,0.25);">
+                        <div class="kpi-label">Zonas en riesgo</div>
+                        <div class="kpi-value" style="color:#EF4444;">{_n_risk}</div>
+                        <div class="kpi-sub">CP donde {_sel_op} lidera el mercado pero un competidor tiene mejor señal — puede perder terreno</div>
+                    </div>""", unsafe_allow_html=True)
+                with ci3:
+                    st.markdown(f"""<div class="card" style="min-height:0;">
+                        <div class="kpi-label">Zonas equilibradas</div>
+                        <div class="kpi-value" style="color:#F59E0B;">{_n_eq}</div>
+                        <div class="kpi-sub">Señal y cuota similares entre {_sel_op} y competidores — batalla activa</div>
+                    </div>""", unsafe_allow_html=True)
 
-            with t4opp:
-                _render_cross_table(
-                    _filter_op(opp_cp, _sel_op),
-                    "CP de oportunidad",
-                    "Señal relativamente mejor + baja cuota de mercado — zonas donde hay red para captar pero no se está aprovechando",
-                    "#22C55E", "▲"
-                )
-            with t4risk:
-                _render_cross_table(
-                    _filter_op(risk_cp, _sel_op),
-                    "CP en riesgo",
-                    "Alta cuota de mercado + señal deteriorada — zonas donde se puede perder mercado por calidad de red",
-                    "#EF4444", "⚠"
-                )
+                # Tables
+                st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">Detalle por zona</div>', unsafe_allow_html=True)
+                t4a, t4b = st.columns(2, gap="large")
 
-            # Gráfica de dispersión señal vs mercado por CP (color por operador)
-            st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 4px 0;">Señal vs cuota de mercado — cada punto es un CP por operador</div>', unsafe_allow_html=True)
-            st.markdown('<div style="font-size:.74rem;color:#64748B;margin-bottom:8px;">Eje X = señal (más a la derecha = mejor señal) · Eje Y = cuota de mercado · esquina superior derecha = ideal · esquina inferior izquierda = urgente</div>', unsafe_allow_html=True)
+                def _show_intel_table(df, title, subtitle, note):
+                    st.markdown(f'<div class="section-card"><div class="section-title">{title}</div><div class="section-subtitle">{subtitle}</div>', unsafe_allow_html=True)
+                    if not df.empty:
+                        _cols = [c for c in ["Codigo_postal","LOCALIDAD","BARRIO","Cuota_mercado","RSRP_mediana","comp_dom_op","comp_dom_cuota","comp_dom_rsrp","cuota_gap","Buena_o_mejor","Critica"] if c in df.columns]
+                        _ds = safe_round_columns(df[_cols].head(20).copy(), ["Cuota_mercado","RSRP_mediana","comp_dom_cuota","comp_dom_rsrp","cuota_gap","Buena_o_mejor","Critica"])
+                        _rn = {"Codigo_postal":"CP","LOCALIDAD":"Localidad","BARRIO":"Barrio","Cuota_mercado":f"Cuota {_sel_op} %","RSRP_mediana":f"Señal {_sel_op}","comp_dom_op":"Competidor dom.","comp_dom_cuota":"Cuota comp. %","comp_dom_rsrp":"Señal comp.","cuota_gap":"Brecha cuota","Buena_o_mejor":"% Buena+","Critica":"% Crítica"}
+                        _ds = _ds.rename(columns={k:v for k,v in _rn.items() if k in _ds.columns})
+                        st.dataframe(_ds, use_container_width=True, height=320)
+                        st.markdown(f'<div style="font-size:.66rem;color:#94A3B8;margin-top:3px;">{note}</div>', unsafe_allow_html=True)
+                    else:
+                        st.info(f"Sin zonas en esta categoría para {_sel_op}.")
+                    st.markdown('</div>', unsafe_allow_html=True)
 
-            _tc_plot = tc[tc["RSRP_mediana"].notna() & tc["Cuota_mercado"].notna()].copy()
-            _tc_plot_filt = _tc_plot if _sel_op=="Todos" else _tc_plot[_tc_plot["Operador"]==_sel_op]
-            # Sample for performance
-            if len(_tc_plot_filt) > 500:
-                _tc_plot_filt = _tc_plot_filt.sample(500, random_state=42)
+                with t4a:
+                    _show_intel_table(
+                        opp_cp,
+                        f"Oportunidades de {_sel_op}",
+                        f"Zonas donde un competidor domina pero {_sel_op} tiene señal para disputar — ordenadas por mayor brecha de cuota a recuperar",
+                        f"Brecha cuota = cuota del competidor dominante menos cuota de {_sel_op} — mayor valor = mayor potencial"
+                    )
+                with t4b:
+                    _show_intel_table(
+                        risk_cp,
+                        f"Zonas en riesgo para {_sel_op}",
+                        f"{_sel_op} lidera el mercado pero un competidor tiene mejor señal — puede perder estos clientes",
+                        f"Ordenadas por mayor cuota de {_sel_op} — las primeras son las más críticas de defender"
+                    )
 
-            st.markdown('<div class="section-card"><div class="section-title">Mapa de posición señal × mercado</div><div class="section-subtitle">CP arriba-derecha = buena señal y alta cuota (posición ideal) · CP abajo-izquierda = señal débil y baja cuota (prioridad) · líneas punteadas = medianas del grupo</div>', unsafe_allow_html=True)
-            if not _tc_plot_filt.empty:
-                _scatter_ch = alt.Chart(_tc_plot_filt).mark_circle(opacity=0.65, size=55).encode(
-                    x=alt.X("RSRP_mediana:Q", title="Señal RSRP mediana (dBm) — más a la derecha = mejor",
-                            scale=alt.Scale(domain=[float(_tc_plot["RSRP_mediana"].min())-2,
-                                                    float(_tc_plot["RSRP_mediana"].max())+2])),
-                    y=alt.Y("Cuota_mercado:Q", title="Cuota de mercado (%)"),
-                    color=alt.Color("Operador:N",
-                        scale=alt.Scale(domain=list(OPERATOR_COLORS.keys()),range=list(OPERATOR_COLORS.values())),
-                        legend=alt.Legend(title="Operador")),
-                    tooltip=[
-                        alt.Tooltip("Codigo_postal:N",  title="CP"),
-                        alt.Tooltip("Operador:N",       title="Operador"),
-                        alt.Tooltip("RSRP_mediana:Q",   title="Señal (dBm)", format=".1f"),
-                        alt.Tooltip("Cuota_mercado:Q",  title="Cuota mkt %", format=".1f"),
-                        alt.Tooltip("Buena_o_mejor:Q",  title="% Buena+",    format=".1f"),
-                        alt.Tooltip("Critica:Q",        title="% Crítica",   format=".1f"),
-                    ]
-                ).properties(height=360)
+                # Zona equilibrada en expander
+                if not eq_cp.empty:
+                    with st.expander(f"Ver {_n_eq} zonas equilibradas — batalla activa entre {_sel_op} y competidores"):
+                        _eq_cols = [c for c in ["Codigo_postal","LOCALIDAD","BARRIO","Cuota_mercado","RSRP_mediana","comp_dom_op","comp_dom_cuota","comp_dom_rsrp"] if c in eq_cp.columns]
+                        _eq_show = safe_round_columns(eq_cp[_eq_cols].copy(),["Cuota_mercado","RSRP_mediana","comp_dom_cuota","comp_dom_rsrp"])
+                        _rneq = {"Codigo_postal":"CP","LOCALIDAD":"Localidad","BARRIO":"Barrio","Cuota_mercado":f"Cuota {_sel_op} %","RSRP_mediana":f"Señal {_sel_op}","comp_dom_op":"Competidor","comp_dom_cuota":"Cuota comp. %","comp_dom_rsrp":"Señal comp."}
+                        _eq_show = _eq_show.rename(columns={k:v for k,v in _rneq.items() if k in _eq_show.columns})
+                        st.dataframe(_eq_show, use_container_width=True, height=280)
+                        st.markdown(f'<div style="font-size:.66rem;color:#94A3B8;margin-top:3px;">Diferencia de señal ≤5 dBm y diferencia de cuota ≤10 pp — ninguno tiene ventaja clara</div>', unsafe_allow_html=True)
 
-                # Median reference lines
-                _med_rsrp = float(_tc_plot_filt["RSRP_mediana"].median())
-                _med_cuota= float(_tc_plot_filt["Cuota_mercado"].median())
-                _vl_sc = alt.Chart(pd.DataFrame({"x":[_med_rsrp]})).mark_rule(
-                    color="rgba(255,255,255,0.18)", strokeDash=[4,3], strokeWidth=1
-                ).encode(x="x:Q")
-                _hl_sc = alt.Chart(pd.DataFrame({"y":[_med_cuota]})).mark_rule(
-                    color="rgba(255,255,255,0.18)", strokeDash=[4,3], strokeWidth=1
-                ).encode(y="y:Q")
-                st.altair_chart(style_chart(_scatter_ch+_vl_sc+_hl_sc), use_container_width=True, theme=None)
-                st.markdown(f'<div style="font-size:.68rem;color:#94A3B8;margin-top:4px;">Líneas punteadas = mediana de señal ({_med_rsrp:.1f} dBm) y mediana de cuota ({_med_cuota:.1f}%) · {len(_tc_plot_filt)} CP graficados{"(muestra)" if len(_tc_plot)>500 else ""}</div>', unsafe_allow_html=True)
             else:
-                st.info("Sin datos suficientes para graficar.")
-            st.markdown('</div>', unsafe_allow_html=True)
+                st.info(f"No hay datos suficientes para analizar la posición de {_sel_op} frente a competidores.")
 
         # ── BLOQUE 5: Variación de operadores si hay histórico ────────────────
         if not market_operator_delta.empty or not altas_operator_delta.empty:
@@ -6054,11 +6040,10 @@ with tab5:
                else f", mientras {_la5} lidera la captación con {_lap5:.1f}% de las altas — operadores distintos ganan en cada frente.")
             + f" La ventaja del líder es de {_gm5:.1f} pp — {'posición consolidada' if _gm5>=15 else 'liderazgo moderado con competencia activa' if _gm5>=5 else 'mercado muy disputado'}."
         )
-        if not territorial_cross.empty:
+        if not territorial_cross.empty and "tc_focal" in dir() and not tc_focal.empty:
             _concl_mkt += (
-                f" El análisis por CP identifica {_n_opp_cp} zonas de oportunidad donde hay señal disponible pero baja cuota de mercado"
-                f" — {_top_opp_op} concentra la mayor parte. Hay {_n_risk_cp} zonas en riesgo donde la cuota es alta pero la señal se deteriora"
-                f" — {_top_risk_op} es el operador más expuesto."
+                f" El análisis competitivo por CP identifica {_n_opp} zonas de oportunidad donde {_sel_op} puede disputar mercado a la competencia"
+                f" y {_n_risk} zonas en riesgo donde puede perder clientes por señal."
             )
 
         st.markdown(f"""
