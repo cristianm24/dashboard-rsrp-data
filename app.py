@@ -4597,29 +4597,22 @@ if not _vista_claro_sidebar:
             codigos_options_sidebar = codigos
         codigos_sel = st.multiselect("Códigos postales", options=codigos_options_sidebar, default=[])
 
-    st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("users",12)} Paso 3 · Define la competencia</div><div class="sidebar-title">Operadores</div><div class="sidebar-sub">Selecciona el universo competitivo a comparar.</div><div class="sidebar-guide-row"><span class="sidebar-guide-pill">{icon_svg("eye",12)} Visible en análisis</span><span class="sidebar-guide-pill">{icon_svg("chart",12)} Impacta todas las tabs</span></div>', unsafe_allow_html=True)
+    st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("users",12)} Paso 3 · Define la competencia</div><div class="sidebar-title">Operadores visibles</div><div class="sidebar-sub">Selecciona los operadores a comparar. Impacta todos los tabs.</div>', unsafe_allow_html=True)
     btn1, btn2 = st.sidebar.columns(2)
     with btn1:
-        if st.button("Seleccionar todos", use_container_width=True):
+        if st.button("Todos", use_container_width=True):
             for op in operator_cols:
                 st.session_state[f"op_{op}"] = True
     with btn2:
-        if st.button("Limpiar", use_container_width=True):
+        if st.button("Ninguno", use_container_width=True):
             for op in operator_cols:
                 st.session_state[f"op_{op}"] = False
-    st.sidebar.markdown('<div class="sidebar-soft-note">Activa solo los operadores que quieras comparar. Si dejas uno solo, el tablero se comporta como una vista focalizada.</div>', unsafe_allow_html=True)
-    cols_ops = st.sidebar.columns(2)
-    for i, op in enumerate(operator_cols):
-        with cols_ops[i % 2]:
-            op_color = OPERATOR_COLORS.get(op, "#64748B")
-            st.markdown(
-                f'''<div class="sidebar-operator-card">
-                    <div class="sidebar-operator-chip" style="background:{op_color};">{icon_svg("users", 11)} Operador</div>
-                    <div class="sidebar-operator-label">{op}</div>
-                    <div class="sidebar-operator-sub">Inclúyelo o exclúyelo del universo competitivo.</div>
-                </div>''',
-                unsafe_allow_html=True
-            )
+    for op in operator_cols:
+        op_color = OPERATOR_COLORS.get(op, "#64748B")
+        col_left, col_right = st.sidebar.columns([0.12, 0.88])
+        with col_left:
+            st.markdown(f'<div style="width:10px;height:10px;border-radius:50%;background:{op_color};margin-top:10px;"></div>', unsafe_allow_html=True)
+        with col_right:
             st.checkbox(op, key=f"op_{op}")
     operadores_sel = [op for op in operator_cols if st.session_state.get(f"op_{op}", False)]
     st.sidebar.markdown('</div>', unsafe_allow_html=True)
@@ -5183,11 +5176,8 @@ st.download_button(
 )
 
 order_quality = ["Excelente", "Buena", "Aceptable", "Crítica", "Sin medición"]
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["01  Resumen ejecutivo", "02  Operadores", "03  Territorio", "04  Variación", "05  Mercado y Captación"])
 
-# TAB 1
-
-# ── Franja de navegación ──────────────────────────────────────────────────────
+# ── Franja de navegación — ENCIMA de los tabs ────────────────────────────────
 def _op_nav_icon(name):
     icons = {
         "eye":   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
@@ -5199,10 +5189,10 @@ def _op_nav_icon(name):
     return icons.get(name, "")
 
 _t1_color = "#22C55E" if (global_median or 0) >= -90 else "#F59E0B" if (global_median or 0) >= -100 else "#EF4444"
-_t3_color = "#EF4444" if worst_zone is not None and worst_zone.get("Pct_critica",0) > 30 else "#F59E0B"
+_t3_color = "#EF4444" if worst_zone is not None and worst_zone.get("Pct_critica", 0) > 30 else "#F59E0B"
 
 st.markdown(f"""
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0 4px 0;">
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0 10px 0;">
     <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
         <div style="margin-bottom:5px;">{_op_nav_icon("eye")}</div>
         <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:2px;">Resumen</div>
@@ -5240,6 +5230,14 @@ def _sc_op(v): return "#22C55E" if v>=100 else "#F59E0B" if v>=70 else "#EF4444"
 def _bar_op(pct, color):
     w = min(max(float(pct),0),100)
     return f'<div style="width:100%;height:5px;background:rgba(255,255,255,0.07);border-radius:99px;margin-top:5px;overflow:hidden;"><div style="width:{w}%;height:100%;background:{color};border-radius:99px;"></div></div>'
+
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "Resumen",
+    "Operadores",
+    "Territorio",
+    "Variación",
+    "Mercado",
+])
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB 1 — RESUMEN
