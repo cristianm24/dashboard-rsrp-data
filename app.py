@@ -5861,9 +5861,9 @@ with tab5:
 
                 # Tabla de ranking posicional — sin mezclar unidades
                 _cross_tbl = cross_operator[["Operador"]+_cols_c].copy()
-                _cross_tbl["Pos. señal"]   = _cross_tbl["RSRP_mediana"].rank(ascending=False).astype(int) if "RSRP_mediana" in _cross_tbl.columns else "-"
-                _cross_tbl["Pos. mercado"] = _cross_tbl["Cuota_mercado_global"].rank(ascending=False).astype(int) if "Cuota_mercado_global" in _cross_tbl.columns else "-"
-                _cross_tbl["Pos. captac."] = _cross_tbl["Participacion_altas_global"].rank(ascending=False).astype(int) if "Participacion_altas_global" in _cross_tbl.columns else "-"
+                _cross_tbl["Pos. señal"]   = _cross_tbl["RSRP_mediana"].rank(ascending=False).fillna(0).astype(int) if "RSRP_mediana" in _cross_tbl.columns else 0
+                _cross_tbl["Pos. mercado"] = _cross_tbl["Cuota_mercado_global"].rank(ascending=False).fillna(0).astype(int) if "Cuota_mercado_global" in _cross_tbl.columns else 0
+                _cross_tbl["Pos. captac."] = _cross_tbl["Participacion_altas_global"].rank(ascending=False).fillna(0).astype(int) if "Participacion_altas_global" in _cross_tbl.columns else 0
                 _cross_tbl = _cross_tbl.sort_values("RSRP_mediana",ascending=False) if "RSRP_mediana" in _cross_tbl.columns else _cross_tbl
 
                 # HTML ranking table — una fila por operador, 3 posiciones
