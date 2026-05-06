@@ -2914,11 +2914,21 @@ def compute_business_metrics(business_df, rsrp_df):
 
         if not territorial_cross.empty and territorial_cross["Cuota_mercado"].notna().any():
             cuota_high = territorial_cross["Cuota_mercado"].quantile(0.60)
-            cuota_low = territorial_cross["Cuota_mercado"].quantile(0.40)
-            risk = territorial_cross[(territorial_cross["RSRP_mediana"] < -90) & (territorial_cross["Cuota_mercado"] >= cuota_high)].copy()
-            opp = territorial_cross[(territorial_cross["RSRP_mediana"] >= -80) & (territorial_cross["Cuota_mercado"] <= cuota_low)].copy()
-            result["risk_table"] = risk.sort_values(["Cuota_mercado", "RSRP_mediana"], ascending=[False, True]).head(25)
-            result["opportunity_table"] = opp.sort_values(["RSRP_mediana", "Cuota_mercado"], ascending=[False, True]).head(25)
+            cuota_low  = territorial_cross["Cuota_mercado"].quantile(0.40)
+            # Risk: bad signal + high market share (at risk of losing market due to signal)
+            risk = territorial_cross[
+                (territorial_cross["RSRP_mediana"] < -100) &
+                (territorial_cross["Cuota_mercado"] >= cuota_high)
+            ].copy()
+            # Opportunity: relatively better signal + low market share (room to grow)
+            # Use relative threshold — top 40% of signal in dataset, not absolute -80
+            rsrp_good_threshold = territorial_cross["RSRP_mediana"].quantile(0.60)
+            opp = territorial_cross[
+                (territorial_cross["RSRP_mediana"] >= rsrp_good_threshold) &
+                (territorial_cross["Cuota_mercado"] <= cuota_low)
+            ].copy()
+            result["risk_table"]        = risk.sort_values(["Cuota_mercado","RSRP_mediana"], ascending=[False,True]).head(25)
+            result["opportunity_table"] = opp.sort_values(["RSRP_mediana","Cuota_mercado"], ascending=[False,True]).head(25)
 
     result["available"] = True
     result["message"] = None
@@ -5242,41 +5252,51 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB 1 — RESUMEN
-# Historia: ¿Cuál es el estado general de la red y dónde estamos comercialmente?
+# Señal mediana como protagonista absoluto. Datos de soporte subordinados.
+# Bloque comercial separado visualmente. Cierre con conclusión ejecutiva.
 # ─────────────────────────────────────────────────────────────────────────────
 with tab1:
     _t1m  = global_median or 0
     _t1c  = "#22C55E" if _t1m>=-90 else "#F59E0B" if _t1m>=-100 else "#EF4444"
     _t1e  = "Buena" if _t1m>=-90 else "Aceptable" if _t1m>=-100 else "Crítica"
-    _t1msg= "Red en buen estado" if _t1m>=-90 else "Atención requerida" if _t1m>=-100 else "Intervención urgente"
+    _t1msg= "Red en buen estado" if _t1m>=-90 else "Atención requerida en el territorio" if _t1m>=-100 else "Intervención urgente requerida"
+    _t1cp_c = "#EF4444" if cp_critical_share>=0.25 else "#F59E0B" if cp_critical_share>=0.10 else "#22C55E"
+    _t1pb_c = "#22C55E" if pct_good>=50 else "#F59E0B" if pct_good>=30 else "#EF4444"
+    _biz1   = business_metrics.get("available",False)
+    _lm1    = leader_market["Operador"] if leader_market is not None else None
+    _la1    = leader_altas["Operador"]  if leader_altas  is not None else None
 
-    # ── Número protagonista — señal mediana ───────────────────────────────────
+    # ── PROTAGONISTA — señal mediana, todo lo demás subordinado ──────────────
     st.markdown(f"""
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.96),rgba(10,18,34,0.98));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:24px 28px;margin-bottom:14px;display:flex;align-items:center;gap:36px;">
-        <div style="flex:0 0 auto;">
-            <div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Señal RSRP mediana · {periodo_txt_corto}</div>
-            <div style="font-size:3.8rem;font-weight:950;color:{_t1c};line-height:1;">{fmt_dBm(_t1m)}</div>
-            <div style="font-size:.82rem;font-weight:700;color:#CBD5E1;margin-top:6px;">{_t1e} — {_t1msg}</div>
-            {_bar_op(max(0,min(100,(110+_t1m)/20*100)), _t1c)}
+    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.97),rgba(10,18,34,0.99));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:28px 32px;margin-bottom:16px;">
+        <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Señal RSRP mediana · {periodo_txt_corto} · {fmt_int(obs_validas)} mediciones</div>
+        <div style="display:flex;align-items:flex-end;gap:20px;margin-bottom:16px;">
+            <div style="font-size:5rem;font-weight:950;color:{_t1c};line-height:1;">{fmt_dBm(_t1m)}</div>
+            <div style="padding-bottom:8px;">
+                <div style="font-size:1.1rem;font-weight:800;color:{_t1c};">{_t1e}</div>
+                <div style="font-size:.82rem;color:#94A3B8;">{_t1msg}</div>
+            </div>
         </div>
-        <div style="width:1px;height:90px;background:rgba(255,255,255,0.07);flex-shrink:0;"></div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;flex:1;">
+        <div style="width:100%;height:6px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden;margin-bottom:20px;">
+            <div style="width:{max(0,min(100,(110+_t1m)/20*100)):.1f}%;height:100%;background:{_t1c};border-radius:99px;"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.07);">
             <div>
-                <div style="font-size:.64rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:3px;">CP críticos</div>
-                <div style="font-size:1.6rem;font-weight:900;color:{"#EF4444" if cp_critical_share>=0.25 else "#F59E0B" if cp_critical_share>=0.10 else "#22C55E"};">{fmt_int(cp_critical_count)}</div>
-                <div style="font-size:.68rem;color:#64748B;">{fmt_pct(cp_critical_share)} del territorio visible</div>
-                {_bar_op(cp_critical_share*100, "#EF4444" if cp_critical_share>=0.25 else "#F59E0B")}
+                <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Códigos postales críticos</div>
+                <div style="font-size:1.8rem;font-weight:900;color:{_t1cp_c};">{fmt_int(cp_critical_count)}</div>
+                <div style="font-size:.68rem;color:#64748B;">{fmt_pct(cp_critical_share)} del territorio · señal bajo -100 dBm</div>
+                {_bar_op(cp_critical_share*100, _t1cp_c)}
             </div>
             <div>
-                <div style="font-size:.64rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:3px;">Cobertura buena+</div>
-                <div style="font-size:1.6rem;font-weight:900;color:{"#22C55E" if pct_good>=50 else "#F59E0B" if pct_good>=30 else "#EF4444"};">{fmt_pct(pct_good)}</div>
-                <div style="font-size:.68rem;color:#64748B;">Excelente + Buena · {fmt_int(obs_validas)} obs.</div>
-                {_bar_op(pct_good, "#22C55E" if pct_good>=50 else "#F59E0B")}
+                <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Cobertura buena o mejor</div>
+                <div style="font-size:1.8rem;font-weight:900;color:{_t1pb_c};">{fmt_pct(pct_good)}</div>
+                <div style="font-size:.68rem;color:#64748B;">Excelente + Buena (≥ -90 dBm)</div>
+                {_bar_op(pct_good, _t1pb_c)}
             </div>
             <div>
-                <div style="font-size:.64rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:3px;">Operador líder señal</div>
-                <div style="font-size:1.1rem;font-weight:900;color:{OPERATOR_COLORS.get(best_operator["Operador"],"#F8FAFC")};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{best_operator["Operador"]}</div>
-                <div style="font-size:.68rem;color:#64748B;">Mediana {fmt_dBm(best_operator["RSRP_mediana"])} · {best_operator["Buena_o_mejor"]:.1f}% buena+</div>
+                <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Operador con mejor señal</div>
+                <div style="font-size:1.2rem;font-weight:900;color:{OPERATOR_COLORS.get(best_operator["Operador"],"#F8FAFC")};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{best_operator["Operador"]}</div>
+                <div style="font-size:.68rem;color:#64748B;">Mediana {fmt_dBm(best_operator["RSRP_mediana"])} · {float(best_operator["Buena_o_mejor"]):.1f}% buena+</div>
                 {_bar_op(float(best_operator["Buena_o_mejor"]), OPERATOR_COLORS.get(best_operator["Operador"],"#64748B"))}
             </div>
         </div>
@@ -5284,102 +5304,120 @@ with tab1:
     """, unsafe_allow_html=True)
 
     # ── Distribución de señal ─────────────────────────────────────────────────
-    st.markdown('<div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">¿Cómo se distribuye la señal en el territorio?</div>', unsafe_allow_html=True)
-    r1c1, r1c2 = st.columns((1.1, 0.9), gap="large")
-
+    st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Distribución de señal en el territorio</div>', unsafe_allow_html=True)
+    r1c1, r1c2 = st.columns((1.15, 0.85), gap="large")
     with r1c1:
         dist = df_f.groupby("Categoria_RSRP",as_index=False).size().rename(columns={"size":"Cantidad","Categoria_RSRP":"Categoria"})
         orden_cat = ["Excelente","Buena","Aceptable","Crítica","Sin medición"]
         dist["Categoria"] = pd.Categorical(dist["Categoria"],categories=orden_cat,ordered=True)
         dist = dist.sort_values("Categoria")
         dist["Pct"] = (dist["Cantidad"]/dist["Cantidad"].sum()*100).round(1)
-        st.markdown('<div class="section-card"><div class="section-title">Distribución de señal por banda</div><div class="section-subtitle">Cuántas mediciones caen en cada banda · verde = buena señal · rojo = crítica</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-card"><div class="section-title">Mediciones por banda de señal</div><div class="section-subtitle">Cada barra = cuántas mediciones caen en esa banda · verde = buena señal · rojo = crítica</div>', unsafe_allow_html=True)
         if not dist.empty:
             _dch = alt.Chart(dist).mark_bar(cornerRadiusTopLeft=6,cornerRadiusTopRight=6).encode(
                 x=alt.X("Categoria:N",title=None,sort=orden_cat),
                 y=alt.Y("Cantidad:Q",title="Mediciones"),
                 color=alt.Color("Categoria:N",scale=alt.Scale(domain=["Excelente","Buena","Aceptable","Crítica","Sin medición"],range=["#22C55E","#84CC16","#F59E0B","#EF4444","#64748B"]),legend=None),
                 tooltip=[alt.Tooltip("Categoria:N",title="Banda"),alt.Tooltip("Cantidad:Q",title="Mediciones",format=","),alt.Tooltip("Pct:Q",title="%",format=".1f")]
-            ).properties(height=260)
+            ).properties(height=240)
             st.altair_chart(style_chart(_dch), use_container_width=True, theme=None)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with r1c2:
-        st.markdown('<div class="section-card"><div class="section-title">Resumen por banda</div><div class="section-subtitle">Porcentaje y volumen de cada banda de señal</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-card"><div class="section-title">Composición por banda</div><div class="section-subtitle">% y volumen de cada banda</div>', unsafe_allow_html=True)
         if not dist.empty:
             for _, rr in dist.iterrows():
                 _cc = {"Excelente":"#22C55E","Buena":"#84CC16","Aceptable":"#F59E0B","Crítica":"#EF4444"}.get(rr["Categoria"],"#64748B")
-                _w  = float(rr["Pct"])
+                _ww = float(rr["Pct"])
                 st.markdown(f"""
-                <div style="margin-bottom:10px;">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+                <div style="margin-bottom:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;">
                         <span style="font-size:.76rem;font-weight:800;color:#E2E8F0;">{rr["Categoria"]}</span>
-                        <span style="font-size:.80rem;font-weight:900;color:{_cc};">{_w:.1f}%</span>
+                        <span style="font-size:.85rem;font-weight:900;color:{_cc};">{_ww:.1f}%</span>
                     </div>
                     <div style="width:100%;height:7px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden;">
-                        <div style="width:{_w:.1f}%;height:100%;background:{_cc};border-radius:99px;"></div>
+                        <div style="width:{_ww:.1f}%;height:100%;background:{_cc};border-radius:99px;"></div>
                     </div>
-                    <div style="font-size:.66rem;color:#64748B;margin-top:2px;">{int(rr["Cantidad"]):,} mediciones</div>
+                    <div style="font-size:.65rem;color:#64748B;margin-top:2px;">{int(rr["Cantidad"]):,} mediciones</div>
                 </div>""", unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── Puente hacia el negocio ───────────────────────────────────────────────
-    _biz_ok1 = business_metrics.get("available",False)
-    if _biz_ok1:
-        st.markdown('<div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">¿Cómo se traduce la señal en resultados comerciales?</div>', unsafe_allow_html=True)
-        _lm1 = leader_market["Operador"] if leader_market is not None else "N/D"
-        _la1 = leader_altas["Operador"]  if leader_altas  is not None else "N/D"
-        _lmp1= float(leader_market["Cuota_mercado_global"])      if leader_market is not None else 0
-        _lap1= float(leader_altas["Participacion_altas_global"]) if leader_altas  is not None else 0
-        _vm1 = business_metrics.get("variation_market",np.nan)
-        _va1 = business_metrics.get("variation_altas",np.nan)
-
-        bc1,bc2,bc3,bc4 = st.columns(4,gap="medium")
-        with bc1:
-            _lmc1 = OPERATOR_COLORS.get(_lm1,"#F8FAFC")
-            st.markdown(f"""<div class="card" style="min-height:0;">
-                <div class="kpi-label">Líder de mercado</div>
-                <div class="kpi-value" style="font-size:1.15rem;color:{_lmc1};">{_lm1}</div>
-                <div class="kpi-sub">{_lmp1:.1f}% cuota de mercado</div>
-                {_bar_op(_lmp1,_lmc1)}
-            </div>""", unsafe_allow_html=True)
-        with bc2:
-            _lac1 = OPERATOR_COLORS.get(_la1,"#F8FAFC")
-            st.markdown(f"""<div class="card" style="min-height:0;">
-                <div class="kpi-label">Líder de captación</div>
-                <div class="kpi-value" style="font-size:1.15rem;color:{_lac1};">{_la1}</div>
-                <div class="kpi-sub">{_lap1:.1f}% participación altas</div>
-                {_bar_op(_lap1,_lac1)}
-            </div>""", unsafe_allow_html=True)
-        with bc3:
-            _mvc = "#22C55E" if pd.notna(_vm1) and _vm1>=0 else "#EF4444"
-            _mva = f'{"▲" if pd.notna(_vm1) and _vm1>=0 else "▼"} {abs(_vm1):.1f} pp' if pd.notna(_vm1) else "Sin dato"
-            st.markdown(f"""<div class="card" style="min-height:0;">
-                <div class="kpi-label">Var. cuota de mercado</div>
-                <div class="kpi-value" style="color:{_mvc};">{_mva}</div>
-                <div class="kpi-sub">{"Ganando mercado" if pd.notna(_vm1) and _vm1>=0 else "Cediendo mercado"} vs periodo anterior</div>
-            </div>""", unsafe_allow_html=True)
-        with bc4:
-            _avc = "#22C55E" if pd.notna(_va1) and _va1>=0 else "#EF4444"
-            _ava = f'{"▲" if pd.notna(_va1) and _va1>=0 else "▼"} {abs(_va1):.1f} pp' if pd.notna(_va1) else "Sin dato"
-            st.markdown(f"""<div class="card" style="min-height:0;">
-                <div class="kpi-label">Var. captación altas</div>
-                <div class="kpi-value" style="color:{_avc};">{_ava}</div>
-                <div class="kpi-sub">{"Ganando captación" if pd.notna(_va1) and _va1>=0 else "Cediendo captación"} vs periodo anterior</div>
-            </div>""", unsafe_allow_html=True)
-
-    # Insight narrativo
-    if tab1_insight_body:
-        st.markdown(f"""
-        <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:14px 18px;margin-top:10px;">
-            <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;">Lectura del periodo</div>
-            <div style="font-size:.82rem;color:#CBD5E1;line-height:1.6;">{tab1_insight_body}</div>
+    # ── Bloque comercial — separado visualmente ───────────────────────────────
+    if _biz1:
+        st.markdown("""
+        <div style="display:flex;align-items:center;gap:10px;margin:20px 0 10px 0;">
+            <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
+            <div style="font-size:.66rem;font-weight:900;color:#64748B;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;padding:0 12px;">Posición comercial</div>
+            <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
         </div>
         """, unsafe_allow_html=True)
 
+        _lmp1 = float(leader_market["Cuota_mercado_global"])      if leader_market is not None else 0
+        _lap1 = float(leader_altas["Participacion_altas_global"]) if leader_altas  is not None else 0
+        _vm1  = business_metrics.get("variation_market",np.nan)
+        _va1  = business_metrics.get("variation_altas",np.nan)
+        _gm1  = float(market_lead_gap) if pd.notna(market_lead_gap) else 0
+
+        bc1,bc2,bc3,bc4 = st.columns(4,gap="medium")
+        with bc1:
+            _lmc = OPERATOR_COLORS.get(_lm1,"#F8FAFC") if _lm1 else "#F8FAFC"
+            st.markdown(f"""<div class="card" style="min-height:0;">
+                <div class="kpi-label">Líder de mercado</div>
+                <div class="kpi-value" style="font-size:1.1rem;color:{_lmc};">{_lm1 or "N/D"}</div>
+                <div class="kpi-sub">{_lmp1:.1f}% cuota acumulada</div>
+                {_bar_op(_lmp1,_lmc)}
+            </div>""", unsafe_allow_html=True)
+        with bc2:
+            _lac = OPERATOR_COLORS.get(_la1,"#F8FAFC") if _la1 else "#F8FAFC"
+            st.markdown(f"""<div class="card" style="min-height:0;">
+                <div class="kpi-label">Líder de captación</div>
+                <div class="kpi-value" style="font-size:1.1rem;color:{_lac};">{_la1 or "N/D"}</div>
+                <div class="kpi-sub">{_lap1:.1f}% participación en altas</div>
+                {_bar_op(_lap1,_lac)}
+            </div>""", unsafe_allow_html=True)
+        with bc3:
+            _mvc = "#22C55E" if pd.notna(_vm1) and _vm1>=0 else "#EF4444"
+            st.markdown(f"""<div class="card" style="min-height:0;">
+                <div class="kpi-label">Tendencia de mercado</div>
+                <div class="kpi-value" style="color:{_mvc};">{"▲" if pd.notna(_vm1) and _vm1>=0 else "▼"} {f"{abs(_vm1):.1f} pp" if pd.notna(_vm1) else "S/D"}</div>
+                <div class="kpi-sub">{"Mercado en crecimiento" if pd.notna(_vm1) and _vm1>=0 else "Mercado en contracción"} vs periodo ant.</div>
+            </div>""", unsafe_allow_html=True)
+        with bc4:
+            _gmc = "#22C55E" if _gm1>=15 else "#F59E0B" if _gm1>=5 else "#EF4444"
+            st.markdown(f"""<div class="card" style="min-height:0;">
+                <div class="kpi-label">Ventaja del líder</div>
+                <div class="kpi-value" style="color:{_gmc};">{_gm1:.1f} pp</div>
+                <div class="kpi-sub">{"Liderazgo sólido" if _gm1>=15 else "Liderazgo moderado" if _gm1>=5 else "Mercado muy disputado"}</div>
+            </div>""", unsafe_allow_html=True)
+
+    # ── Conclusión ejecutiva ──────────────────────────────────────────────────
+    _n_ops_t1 = len(summary_operator)
+    _worst_op = summary_operator.sort_values("RSRP_mediana").iloc[0]["Operador"] if not summary_operator.empty else "N/D"
+    _concl_red = (
+        f"La red opera en banda {_t1e.lower()} con mediana {fmt_dBm(_t1m)}. "
+        f"{'El territorio no presenta alertas críticas.' if cp_critical_share<0.10 else f'{fmt_int(cp_critical_count)} CP ({fmt_pct(cp_critical_share)}) están en señal crítica — requieren intervención.'} "
+        f"{best_operator['Operador']} lidera la señal con {fmt_dBm(best_operator['RSRP_mediana'])} de mediana; "
+        f"{_worst_op} tiene la señal más débil del grupo de {_n_ops_t1} operadores."
+    )
+    _concl_biz = ""
+    if _biz1 and _lm1 and _la1:
+        _same = _lm1 == _la1
+        _concl_biz = (
+            f" Comercialmente, {_lm1} domina {'tanto en mercado como en captación' if _same else 'el mercado'} "
+            f"con {_lmp1:.1f}% de cuota" +
+            (f", mientras {_la1} lidera la captación con {_lap1:.1f}% de las altas." if not _same else f" y {_lap1:.1f}% de las altas nuevas.")
+        )
+
+    st.markdown(f"""
+    <div style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(99,102,241,0.06));border:1px solid rgba(99,102,241,0.18);border-radius:18px;padding:16px 20px;margin-top:14px;">
+        <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Conclusión ejecutiva del periodo</div>
+        <div style="font-size:.84rem;color:#E2E8F0;line-height:1.7;">{_concl_red}{_concl_biz}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB 2 — OPERADORES
-# Historia: ¿Qué tan buena es la señal de cada operador y qué los diferencia?
+# Ranking sin redundancia + una gráfica que añade valor + cierre con conclusión
 # ─────────────────────────────────────────────────────────────────────────────
 with tab2:
     _ops = summary_operator.sort_values("RSRP_mediana",ascending=False).reset_index(drop=True)
@@ -5387,15 +5425,15 @@ with tab2:
     _rez = _ops.iloc[-1]
     _brecha = float(_lid["RSRP_mediana"] - _rez["RSRP_mediana"])
 
-    # ── 3 KPIs de contexto ───────────────────────────────────────────────────
-    st.markdown('<div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">¿Qué tan diferente es la señal entre operadores?</div>', unsafe_allow_html=True)
+    # ── 3 KPIs ───────────────────────────────────────────────────────────────
+    st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">¿Qué tan diferente es la señal entre operadores?</div>', unsafe_allow_html=True)
     ok1,ok2,ok3 = st.columns(3,gap="medium")
     with ok1:
         _lc = OPERATOR_COLORS.get(_lid["Operador"],"#F8FAFC")
         st.markdown(f"""<div class="card" style="min-height:0;">
-            <div class="kpi-label">Mejor señal del grupo</div>
+            <div class="kpi-label">Mejor señal</div>
             <div class="kpi-value" style="font-size:1.3rem;color:{_lc};">{_lid["Operador"]}</div>
-            <div class="kpi-sub">Mediana <b>{fmt_dBm(_lid["RSRP_mediana"])}</b> · {float(_lid["Buena_o_mejor"]):.1f}% buena o mejor</div>
+            <div class="kpi-sub">Mediana <b>{fmt_dBm(_lid["RSRP_mediana"])}</b> · {float(_lid["Buena_o_mejor"]):.1f}% buena+</div>
             {_bar_op(float(_lid["Buena_o_mejor"]),_lc)}
         </div>""", unsafe_allow_html=True)
     with ok2:
@@ -5408,16 +5446,15 @@ with tab2:
         </div>""", unsafe_allow_html=True)
     with ok3:
         _bc = "#22C55E" if abs(_brecha)<=5 else "#F59E0B" if abs(_brecha)<=15 else "#EF4444"
-        _bt = "Brecha pequeña — operadores similares" if abs(_brecha)<=5 else "Brecha notable entre operadores" if abs(_brecha)<=15 else "Brecha amplia — diferencia significativa"
         st.markdown(f"""<div class="card" style="min-height:0;">
-            <div class="kpi-label">Brecha entre mejor y peor</div>
+            <div class="kpi-label">Brecha de señal</div>
             <div class="kpi-value" style="color:{_bc};">{abs(_brecha):.1f} dBm</div>
-            <div class="kpi-sub">{_bt}</div>
+            <div class="kpi-sub">{"Operadores similares" if abs(_brecha)<=5 else "Diferencia notable" if abs(_brecha)<=15 else "Diferencia significativa"} entre mejor y peor</div>
         </div>""", unsafe_allow_html=True)
 
-    # ── Ranking visual con datos completos ────────────────────────────────────
-    st.markdown('<div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">Ranking de operadores — de mejor a peor señal</div>', unsafe_allow_html=True)
-    for _, ro in _ops.iterrows():
+    # ── Ranking — una fila completa por operador ──────────────────────────────
+    st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">Ranking por señal mediana — de mejor a peor</div>', unsafe_allow_html=True)
+    for idx_op, ro in _ops.iterrows():
         _oc  = OPERATOR_COLORS.get(ro["Operador"],"#64748B")
         _med = float(ro["RSRP_mediana"])
         _bun = float(ro["Buena_o_mejor"])
@@ -5430,95 +5467,96 @@ with tab2:
         _ww  = int((_med-_mm)/max(_mx-_mm,1)*100)
         _mc  = "#22C55E" if _med>=-90 else "#F59E0B" if _med>=-100 else "#EF4444"
         _cc  = "#EF4444" if _cri>30 else "#F59E0B" if _cri>10 else "#22C55E"
+        _pos = idx_op + 1
         st.markdown(f"""
         <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:10px 14px;margin-bottom:6px;">
+            <div style="width:24px;text-align:center;font-size:.80rem;font-weight:900;color:#64748B;flex-shrink:0;">#{_pos}</div>
             <div style="width:150px;flex-shrink:0;display:flex;align-items:center;gap:7px;">
                 <span style="width:9px;height:9px;border-radius:50%;background:{_oc};display:inline-block;flex-shrink:0;"></span>
                 <span style="font-size:.80rem;font-weight:800;color:#F8FAFC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{ro["Operador"]}</span>
             </div>
             <div style="flex:1;min-width:0;"><div style="width:100%;height:8px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;"><div style="width:{_ww}%;height:100%;background:{_mc};border-radius:99px;opacity:.85;"></div></div></div>
             <div style="width:90px;text-align:right;font-size:.95rem;font-weight:900;color:{_mc};flex-shrink:0;">{_med:.1f} dBm</div>
-            <div style="width:100px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">Buena+: <b style="color:#22C55E;">{_bun:.1f}%</b></div>
-            <div style="width:90px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">Aceptable: <b>{_ace:.1f}%</b></div>
-            <div style="width:90px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">Crítica: <b style="color:{_cc};">{_cri:.1f}%</b></div>
-            <div style="width:80px;text-align:right;font-size:.68rem;color:#64748B;flex-shrink:0;">{_obs:,} obs<br>{_cod} CP</div>
+            <div style="width:95px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">Buena+: <b style="color:#22C55E;">{_bun:.1f}%</b></div>
+            <div style="width:85px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">Aceptable: <b>{_ace:.1f}%</b></div>
+            <div style="width:85px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">Crítica: <b style="color:{_cc};">{_cri:.1f}%</b></div>
+            <div style="width:75px;text-align:right;font-size:.66rem;color:#64748B;flex-shrink:0;">{_obs:,} obs<br>{_cod} CP</div>
         </div>""", unsafe_allow_html=True)
-    st.markdown('<div style="font-size:.68rem;color:#94A3B8;margin-top:4px;margin-bottom:14px;">Barra = posición relativa entre operadores · 🟢 ≥-90 dBm · 🟡 -90 a -100 · 🔴 &lt;-100</div>', unsafe_allow_html=True)
 
-    # ── Una sola gráfica valiosa — composición que no repite el ranking ───────
-    st.markdown('<div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">¿Cómo se compone la señal de cada operador?</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-card"><div class="section-title">Composición de señal por operador</div><div class="section-subtitle">Cada barra = 100% del portafolio de ese operador · el color muestra qué porción está en cada banda · más verde = mejor red · más rojo = mayor riesgo</div>', unsafe_allow_html=True)
+    # ── Gráfica que AÑADE valor: composición interna normalizada ─────────────
+    st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">Composición interna de señal — la estructura real de cada operador</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-card"><div class="section-title">% de señal por banda (normalizado al 100%)</div><div class="section-subtitle">El ranking muestra quién tiene mejor mediana. Esta gráfica muestra QUÉ TAN DISTINTA es la estructura interna de cada operador. Un operador puede tener buena mediana pero mucha señal crítica oculta.</div>', unsafe_allow_html=True)
     sp = alt.Chart(quality_pct[quality_pct["Categoria_RSRP"].isin(order_quality[:-1])]).mark_bar().encode(
         x=alt.X("Operador:N",title=None),
         y=alt.Y("Porcentaje:Q",title="% del portafolio",stack="normalize"),
-        color=alt.Color("Categoria_RSRP:N",scale=alt.Scale(domain=list(QUALITY_COLORS.keys()),range=list(QUALITY_COLORS.values())),legend=alt.Legend(title="Banda de señal",orient="bottom")),
+        color=alt.Color("Categoria_RSRP:N",scale=alt.Scale(domain=list(QUALITY_COLORS.keys()),range=list(QUALITY_COLORS.values())),legend=alt.Legend(title="Banda",orient="bottom")),
+        order=alt.Order("Categoria_RSRP:N",sort="descending"),
         tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Categoria_RSRP:N",title="Banda"),alt.Tooltip("Porcentaje:Q",title="%",format=".1f"),alt.Tooltip("Cantidad:Q",title="Mediciones",format=",")]
-    ).properties(height=300)
+    ).properties(height=280)
     st.altair_chart(style_chart(sp), use_container_width=True, theme=None)
-    st.markdown('<div style="font-size:.68rem;color:#94A3B8;margin-top:4px;">Normalizadas al 100% para comparar composición entre operadores de diferente tamaño</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── Tabla completa ────────────────────────────────────────────────────────
-    with st.expander("Ver tabla completa de señal por operador"):
-        _et = safe_round_columns(
-            _ops[["Operador","RSRP_mediana","RSRP_promedio","Excelente","Buena","Aceptable","Critica","Buena_o_mejor","Observaciones","Codigos"]].copy(),
-            ["RSRP_mediana","RSRP_promedio","Excelente","Buena","Aceptable","Critica","Buena_o_mejor"]
-        )
+    # ── Conclusión ejecutiva ──────────────────────────────────────────────────
+    _op_count = len(_ops)
+    _top3_crit = _ops.nlargest(1,"Critica").iloc[0]
+    _concl_op = (
+        f"Entre los {_op_count} operadores visibles, {_lid['Operador']} tiene la mejor señal con mediana {fmt_dBm(_lid['RSRP_mediana'])} "
+        f"y {float(_lid['Buena_o_mejor']):.1f}% de cobertura buena o mejor. "
+        f"{_rez['Operador']} tiene la señal más débil con mediana {fmt_dBm(_rez['RSRP_mediana'])}. "
+        f"La brecha de {abs(_brecha):.1f} dBm entre el mejor y el peor es {'pequeña — el mercado está competitivamente equilibrado en señal' if abs(_brecha)<=5 else 'notable — hay diferencias claras de calidad de red entre operadores' if abs(_brecha)<=15 else 'muy amplia — existe una ventaja estructural de señal significativa'}. "
+        f"{_top3_crit['Operador']} concentra el mayor % de señal crítica ({float(_top3_crit['Critica']):.1f}%)."
+    )
+    st.markdown(f"""
+    <div style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(99,102,241,0.06));border:1px solid rgba(99,102,241,0.18);border-radius:18px;padding:16px 20px;margin-top:14px;">
+        <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Conclusión ejecutiva</div>
+        <div style="font-size:.84rem;color:#E2E8F0;line-height:1.7;">{_concl_op}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    with st.expander("Ver tabla completa"):
+        _et = safe_round_columns(_ops[["Operador","RSRP_mediana","RSRP_promedio","Excelente","Buena","Aceptable","Critica","Buena_o_mejor","Observaciones","Codigos"]].copy(),["RSRP_mediana","RSRP_promedio","Excelente","Buena","Aceptable","Critica","Buena_o_mejor"])
         _et.columns = ["Operador","Mediana (dBm)","Promedio (dBm)","% Excelente","% Buena","% Aceptable","% Crítica","% Buena+","Observaciones","CP cubiertos"]
         st.dataframe(_et, use_container_width=True, height=260)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB 3 — TERRITORIO
-# Historia: ¿Dónde están los problemas de señal en el mapa?
 # ─────────────────────────────────────────────────────────────────────────────
 with tab3:
     _wz_cp  = enrich_cp_label(worst_zone["Codigo_postal"],worst_zone) if worst_zone is not None else "N/D"
-    _wz_pct = worst_zone["Pct_critica"] if worst_zone is not None else 0
+    _wz_pct = float(worst_zone["Pct_critica"]) if worst_zone is not None else 0
     _wz_op  = worst_zone["Operador_mas_debil"] if worst_zone is not None else "N/D"
-    _wz_med = worst_zone["RSRP_mediana"] if worst_zone is not None else 0
+    _wz_med = float(worst_zone["RSRP_mediana"]) if worst_zone is not None else 0
     _bz_cp  = enrich_cp_label(best_zone["Codigo_postal"],best_zone) if best_zone is not None else "N/D"
-    _bz_pct = best_zone["Pct_buena_o_mejor"] if best_zone is not None else 0
+    _bz_pct = float(best_zone["Pct_buena_o_mejor"]) if best_zone is not None else 0
     _n_cp   = zone_summary["Codigo_postal"].nunique() if not zone_summary.empty else 0
     _wz_c   = "#EF4444" if _wz_pct>=50 else "#F59E0B" if _wz_pct>=30 else "#22C55E"
 
     # ── Headline ──────────────────────────────────────────────────────────────
     st.markdown(f"""
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.96),rgba(10,18,34,0.98));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:18px 28px;margin-bottom:14px;display:flex;align-items:center;gap:32px;">
-        <div style="flex:0 0 auto;min-width:200px;">
-            <div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Zona prioritaria de intervención</div>
-            <div style="font-size:1.6rem;font-weight:900;color:{_wz_c};">{_wz_cp}</div>
-            <div style="font-size:.78rem;color:#CBD5E1;margin-top:3px;">{fmt_pct(_wz_pct)} señal crítica · Op. más débil: {_wz_op}</div>
-            {_bar_op(_wz_pct,"#EF4444")}
-        </div>
-        <div style="width:1px;height:70px;background:rgba(255,255,255,0.07);flex-shrink:0;"></div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;flex:1;">
+    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.97),rgba(10,18,34,0.99));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:22px 28px;margin-bottom:16px;">
+        <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Análisis territorial · {fmt_int(_n_cp)} CP evaluados · {fmt_int(cp_critical_count)} críticos ({fmt_pct(cp_critical_share)})</div>
+        <div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:24px;align-items:center;">
             <div>
-                <div style="font-size:.64rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:3px;">CP evaluados</div>
-                <div style="font-size:1.6rem;font-weight:900;color:#F8FAFC;">{fmt_int(_n_cp)}</div>
-                <div style="font-size:.68rem;color:#64748B;">Códigos postales con datos</div>
+                <div style="font-size:.62rem;font-weight:900;color:#FCA5A5;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Zona prioritaria de intervención</div>
+                <div style="font-size:1.5rem;font-weight:900;color:{_wz_c};">{_wz_cp}</div>
+                <div style="font-size:.76rem;color:#94A3B8;margin-top:3px;">{fmt_pct(_wz_pct)} señal crítica · Mediana {fmt_dBm(_wz_med)} · Op. débil: {_wz_op}</div>
+                {_bar_op(_wz_pct,"#EF4444")}
             </div>
+            <div style="height:60px;background:rgba(255,255,255,0.07);"></div>
             <div>
-                <div style="font-size:.64rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:3px;">CP críticos</div>
-                <div style="font-size:1.6rem;font-weight:900;color:#EF4444;">{fmt_int(cp_critical_count)}</div>
-                <div style="font-size:.68rem;color:#64748B;">{fmt_pct(cp_critical_share)} del territorio</div>
-                {_bar_op(cp_critical_share*100,"#EF4444")}
-            </div>
-            <div>
-                <div style="font-size:.64rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:3px;">Zona más sólida</div>
-                <div style="font-size:1rem;font-weight:900;color:#22C55E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{_bz_cp}</div>
-                <div style="font-size:.68rem;color:#64748B;">{fmt_pct(_bz_pct)} buena o mejor</div>
+                <div style="font-size:.62rem;font-weight:900;color:#86EFAC;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Zona de mayor solidez</div>
+                <div style="font-size:1.5rem;font-weight:900;color:#22C55E;">{_bz_cp}</div>
+                <div style="font-size:.76rem;color:#94A3B8;margin-top:3px;">{fmt_pct(_bz_pct)} buena o mejor · Op. líder: {best_zone["Operador_lider"] if best_zone is not None else "N/D"}</div>
                 {_bar_op(_bz_pct,"#22C55E")}
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # ── CP críticos + distribución por nivel ──────────────────────────────────
-    st.markdown('<div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">¿Qué CP necesitan intervención y con qué urgencia?</div>', unsafe_allow_html=True)
-    z1,z2 = st.columns((1.35,0.65),gap="large")
-
+    # ── CP críticos + distribución ────────────────────────────────────────────
+    z1,z2 = st.columns((1.4,0.6),gap="large")
     with z1:
-        st.markdown('<div class="section-card"><div class="section-title">Top 15 CP más críticos</div><div class="section-subtitle">Ordenados por % señal crítica · barra = urgencia · pasa el mouse para ver operador más débil</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-card"><div class="section-title">Top 15 CP más críticos</div><div class="section-subtitle">Ordenados por % señal crítica · pasa el mouse para ver operador más débil y número de operadores presentes</div>', unsafe_allow_html=True)
         if not top_zones.empty:
             tc = top_zones.copy()
             tc["Codigo_postal"] = tc["Codigo_postal"].astype(str)
@@ -5530,90 +5568,94 @@ with tab3:
             tc["Zona_label"] = tc.apply(_el,axis=1)
             bars = alt.Chart(tc.head(15)).mark_bar(cornerRadiusTopLeft=6,cornerRadiusBottomLeft=6).encode(
                 x=alt.X("Pct_critica:Q",title="% señal crítica",scale=alt.Scale(domain=[0,100])),
-                y=alt.Y("Zona_label:N",sort="-x",title=None,axis=alt.Axis(labelLimit=260)),
+                y=alt.Y("Zona_label:N",sort="-x",title=None,axis=alt.Axis(labelLimit=280)),
                 color=alt.value("#EF4444"),
-                tooltip=[alt.Tooltip("Codigo_postal:N",title="CP"),alt.Tooltip("Pct_critica:Q",title="% crítica",format=".1f"),alt.Tooltip("RSRP_mediana:Q",title="Mediana (dBm)",format=".1f"),alt.Tooltip("Operador_mas_debil:N",title="Op. más débil"),alt.Tooltip("Operadores_presentes:Q",title="# Ops")]
-            ).properties(height=420)
+                tooltip=[alt.Tooltip("Codigo_postal:N",title="CP"),alt.Tooltip("Pct_critica:Q",title="% crítica",format=".1f"),alt.Tooltip("RSRP_mediana:Q",title="Mediana (dBm)",format=".1f"),alt.Tooltip("Operador_mas_debil:N",title="Op. más débil"),alt.Tooltip("Operadores_presentes:Q",title="# Operadores")]
+            ).properties(height=400)
             st.altair_chart(style_chart(bars), use_container_width=True, theme=None)
         else:
             st.info("Sin datos territoriales.")
         st.markdown('</div>', unsafe_allow_html=True)
 
     with z2:
-        # Contexto zona crítica y sólida
-        st.markdown('<div class="section-card"><div class="section-title">Extremos del territorio</div><div class="section-subtitle">La zona que más urge y la que mejor referencia</div>', unsafe_allow_html=True)
-        if worst_zone is not None:
-            st.markdown(f'<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.20);border-radius:14px;padding:14px;margin-bottom:10px;"><div style="font-size:.64rem;font-weight:900;color:#FCA5A5;text-transform:uppercase;margin-bottom:5px;">Prioridad 1</div><div style="font-size:.95rem;font-weight:900;color:#F8FAFC;margin-bottom:5px;">{_wz_cp}</div><div style="font-size:.72rem;color:#94A3B8;line-height:1.7;">Crítica: <b style="color:#EF4444;">{fmt_pct(_wz_pct)}</b><br>Mediana: <b>{fmt_dBm(_wz_med)}</b><br>Op. débil: <b>{_wz_op}</b></div></div>', unsafe_allow_html=True)
-        if best_zone is not None:
-            st.markdown(f'<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.20);border-radius:14px;padding:14px;margin-bottom:10px;"><div style="font-size:.64rem;font-weight:900;color:#86EFAC;text-transform:uppercase;margin-bottom:5px;">Zona referente</div><div style="font-size:.95rem;font-weight:900;color:#F8FAFC;margin-bottom:5px;">{_bz_cp}</div><div style="font-size:.72rem;color:#94A3B8;line-height:1.7;">Buena+: <b style="color:#22C55E;">{fmt_pct(_bz_pct)}</b><br>Op. líder: <b>{best_zone["Operador_lider"]}</b></div></div>', unsafe_allow_html=True)
-        # Distribución de CP por nivel de criticidad
+        # Distribución por nivel
         if not zone_summary.empty and "Pct_critica" in zone_summary.columns:
-            _bins = [0,10,30,50,100]; _lbls = ["0–10%","10–30%","30–50%",">50%"]
+            _bins=[0,10,30,50,100]; _lbls=["0–10%","10–30%","30–50%",">50%"]
             _zc = zone_summary.copy()
             _zc["rango"] = pd.cut(_zc["Pct_critica"],bins=_bins,labels=_lbls,right=True)
             _rc = _zc["rango"].value_counts().reindex(_lbls,fill_value=0).reset_index()
             _rc.columns = ["Rango","CP"]
-            st.markdown('<div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-top:10px;margin-bottom:6px;">CP por nivel de criticidad</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">CP por nivel de criticidad</div><div class="section-subtitle">Cuántos CP hay en cada rango de % señal crítica</div>', unsafe_allow_html=True)
+            _total_cp = int(_rc["CP"].sum())
             for _, rn in _rc.iterrows():
-                _rcc = "#EF4444" if rn["Rango"]==">50%" else "#F59E0B" if rn["Rango"]=="30–50%" else "#64748B"
-                _rw  = int(rn["CP"]/max(_rc["CP"].max(),1)*100)
+                _rcc = "#EF4444" if rn["Rango"]==">50%" else "#F59E0B" if rn["Rango"]=="30–50%" else "#84CC16" if rn["Rango"]=="0–10%" else "#64748B"
+                _rpct = int(rn["CP"])/max(_total_cp,1)*100
                 st.markdown(f"""
-                <div style="margin-bottom:8px;">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
-                        <span style="font-size:.72rem;color:#94A3B8;">{rn["Rango"]} crítica</span>
-                        <span style="font-size:.72rem;font-weight:800;color:{_rcc};">{int(rn["CP"])} CP</span>
+                <div style="margin-bottom:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;">
+                        <span style="font-size:.74rem;color:#E2E8F0;font-weight:700;">{rn["Rango"]} crítica</span>
+                        <span style="font-size:.82rem;font-weight:900;color:{_rcc};">{int(rn["CP"])} CP</span>
                     </div>
-                    <div style="width:100%;height:5px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;"><div style="width:{_rw}%;height:100%;background:{_rcc};border-radius:99px;"></div></div>
+                    <div style="width:100%;height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
+                        <div style="width:{_rpct:.1f}%;height:100%;background:{_rcc};border-radius:99px;"></div>
+                    </div>
                 </div>""", unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        # Tabla compacta
+        st.markdown('<div class="section-card" style="margin-top:8px;"><div class="section-title">Top 10 — tabla accionable</div><div class="section-subtitle">Solo las columnas que importan para actuar</div>', unsafe_allow_html=True)
+        if not top_zones.empty:
+            _sc = [c for c in ["Codigo_postal","LOCALIDAD","RSRP_mediana","Pct_critica","Pct_buena_o_mejor","Operador_mas_debil"] if c in top_zones.columns]
+            _tz = safe_round_columns(top_zones[_sc].head(10).copy(),["RSRP_mediana","Pct_critica","Pct_buena_o_mejor"])
+            _tz.columns = [{"Codigo_postal":"CP","LOCALIDAD":"Localidad","RSRP_mediana":"Mediana","Pct_critica":"% Crit.","Pct_buena_o_mejor":"% Buena+","Operador_mas_debil":"Op. débil"}.get(c,c) for c in _tz.columns]
+            st.dataframe(_tz, use_container_width=True, height=280)
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── Tabla compacta — solo lo que importa ──────────────────────────────────
-    st.markdown('<div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 6px 0;">Tabla de CP críticos — columnas clave</div>', unsafe_allow_html=True)
-    if not top_zones.empty:
-        _show_cols = [c for c in ["Codigo_postal","LOCALIDAD","BARRIO","RSRP_mediana","Pct_critica","Pct_buena_o_mejor","Operador_mas_debil","Operadores_presentes"] if c in top_zones.columns]
-        _tz = safe_round_columns(top_zones[_show_cols].head(15).copy(),["RSRP_mediana","Pct_critica","Pct_buena_o_mejor"])
-        _tz.columns = [{"Codigo_postal":"CP","LOCALIDAD":"Localidad","BARRIO":"Barrio","RSRP_mediana":"Mediana (dBm)","Pct_critica":"% Crítica","Pct_buena_o_mejor":"% Buena+","Operador_mas_debil":"Op. débil","Operadores_presentes":"# Ops"}.get(c,c) for c in _tz.columns]
-        st.dataframe(_tz, use_container_width=True, height=360)
-        st.markdown('<div style="font-size:.68rem;color:#94A3B8;margin-top:4px;">Ordenado por mayor % crítica · solo columnas accionables</div>', unsafe_allow_html=True)
-    else:
-        st.info("Sin datos territoriales.")
+    # ── Conclusión ────────────────────────────────────────────────────────────
+    _n_muy_crit = int((zone_summary["Pct_critica"]>50).sum()) if not zone_summary.empty else 0
+    _concl_ter = (
+        f"De {fmt_int(_n_cp)} CP evaluados, {fmt_int(cp_critical_count)} ({fmt_pct(cp_critical_share)}) están en señal crítica. "
+        f"{fmt_int(_n_muy_crit)} CP superan el 50% de señal crítica — estos son la prioridad máxima de intervención. "
+        f"La zona más urgente es {_wz_cp} con {fmt_pct(_wz_pct)} crítica y mediana {fmt_dBm(_wz_med)}. "
+        f"En el otro extremo, {_bz_cp} es el referente del territorio con {fmt_pct(_bz_pct)} de señal buena o mejor."
+    )
+    st.markdown(f"""
+    <div style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(99,102,241,0.06));border:1px solid rgba(99,102,241,0.18);border-radius:18px;padding:16px 20px;margin-top:14px;">
+        <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Conclusión ejecutiva</div>
+        <div style="font-size:.84rem;color:#E2E8F0;line-height:1.7;">{_concl_ter}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB 4 — VARIACIÓN
-# Historia: ¿La señal mejoró o empeoró? ¿Quién mejoró más y quién más empeoró?
 # ─────────────────────────────────────────────────────────────────────────────
 with tab4:
-    _vg4  = variation_result.get("variacion_global",0) or 0
+    _vg4  = float(variation_result.get("variacion_global",0) or 0)
     _vc4  = "#22C55E" if _vg4>=0 else "#EF4444"
     _tie4 = variation_result.get("tiene_variacion",False)
-    _pi4  = variation_result.get("periodo_inicial","N/D")
-    _pf4  = variation_result.get("periodo_final","N/D")
+    _pi4  = str(variation_result.get("periodo_inicial","N/D"))
+    _pf4  = str(variation_result.get("periodo_final","N/D"))
 
-    # ── Headline con contexto claro de QUÉ se compara ─────────────────────────
     st.markdown(f"""
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.96),rgba(10,18,34,0.98));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:18px 28px;margin-bottom:14px;display:flex;align-items:center;gap:32px;">
-        <div style="flex:0 0 auto;min-width:200px;">
-            <div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Variación de señal</div>
-            <div style="font-size:3rem;font-weight:950;color:{_vc4};line-height:1;">{"▲" if _vg4>=0 else "▼"} {fmt_var_dBm(_vg4)}</div>
-            <div style="font-size:.78rem;color:#CBD5E1;margin-top:4px;">{"Señal mejoró" if _vg4>=0 else "Señal se deterioró"} en el periodo</div>
-            <div style="font-size:.68rem;color:#64748B;margin-top:3px;">Comparando <b>{_pi4}</b> vs <b>{_pf4}</b></div>
+    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.97),rgba(10,18,34,0.99));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:22px 28px;margin-bottom:16px;">
+        <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Variación de señal RSRP · comparando <b style="color:#E2E8F0;">{_pi4}</b> vs <b style="color:#E2E8F0;">{_pf4}</b></div>
+        <div style="display:flex;align-items:flex-end;gap:20px;margin-bottom:12px;">
+            <div style="font-size:4rem;font-weight:950;color:{_vc4};line-height:1;">{"▲" if _vg4>=0 else "▼"} {fmt_var_dBm(_vg4)}</div>
+            <div style="padding-bottom:6px;">
+                <div style="font-size:1rem;font-weight:800;color:{_vc4};">{"Señal mejoró" if _vg4>=0 else "Señal se deterioró"} en el periodo</div>
+                <div style="font-size:.76rem;color:#94A3B8;">{nivel_temporal_variacion} · {fmt_int(len(variation_cp)) if not variation_cp.empty else "N/D"} CP con datos en ambos periodos</div>
+            </div>
         </div>
-        <div style="width:1px;height:70px;background:rgba(255,255,255,0.07);flex-shrink:0;"></div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;flex:1;">
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);">
             <div>
-                <div style="font-size:.64rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:3px;">Mayor mejora</div>
-                <div style="font-size:1.4rem;font-weight:900;color:#22C55E;">{fmt_var_dBm(mayor_mejora["Variacion_RSRP"]) if mayor_mejora is not None else "N/D"}</div>
+                <div style="font-size:.62rem;font-weight:900;color:#86EFAC;text-transform:uppercase;margin-bottom:3px;">CP con mayor mejora</div>
+                <div style="font-size:1.5rem;font-weight:900;color:#22C55E;">{fmt_var_dBm(mayor_mejora["Variacion_RSRP"]) if mayor_mejora is not None else "N/D"}</div>
                 <div style="font-size:.68rem;color:#64748B;">CP {str(mayor_mejora["Codigo_postal"]) if mayor_mejora is not None else "N/D"}</div>
             </div>
             <div>
-                <div style="font-size:.64rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:3px;">Mayor deterioro</div>
-                <div style="font-size:1.4rem;font-weight:900;color:#EF4444;">{fmt_var_dBm(mayor_deterioro["Variacion_RSRP"]) if mayor_deterioro is not None else "N/D"}</div>
+                <div style="font-size:.62rem;font-weight:900;color:#FCA5A5;text-transform:uppercase;margin-bottom:3px;">CP con mayor deterioro</div>
+                <div style="font-size:1.5rem;font-weight:900;color:#EF4444;">{fmt_var_dBm(mayor_deterioro["Variacion_RSRP"]) if mayor_deterioro is not None else "N/D"}</div>
                 <div style="font-size:.68rem;color:#64748B;">CP {str(mayor_deterioro["Codigo_postal"]) if mayor_deterioro is not None else "N/D"}</div>
-            </div>
-            <div>
-                <div style="font-size:.64rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:3px;">CP con variación</div>
-                <div style="font-size:1.4rem;font-weight:900;color:#F8FAFC;">{fmt_int(len(variation_cp)) if not variation_cp.empty else "N/D"}</div>
-                <div style="font-size:.68rem;color:#64748B;">Con datos en ambos periodos</div>
             </div>
         </div>
     </div>
@@ -5622,11 +5664,9 @@ with tab4:
     if not _tie4:
         st.info(variation_result.get("message","Se necesitan al menos 2 periodos para calcular variación."))
     else:
-        # ── Trayectoria + variación por operador ─────────────────────────────
-        st.markdown('<div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">¿Cómo evolucionó la señal en el tiempo?</div>', unsafe_allow_html=True)
         v1,v2 = st.columns(2,gap="large")
         with v1:
-            st.markdown('<div class="section-card"><div class="section-title">Trayectoria global de señal</div><div class="section-subtitle">Mediana RSRP por periodo · línea que sube = mejora · área = volumen de datos</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">Trayectoria de señal en el tiempo</div><div class="section-subtitle">Mediana RSRP por periodo · línea que sube = mejora de red · área = volumen de datos</div>', unsafe_allow_html=True)
             if not variation_period.empty:
                 _pc = variation_period.columns[0]
                 tj = alt.Chart(variation_period).mark_line(point=True,strokeWidth=2.5,color="#E10600").encode(
@@ -5641,7 +5681,7 @@ with tab4:
             st.markdown('</div>', unsafe_allow_html=True)
 
         with v2:
-            st.markdown('<div class="section-card"><div class="section-title">Variación de señal por operador</div><div class="section-subtitle">¿Qué operador mejoró más y cuál empeoró más? · verde = mejora · rojo = deterioro</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-card"><div class="section-title">Variación por operador</div><div class="section-subtitle">Cambio de señal entre {_pi4} y {_pf4} · verde = mejoró · rojo = empeoró</div>', unsafe_allow_html=True)
             if not variation_operator.empty:
                 ov = alt.Chart(variation_operator).mark_bar(cornerRadiusTopLeft=6,cornerRadiusTopRight=6).encode(
                     x=alt.X("Operador:N",title=None,sort="-y"),
@@ -5651,16 +5691,13 @@ with tab4:
                 ).properties(height=280)
                 zl = alt.Chart(pd.DataFrame({"y":[0]})).mark_rule(color="rgba(255,255,255,0.2)",strokeDash=[4,3]).encode(y="y:Q")
                 st.altair_chart(style_chart(ov+zl), use_container_width=True, theme=None)
-                st.markdown(f'<div style="font-size:.68rem;color:#94A3B8;margin-top:4px;">Comparando {_pi4} vs {_pf4} · barras sobre cero = mejoró · bajo cero = empeoró</div>', unsafe_allow_html=True)
             else:
                 st.info("Sin datos de variación por operador.")
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── Top mejoras y deterioros ──────────────────────────────────────────
-        st.markdown('<div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">¿Qué CP mejoraron más y cuáles empeoraron más?</div>', unsafe_allow_html=True)
         vd1,vd2 = st.columns(2,gap="large")
         with vd1:
-            st.markdown('<div class="section-card"><div class="section-title">Top 10 — mayor mejora de señal</div><div class="section-subtitle">CP donde la señal subió más entre inicio y fin del periodo</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-card"><div class="section-title">Top 10 — mayor mejora</div><div class="section-subtitle">CP donde la señal mejoró más entre {_pi4} y {_pf4}</div>', unsafe_allow_html=True)
             if not variation_cp.empty:
                 mj = safe_round_columns(variation_cp.sort_values("Variacion_RSRP",ascending=False).head(10).copy(),["RSRP_inicial","RSRP_final","Variacion_RSRP"])
                 st.dataframe(mj, use_container_width=True, height=280)
@@ -5668,7 +5705,7 @@ with tab4:
                 st.info("Sin datos.")
             st.markdown('</div>', unsafe_allow_html=True)
         with vd2:
-            st.markdown('<div class="section-card"><div class="section-title">Top 10 — mayor deterioro de señal</div><div class="section-subtitle">CP donde la señal bajó más — prioridad de revisión de red</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-card"><div class="section-title">Top 10 — mayor deterioro</div><div class="section-subtitle">CP donde la señal empeoró más — prioridad de revisión de red</div>', unsafe_allow_html=True)
             if not variation_cp.empty:
                 dt = safe_round_columns(variation_cp.sort_values("Variacion_RSRP",ascending=True).head(10).copy(),["RSRP_inicial","RSRP_final","Variacion_RSRP"])
                 st.dataframe(dt, use_container_width=True, height=280)
@@ -5676,9 +5713,26 @@ with tab4:
                 st.info("Sin datos.")
             st.markdown('</div>', unsafe_allow_html=True)
 
+        # Conclusión
+        _op_mejor = variation_operator.sort_values("Variacion_RSRP",ascending=False).iloc[0] if not variation_operator.empty else None
+        _op_peor  = variation_operator.sort_values("Variacion_RSRP",ascending=True).iloc[0]  if not variation_operator.empty else None
+        _concl_var = (
+            f"Comparando {_pi4} con {_pf4}, la señal {'mejoró' if _vg4>=0 else 'se deterioró'} {fmt_var_dBm(abs(_vg4))} a nivel global. "
+            + (f"{_op_mejor['Operador']} fue el operador con mayor mejora ({fmt_var_dBm(_op_mejor['Variacion_RSRP'])}), "
+               f"mientras {_op_peor['Operador']} tuvo el mayor deterioro ({fmt_var_dBm(_op_peor['Variacion_RSRP'])}). " if _op_mejor is not None else "")
+            + (f"El CP con mayor mejora fue {mayor_mejora['Codigo_postal']} ({fmt_var_dBm(mayor_mejora['Variacion_RSRP'])}) "
+               f"y el de mayor deterioro fue {mayor_deterioro['Codigo_postal']} ({fmt_var_dBm(mayor_deterioro['Variacion_RSRP'])})." if mayor_mejora is not None else "")
+        )
+        st.markdown(f"""
+        <div style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(99,102,241,0.06));border:1px solid rgba(99,102,241,0.18);border-radius:18px;padding:16px 20px;margin-top:14px;">
+            <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Conclusión ejecutiva</div>
+            <div style="font-size:.84rem;color:#E2E8F0;line-height:1.7;">{_concl_var}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB 5 — MERCADO
-# Historia: ¿Quién domina el mercado, gana más clientes y la señal lo explica?
+# Hilo conductor: ¿la señal explica el liderazgo comercial?
 # ─────────────────────────────────────────────────────────────────────────────
 with tab5:
     _biz5 = business_metrics.get("available",False)
@@ -5690,56 +5744,49 @@ with tab5:
     _lac5 = OPERATOR_COLORS.get(_la5,"#F8FAFC")
     _vm5  = business_metrics.get("variation_market",np.nan)
     _va5  = business_metrics.get("variation_altas",np.nan)
+    _gm5  = float(market_lead_gap) if pd.notna(market_lead_gap) else 0
     _rsk5 = len(risk_table) if risk_table is not None and not risk_table.empty else 0
     _opp5 = len(opportunity_table) if opportunity_table is not None and not opportunity_table.empty else 0
 
     if not _biz5:
         st.warning(business_metrics.get("message") or "Sin datos de mercado y captación disponibles.")
+    else:
+        # ── Headline ─────────────────────────────────────────────────────────
+        _same5 = _lm5==_la5
+        _gmc5  = "#22C55E" if _gm5>=15 else "#F59E0B" if _gm5>=5 else "#EF4444"
+        st.markdown(f"""
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.97),rgba(10,18,34,0.99));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:22px 28px;margin-bottom:16px;">
+            <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">Posición competitiva en mercado y captación</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;">
+                <div>
+                    <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:4px;">Líder de mercado</div>
+                    <div style="font-size:1.2rem;font-weight:900;color:{_lmc5};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{_lm5}</div>
+                    <div style="font-size:.68rem;color:#64748B;">{_lmp5:.1f}% cuota acumulada</div>
+                    {_bar_op(_lmp5,_lmc5)}
+                </div>
+                <div>
+                    <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:4px;">Líder de captación</div>
+                    <div style="font-size:1.2rem;font-weight:900;color:{_lac5};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{_la5}</div>
+                    <div style="font-size:.68rem;color:#64748B;">{_lap5:.1f}% de las altas nuevas</div>
+                    {_bar_op(_lap5,_lac5)}
+                </div>
+                <div>
+                    <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:4px;">Ventaja del líder</div>
+                    <div style="font-size:1.6rem;font-weight:900;color:{_gmc5};">{_gm5:.1f} pp</div>
+                    <div style="font-size:.68rem;color:#64748B;">{"Liderazgo sólido" if _gm5>=15 else "Liderazgo moderado" if _gm5>=5 else "Mercado disputado"}</div>
+                </div>
+                <div>
+                    <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:4px;">Focos identificados</div>
+                    <div style="font-size:1.6rem;font-weight:900;color:{"#EF4444" if _rsk5>3 else "#F59E0B" if _rsk5>0 else "#22C55E"};">{_rsk5+_opp5}</div>
+                    <div style="font-size:.68rem;color:#64748B;">{_rsk5} riesgos · {_opp5} oportunidades</div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    # ── Headline — los 2 líderes + qué está cambiando ─────────────────────────
-    st.markdown('<div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">¿Quién domina el mercado y quién capta más clientes nuevos?</div>', unsafe_allow_html=True)
-    t5k1,t5k2,t5k3,t5k4 = st.columns(4,gap="medium")
-    def _vt5(v,lbl):
-        if not pd.notna(v): return ""
-        c="#22C55E" if v>=0 else "#EF4444"; a="▲" if v>=0 else "▼"
-        return f'<div style="font-size:.68rem;font-weight:800;color:{c};margin-top:3px;">{a} {abs(v):.1f} pp {lbl}</div>'
-
-    with t5k1:
-        st.markdown(f"""<div class="card" style="min-height:0;">
-            <div class="kpi-label">Líder de mercado</div>
-            <div class="kpi-value" style="font-size:1.2rem;color:{_lmc5};">{_lm5}</div>
-            <div class="kpi-sub">{_lmp5:.1f}% cuota de mercado acumulada</div>
-            {_bar_op(_lmp5,_lmc5)}
-            {_vt5(_vm5,"vs periodo ant.")}
-        </div>""", unsafe_allow_html=True)
-    with t5k2:
-        st.markdown(f"""<div class="card" style="min-height:0;">
-            <div class="kpi-label">Líder de captación</div>
-            <div class="kpi-value" style="font-size:1.2rem;color:{_lac5};">{_la5}</div>
-            <div class="kpi-sub">{_lap5:.1f}% de las altas nuevas totales</div>
-            {_bar_op(_lap5,_lac5)}
-            {_vt5(_va5,"vs periodo ant.")}
-        </div>""", unsafe_allow_html=True)
-    with t5k3:
-        _gm5 = float(market_lead_gap) if pd.notna(market_lead_gap) else 0
-        _gmc = "#22C55E" if _gm5>=15 else "#F59E0B" if _gm5>=5 else "#EF4444"
-        st.markdown(f"""<div class="card" style="min-height:0;">
-            <div class="kpi-label">Ventaja del líder de mercado</div>
-            <div class="kpi-value" style="color:{_gmc};">{_gm5:.1f} pp</div>
-            <div class="kpi-sub">{"Liderazgo sólido" if _gm5>=15 else "Liderazgo moderado" if _gm5>=5 else "Mercado muy disputado"} · diferencia vs 2do operador</div>
-        </div>""", unsafe_allow_html=True)
-    with t5k4:
-        _fc5 = "#EF4444" if _rsk5>3 else "#F59E0B" if _rsk5>0 else "#22C55E"
-        st.markdown(f"""<div class="card" style="min-height:0;">
-            <div class="kpi-label">Focos comerciales</div>
-            <div class="kpi-value" style="color:{_fc5};">{_rsk5 + _opp5}</div>
-            <div class="kpi-sub">{_rsk5} riesgos · {_opp5} oportunidades identificadas</div>
-        </div>""", unsafe_allow_html=True)
-
-    if _biz5:
-        # ── Mercado vs captación — ranking doble ─────────────────────────────
-        st.markdown('<div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">Mercado vs captación — ¿quién está ganando y quién está perdiendo?</div>', unsafe_allow_html=True)
-        st.markdown('<div style="font-size:.74rem;color:#64748B;margin-bottom:8px;">Si captación supera al mercado, ese operador está ganando participación activa. Si es menor, está perdiendo terreno en clientes nuevos.</div>', unsafe_allow_html=True)
+        # ── Ranking doble mercado vs captación ───────────────────────────────
+        st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Mercado vs captación — quién gana y quién pierde terreno</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.74rem;color:#64748B;margin-bottom:8px;">Mercado = cuota acumulada · Captación = % de clientes nuevos captados · si captación supera mercado, ese operador está ganando participación activa</div>', unsafe_allow_html=True)
         if not market_operator.empty and not altas_operator.empty:
             _mkt5 = market_operator[["Operador","Cuota_mercado_global"]].copy()
             _alt5 = altas_operator[["Operador","Participacion_altas_global"]].copy()
@@ -5748,100 +5795,145 @@ with tab5:
                 _oc5 = OPERATOR_COLORS.get(rr["Operador"],"#64748B")
                 _mv5 = float(rr.get("Cuota_mercado_global",0))
                 _av5 = float(rr.get("Participacion_altas_global",0))
-                _df5 = _av5 - _mv5
+                _df5 = _av5-_mv5
                 _dc5 = "#22C55E" if _df5>=0 else "#EF4444"
-                _da5 = "▲ ganando" if _df5>=0 else "▼ perdiendo"
                 st.markdown(f"""
                 <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:9px 14px;margin-bottom:6px;">
-                    <div style="width:140px;flex-shrink:0;display:flex;align-items:center;gap:7px;">
+                    <div style="width:150px;flex-shrink:0;display:flex;align-items:center;gap:7px;">
                         <span style="width:9px;height:9px;border-radius:50%;background:{_oc5};display:inline-block;flex-shrink:0;"></span>
                         <span style="font-size:.78rem;font-weight:800;color:#F8FAFC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{rr["Operador"]}</span>
                     </div>
                     <div style="flex:1;min-width:0;">
-                        <div style="font-size:.60rem;color:#64748B;margin-bottom:1px;">Mercado acumulado</div>
+                        <div style="font-size:.60rem;color:#64748B;margin-bottom:1px;">Mercado</div>
                         <div style="width:100%;height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;"><div style="width:{min(_mv5,100):.1f}%;height:100%;background:{_oc5};border-radius:99px;opacity:.65;"></div></div>
                     </div>
-                    <div style="width:46px;text-align:right;font-size:.88rem;font-weight:900;color:{_oc5};flex-shrink:0;">{_mv5:.1f}%</div>
+                    <div style="width:46px;text-align:right;font-size:.90rem;font-weight:900;color:{_oc5};flex-shrink:0;">{_mv5:.1f}%</div>
                     <div style="flex:1;min-width:0;">
-                        <div style="font-size:.60rem;color:#64748B;margin-bottom:1px;">Captación (altas)</div>
+                        <div style="font-size:.60rem;color:#64748B;margin-bottom:1px;">Captación</div>
                         <div style="width:100%;height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;"><div style="width:{min(_av5,100):.1f}%;height:100%;background:{_oc5};border-radius:99px;opacity:.92;"></div></div>
                     </div>
-                    <div style="width:46px;text-align:right;font-size:.88rem;font-weight:900;color:{_oc5};flex-shrink:0;">{_av5:.1f}%</div>
-                    <div style="width:110px;text-align:right;font-size:.70rem;color:{_dc5};flex-shrink:0;font-weight:800;">{_da5} {abs(_df5):.1f} pp</div>
+                    <div style="width:46px;text-align:right;font-size:.90rem;font-weight:900;color:{_oc5};flex-shrink:0;">{_av5:.1f}%</div>
+                    <div style="width:120px;text-align:right;font-size:.72rem;color:{_dc5};flex-shrink:0;font-weight:800;">{"▲ ganando" if _df5>=0 else "▼ perdiendo"} {abs(_df5):.1f} pp</div>
                 </div>""", unsafe_allow_html=True)
 
         # ── Evolución temporal ────────────────────────────────────────────────
-        st.markdown('<div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">¿Cómo evolucionaron mercado y captación en el tiempo?</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">Evolución en el tiempo</div>', unsafe_allow_html=True)
         t5c1,t5c2 = st.columns(2,gap="large")
         with t5c1:
-            st.markdown('<div class="section-card"><div class="section-title">Cuota de mercado en el tiempo</div><div class="section-subtitle">Línea que sube = ganando mercado · línea que baja = cediendo participación</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">Cuota de mercado por periodo</div><div class="section-subtitle">Línea que sube = ganando mercado · línea que baja = cediendo participación</div>', unsafe_allow_html=True)
             if not market_time.empty and "Periodo_Mes" in market_time.columns and "Cuota_mercado" in market_time.columns:
                 mc = alt.Chart(market_time).mark_line(point=True,strokeWidth=2.5).encode(
                     x=alt.X("Periodo_Mes:T",title=None),
                     y=alt.Y("Cuota_mercado:Q",title="Cuota de mercado (%)"),
                     color=alt.Color("Operador:N",scale=alt.Scale(domain=list(OPERATOR_COLORS.keys()),range=list(OPERATOR_COLORS.values())),legend=alt.Legend(title="")),
                     tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Periodo_Mes:T",title="Periodo"),alt.Tooltip("Cuota_mercado:Q",title="Cuota %",format=".1f"),alt.Tooltip("Mercado_total:Q",title="Total mercado",format=",")]
-                ).properties(height=280)
+                ).properties(height=260)
                 st.altair_chart(style_chart(mc), use_container_width=True, theme=None)
                 if pd.notna(market_growth_pct):
                     _mgc = "#22C55E" if market_growth_pct>=0 else "#EF4444"
-                    st.markdown(f'<div style="font-size:.68rem;color:#94A3B8;margin-top:4px;">Volumen total: <span style="color:{_mgc};font-weight:800;">{"▲" if market_growth_pct>=0 else "▼"} {abs(market_growth_pct):.1f}%</span> · {market_period_initial} → {market_period_final}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="font-size:.68rem;color:#94A3B8;margin-top:4px;">Volumen de mercado: <span style="color:{_mgc};font-weight:800;">{"▲" if market_growth_pct>=0 else "▼"} {abs(market_growth_pct):.1f}%</span> entre {market_period_initial} y {market_period_final}</div>', unsafe_allow_html=True)
             else:
                 st.info("Sin datos temporales de mercado.")
             st.markdown('</div>', unsafe_allow_html=True)
         with t5c2:
-            st.markdown('<div class="section-card"><div class="section-title">Captación de altas en el tiempo</div><div class="section-subtitle">Participación en altas nuevas por mes · quién capta más clientes nuevos</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">Captación de altas por periodo</div><div class="section-subtitle">Participación en clientes nuevos · quién capta más en cada periodo</div>', unsafe_allow_html=True)
             if not altas_time.empty and "Periodo_Mes" in altas_time.columns and "Participacion_altas" in altas_time.columns:
                 ac = alt.Chart(altas_time).mark_line(point=True,strokeWidth=2.5).encode(
                     x=alt.X("Periodo_Mes:T",title=None),
                     y=alt.Y("Participacion_altas:Q",title="Participación altas (%)"),
                     color=alt.Color("Operador:N",scale=alt.Scale(domain=list(OPERATOR_COLORS.keys()),range=list(OPERATOR_COLORS.values())),legend=alt.Legend(title="")),
-                    tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Periodo_Mes:T",title="Periodo"),alt.Tooltip("Participacion_altas:Q",title="%",format=".1f"),alt.Tooltip("Altas_total:Q",title="Altas totales",format=",")]
-                ).properties(height=280)
+                    tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Periodo_Mes:T",title="Periodo"),alt.Tooltip("Participacion_altas:Q",title="%",format=".1f"),alt.Tooltip("Altas_total:Q",title="Altas",format=",")]
+                ).properties(height=260)
                 st.altair_chart(style_chart(ac), use_container_width=True, theme=None)
                 if pd.notna(altas_growth_pct):
                     _agc = "#22C55E" if altas_growth_pct>=0 else "#EF4444"
-                    st.markdown(f'<div style="font-size:.68rem;color:#94A3B8;margin-top:4px;">Altas totales: <span style="color:{_agc};font-weight:800;">{"▲" if altas_growth_pct>=0 else "▼"} {abs(altas_growth_pct):.1f}%</span> · {altas_period_initial} → {altas_period_final}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="font-size:.68rem;color:#94A3B8;margin-top:4px;">Altas totales: <span style="color:{_agc};font-weight:800;">{"▲" if altas_growth_pct>=0 else "▼"} {abs(altas_growth_pct):.1f}%</span> entre {altas_period_initial} y {altas_period_final}</div>', unsafe_allow_html=True)
             else:
                 st.info("Sin datos temporales de altas.")
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── La pregunta clave: ¿la señal explica el mercado? ──────────────────
+        # ── ¿La señal explica el mercado? — tabla comparativa (sin mezclar unidades)
         if not cross_operator.empty:
             _cols_c = [c for c in ["RSRP_mediana","Cuota_mercado_global","Participacion_altas_global"] if c in cross_operator.columns]
-            if len(_cols_c) >= 2:
-                st.markdown('<div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 4px 0;">¿El operador con mejor señal también lidera el mercado?</div>', unsafe_allow_html=True)
-                st.markdown('<div style="font-size:.74rem;color:#64748B;margin-bottom:8px;">Si el orden del ranking de señal coincide con el de mercado y captación, la calidad de red es un diferenciador comercial real.</div>', unsafe_allow_html=True)
-                st.markdown('<div class="section-card"><div class="section-title">Señal vs mercado vs captación</div><div class="section-subtitle">🔵 Señal (RSRP abs., menor = mejor) · 🔴 Cuota mercado % · 🟢 Captación (altas) %</div>', unsafe_allow_html=True)
-                _cm5 = cross_operator[["Operador"]+_cols_c].melt("Operador",var_name="Ind",value_name="Val")
-                _lm5d = {"RSRP_mediana":"Señal (abs menor=mejor)","Cuota_mercado_global":"Cuota mercado %","Participacion_altas_global":"Captación %"}
-                _cm5["Ind"] = _cm5["Ind"].map(_lm5d)
-                _cm5.loc[_cm5["Ind"]=="Señal (abs menor=mejor)","Val"] = _cm5.loc[_cm5["Ind"]=="Señal (abs menor=mejor)","Val"].abs()
-                _crs5 = alt.Chart(_cm5).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
-                    x=alt.X("Operador:N",title=None,axis=alt.Axis(labelAngle=-15)),
-                    y=alt.Y("Val:Q",title="Valor"),
-                    color=alt.Color("Ind:N",scale=alt.Scale(domain=["Señal (abs menor=mejor)","Cuota mercado %","Captación %"],range=["#38BDF8","#E10600","#22C55E"]),legend=alt.Legend(title="")),
-                    xOffset="Ind:N",
-                    tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Ind:N"),alt.Tooltip("Val:Q",format=".1f")]
-                ).properties(height=260)
-                st.altair_chart(style_chart(_crs5), use_container_width=True, theme=None)
+            if len(_cols_c)>=2:
+                st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 4px 0;">¿El operador con mejor señal también lidera el mercado?</div>', unsafe_allow_html=True)
+                st.markdown('<div style="font-size:.74rem;color:#64748B;margin-bottom:8px;">Ranking comparativo — posición de cada operador en señal, mercado y captación. Si los rankings coinciden, la calidad de red es un diferenciador real.</div>', unsafe_allow_html=True)
+
+                # Tabla de ranking posicional — sin mezclar unidades
+                _cross_tbl = cross_operator[["Operador"]+_cols_c].copy()
+                _cross_tbl["Pos. señal"]   = _cross_tbl["RSRP_mediana"].rank(ascending=False).astype(int) if "RSRP_mediana" in _cross_tbl.columns else "-"
+                _cross_tbl["Pos. mercado"] = _cross_tbl["Cuota_mercado_global"].rank(ascending=False).astype(int) if "Cuota_mercado_global" in _cross_tbl.columns else "-"
+                _cross_tbl["Pos. captac."] = _cross_tbl["Participacion_altas_global"].rank(ascending=False).astype(int) if "Participacion_altas_global" in _cross_tbl.columns else "-"
+                _cross_tbl = _cross_tbl.sort_values("RSRP_mediana",ascending=False) if "RSRP_mediana" in _cross_tbl.columns else _cross_tbl
+
+                # HTML ranking table — una fila por operador, 3 posiciones
+                st.markdown('<div class="section-card"><div class="section-title">Ranking posicional: señal · mercado · captación</div><div class="section-subtitle">#1 = mejor posición · si los tres rankings son iguales, la señal es el factor diferenciador</div>', unsafe_allow_html=True)
+                for _, rr in _cross_tbl.iterrows():
+                    _oc = OPERATOR_COLORS.get(rr["Operador"],"#64748B")
+                    _ps = int(rr["Pos. señal"]) if "Pos. señal" in rr else "-"
+                    _pm = int(rr["Pos. mercado"]) if "Pos. mercado" in rr else "-"
+                    _pc = int(rr["Pos. captac."]) if "Pos. captac." in rr else "-"
+                    _med_val = f'{rr["RSRP_mediana"]:.1f} dBm' if "RSRP_mediana" in rr else ""
+                    _mkt_val = f'{rr["Cuota_mercado_global"]:.1f}%' if "Cuota_mercado_global" in rr else ""
+                    _alt_val = f'{rr["Participacion_altas_global"]:.1f}%' if "Participacion_altas_global" in rr else ""
+                    def _pos_color(p): return "#22C55E" if p==1 else "#F59E0B" if p==2 else "#EF4444"
+                    st.markdown(f"""
+                    <div style="display:flex;align-items:center;gap:16px;background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:10px 16px;margin-bottom:6px;">
+                        <div style="display:flex;align-items:center;gap:7px;width:150px;flex-shrink:0;">
+                            <span style="width:9px;height:9px;border-radius:50%;background:{_oc};display:inline-block;flex-shrink:0;"></span>
+                            <span style="font-size:.80rem;font-weight:800;color:#F8FAFC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{rr["Operador"]}</span>
+                        </div>
+                        <div style="flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                            <div style="text-align:center;background:rgba(255,255,255,0.03);border-radius:10px;padding:8px;">
+                                <div style="font-size:.60rem;color:#64748B;text-transform:uppercase;margin-bottom:2px;">Señal</div>
+                                <div style="font-size:1.2rem;font-weight:900;color:{_pos_color(_ps)};">#{_ps}</div>
+                                <div style="font-size:.64rem;color:#64748B;">{_med_val}</div>
+                            </div>
+                            <div style="text-align:center;background:rgba(255,255,255,0.03);border-radius:10px;padding:8px;">
+                                <div style="font-size:.60rem;color:#64748B;text-transform:uppercase;margin-bottom:2px;">Mercado</div>
+                                <div style="font-size:1.2rem;font-weight:900;color:{_pos_color(_pm)};">#{_pm}</div>
+                                <div style="font-size:.64rem;color:#64748B;">{_mkt_val}</div>
+                            </div>
+                            <div style="text-align:center;background:rgba(255,255,255,0.03);border-radius:10px;padding:8px;">
+                                <div style="font-size:.60rem;color:#64748B;text-transform:uppercase;margin-bottom:2px;">Captación</div>
+                                <div style="font-size:1.2rem;font-weight:900;color:{_pos_color(_pc)};">#{_pc}</div>
+                                <div style="font-size:.64rem;color:#64748B;">{_alt_val}</div>
+                            </div>
+                        </div>
+                    </div>""", unsafe_allow_html=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── Focos: riesgos y oportunidades ────────────────────────────────────
+        # ── Focos ─────────────────────────────────────────────────────────────
         if _rsk5>0 or _opp5>0:
-            st.markdown('<div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">Riesgos y oportunidades identificadas</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">Focos comerciales — riesgos y oportunidades</div>', unsafe_allow_html=True)
             fc1,fc2 = st.columns(2,gap="large")
             with fc1:
-                st.markdown('<div class="section-card"><div class="section-title">Riesgos</div><div class="section-subtitle">Zonas donde la posición competitiva se deteriora</div>', unsafe_allow_html=True)
+                st.markdown('<div class="section-card"><div class="section-title">Riesgos</div><div class="section-subtitle">Zonas con buena cuota de mercado pero señal deteriorada — riesgo de perder clientes</div>', unsafe_allow_html=True)
                 if risk_table is not None and not risk_table.empty:
                     st.dataframe(risk_table, use_container_width=True, height=240)
                 else:
                     st.success("✅ Sin riesgos identificados.")
                 st.markdown('</div>', unsafe_allow_html=True)
             with fc2:
-                st.markdown('<div class="section-card"><div class="section-title">Oportunidades</div><div class="section-subtitle">Zonas con potencial de captación sin explotar</div>', unsafe_allow_html=True)
+                st.markdown('<div class="section-card"><div class="section-title">Oportunidades</div><div class="section-subtitle">Zonas con señal relativamente mejor pero baja cuota — potencial de captación sin explotar</div>', unsafe_allow_html=True)
                 if opportunity_table is not None and not opportunity_table.empty:
                     st.dataframe(opportunity_table, use_container_width=True, height=240)
                 else:
                     st.info("Sin oportunidades identificadas.")
                 st.markdown('</div>', unsafe_allow_html=True)
+
+        # ── Conclusión ejecutiva ──────────────────────────────────────────────
+        _same_leader = _lm5==_la5
+        _concl_mkt = (
+            f"{_lm5} lidera el mercado con {_lmp5:.1f}% de cuota acumulada. "
+            + (f"El mismo operador también lidera la captación con {_lap5:.1f}% de las altas nuevas — posición dominante en ambos frentes. " if _same_leader
+               else f"{_la5} lidera la captación con {_lap5:.1f}% de las altas nuevas — hay un operador distinto ganando la batalla de clientes nuevos. ")
+            + (f"La ventaja del líder de mercado es de {_gm5:.1f} pp — {'posición consolidada que será difícil de desafiar a corto plazo' if _gm5>=15 else 'liderazgo moderado con competencia activa' if _gm5>=5 else 'mercado muy disputado donde cualquier operador puede tomar el liderazgo'}. ")
+            + (f"Se identificaron {_rsk5} riesgos y {_opp5} oportunidades comerciales en el territorio." if _rsk5+_opp5>0 else "")
+        )
+        st.markdown(f"""
+        <div style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(99,102,241,0.06));border:1px solid rgba(99,102,241,0.18);border-radius:18px;padding:16px 20px;margin-top:14px;">
+            <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Conclusión ejecutiva</div>
+            <div style="font-size:.84rem;color:#E2E8F0;line-height:1.7;">{_concl_mkt}</div>
+        </div>
+        """, unsafe_allow_html=True)
