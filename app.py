@@ -3542,12 +3542,12 @@ def render_claro_view():
                         <span style="font-size:.80rem;">{badge}</span>
                     </div>
                     <div style="font-size:2rem;font-weight:950;color:{cp};line-height:1.05;">{p:.1f}%</div>
-                    <div style="font-size:.68rem;color:#64748B;margin-top:1px;">proyección fin de mes</div>
+                    <div style="font-size:.68rem;color:#64748B;margin-top:1px;">cumplimiento total del mes</div>
                     {_bar(p, cp)}
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px;">
-                        <div style="font-size:.70rem;color:#94A3B8;">Hoy: <span style="color:#F8FAFC;font-weight:800;">{fmt_pct_c(row["cumpl"])}</span></div>
+                        <div style="font-size:.70rem;color:#94A3B8;">Orgánicas: <span style="color:#F8FAFC;font-weight:800;">{row["cumpl_nat"]:.1f}%</span></div>
                         <div style="font-size:.70rem;color:#94A3B8;">Brecha: <span style="color:#F8FAFC;font-weight:800;">{fmt_int(row["brecha"])}</span></div>
-                        <div style="font-size:.70rem;color:#94A3B8;">Altas/día: <span style="color:#F8FAFC;font-weight:800;">{fmt_int(row["alt_dia"])}</span></div>
+                        <div style="font-size:.70rem;color:#94A3B8;">Ejec. total: <span style="color:#F8FAFC;font-weight:800;">{fmt_int(row["ejec_total"])}</span></div>
                         <div style="font-size:.70rem;color:#94A3B8;">Cuota alta: <span style="color:#F8FAFC;font-weight:800;">{fmt_pct_c(row["cuota_alta"])}</span> <span style="color:{_vc};font-size:.65rem;">{_vt}</span></div>
                     </div>
                 </div>""", unsafe_allow_html=True)
