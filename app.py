@@ -3146,13 +3146,14 @@ def build_excel(summary_operator_df, zone_exec_df, variation_operator_df, variat
 
 # =========================================================
 # MÓDULO: VISTA CLARO — PLAN Y EJECUCIÓN DE AGENTES
-# Archivo de datos: Plan_actualizado_CORTE_28_FINAL.xlsx
+# Archivo de datos: Plan_actualizado_CORTE_30_FINAL.xlsx
 # Hojas: Detalle (principal), LIKE SUR (resumen agente), Cierre marzo
 # =========================================================
 
 CLARO_FILE_CANDIDATES = [
-    os.path.join(BASE_DIR, "Plan_actualizado_CORTE_28_FINAL.xlsx"),
     os.path.join(BASE_DIR, "Plan_actualizado_CORTE_30_FINAL.xlsx"),
+    os.path.join(BASE_DIR, "Plan_actualizado_CORTE_28_FINAL.xlsx"),
+    os.path.join(BASE_DIR, "Plan_actualizado_CORTE_28_FINAL(1).xlsx"),
     os.path.join(BASE_DIR, "Plan_actualizado_CORTE_28_FINAL(2).xlsx"),
 ]
 
@@ -3282,16 +3283,20 @@ def render_claro_view():
     total_pdvs        = int(df["ID"].nunique()) if "ID" in df.columns else int(len(df))
     meta_nat_total    = df["META ALTA NAT (>$2000)"].sum()
     ejec_nat_total    = df["EJEC ALTA NAT"].sum()
-    meta_total_alta   = df["TOTAL META ALTA"].sum()
+    meta_indu_total   = df["META ALTA INDU (=< $2.000)"].sum() if "META ALTA INDU (=< $2.000)" in df.columns else 0
+    ejec_indu_total   = df["EJEC ALTA INDU"].sum() if "EJEC ALTA INDU" in df.columns else 0
+    # Meta total real = orgánicas + inducidas (TOTAL META ALTA en el archivo es otra métrica)
+    meta_total_real   = meta_nat_total + meta_indu_total
     ejec_total_alta   = df["EJE ALTA TOTAL"].sum()
+    meta_total_alta   = meta_total_real   # alias para compatibilidad
     meta_ingresos     = df["META INGRESOS M0"].sum()
     ejec_ingresos     = df["EJEC INGRESOS M0"].sum()
     cuota_mkt_media   = df["CUOTA DE MERCADO"].mean()
     cuota_alta_media  = df["CUOTA DE ALTA"].mean()
     rsrp_media        = df["RSRP"].mean()
 
-    cumplimiento_nat  = (ejec_nat_total / meta_nat_total * 100) if meta_nat_total > 0 else np.nan
-    cumplimiento_tot  = (ejec_total_alta / meta_total_alta * 100) if meta_total_alta > 0 else np.nan
+    cumplimiento_nat  = (ejec_nat_total  / meta_nat_total  * 100) if meta_nat_total  > 0 else np.nan
+    cumplimiento_tot  = (ejec_total_alta / meta_total_real * 100) if meta_total_real > 0 else np.nan
 
     s1_total = df["S1"].sum()
     s2_total = df["S2"].sum()
@@ -3350,13 +3355,13 @@ def render_claro_view():
     """, unsafe_allow_html=True)
 
     # ── Cálculos previos necesarios para el nav guide ─────────────────────────
-    _DIA_CORTE_NAV = 28; _DIAS_MES_NAV = 30; _FACTOR_NAV = _DIAS_MES_NAV / _DIA_CORTE_NAV
-    _proy_global   = (ejec_nat_total * _FACTOR_NAV / meta_nat_total * 100) if meta_nat_total > 0 else 0
+    _DIA_CORTE_NAV = 30; _DIAS_MES_NAV = 30; _FACTOR_NAV = 1.0  # mes completo
+    _proy_global   = ((ejec_nat_total + ejec_indu_total) / (meta_nat_total + meta_indu_total) * 100) if (meta_nat_total + meta_indu_total) > 0 else 0
     _cumpl_nav     = (ejec_nat_total / meta_nat_total * 100) if meta_nat_total > 0 else 0
     _pdvs_riesgo   = int(((df["META ALTA NAT (>$2000)"] > 0) &
                           ((df["EJEC ALTA NAT"] / df["META ALTA NAT (>$2000)"].replace(0,np.nan)*100).fillna(0) < 70)).sum())
     _by_ag_nav     = df.groupby("AGENTE").agg(ejec_nat=("EJEC ALTA NAT","sum"), meta_nat=("META ALTA NAT (>$2000)","sum")).reset_index()
-    _by_ag_nav["proy"] = (_by_ag_nav["ejec_nat"] * _FACTOR_NAV / _by_ag_nav["meta_nat"].replace(0,np.nan) * 100).fillna(0)
+    _by_ag_nav["proy"] = (_by_ag_nav["ejec_nat"] / _by_ag_nav["meta_nat"].replace(0,np.nan) * 100).fillna(0)
     _ag_riesgo     = (_by_ag_nav["proy"] < 70).sum()
     _s_vals_nav    = {s: float(df[s].sum()) if s in df.columns else 0.0 for s in ["S1","S2","S3","S4"]}
     _s_list        = [_s_vals_nav["S1"],_s_vals_nav["S2"],_s_vals_nav["S3"],_s_vals_nav["S4"]]
@@ -3382,7 +3387,7 @@ def render_claro_view():
             <div style="margin-bottom:6px;">{_nav_icon("chart")}</div>
             <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;line-height:1.3;">¿Cómo vamos?</div>
             <div style="font-size:.66rem;color:#64748B;margin-bottom:6px;line-height:1.3;">Estado del mes y proyección</div>
-            <div style="display:flex;align-items:center;gap:4px;font-size:.70rem;font-weight:800;color:{_sem_c(_proy_global)};">{_dot(_proy_global)}Proy. {_proy_global:.0f}%</div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:.70rem;font-weight:800;color:{_sem_c(_proy_global)};">{_dot(_proy_global)}Cumpl. {_proy_global:.0f}%</div>
         </div>
         <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
             <div style="margin-bottom:6px;">{_nav_icon("users")}</div>
@@ -3426,83 +3431,107 @@ def render_claro_view():
     # TAB C1 — ¿CÓMO VAMOS?
     # -------------------------------------------------------
     with tc1:
-        _DIA_CORTE = 28; _DIAS_MES = 30; _FACTOR = _DIAS_MES / _DIA_CORTE
-        brecha_nat      = meta_nat_total - ejec_nat_total
-        _proy_fin_mes   = ejec_nat_total * _FACTOR
-        _proy_vs_meta   = (_proy_fin_mes / meta_nat_total * 100) if meta_nat_total > 0 else 0
-        _altas_dia_real = ejec_nat_total / _DIA_CORTE
-        _meta_dia       = meta_nat_total / _DIAS_MES
-        _ritmo_pct      = (_altas_dia_real / _meta_dia * 100) if _meta_dia > 0 else 0
+        # Corte día 30 = mes completo — resultados finales, sin proyección
+        _DIA_CORTE = 30; _DIAS_MES = 30
+        _meta_total     = meta_nat_total + meta_indu_total
+        _ejec_total     = ejec_total_alta
+        _cumpl_total    = (_ejec_total / _meta_total * 100) if _meta_total > 0 else 0
+        _cumpl_nat_tc1  = (ejec_nat_total  / meta_nat_total  * 100) if meta_nat_total  > 0 else 0
+        _cumpl_indu_tc1 = (ejec_indu_total / meta_indu_total * 100) if meta_indu_total > 0 else 0
         _pdvs_con_meta  = int((df["META ALTA NAT (>$2000)"] > 0).sum())
         _cumpl_pdv_ser  = (df["EJEC ALTA NAT"] / df["META ALTA NAT (>$2000)"].replace(0, np.nan) * 100).fillna(0)
         _pdvs_bajo70    = int(((df["META ALTA NAT (>$2000)"] > 0) & (_cumpl_pdv_ser < 70)).sum())
         _pct_bajo70     = (_pdvs_bajo70 / _pdvs_con_meta * 100) if _pdvs_con_meta > 0 else 0
-        _var_alta_media = pd.to_numeric(df["VR_M-1.1"], errors="coerce").mean() if "VR_M-1.1" in df.columns else np.nan
 
         def _sc(v): return "#22C55E" if v >= 100 else "#F59E0B" if v >= 70 else "#EF4444"
         def _bar(pct, color):
             w = min(max(pct, 0), 100)
-            return f'<div style="width:100%;height:6px;background:rgba(255,255,255,0.08);border-radius:99px;margin-top:6px;overflow:hidden;"><div style="width:{w}%;height:100%;background:{color};border-radius:99px;transition:width .4s ease;"></div></div>'
+            return f'<div style="width:100%;height:6px;background:rgba(255,255,255,0.08);border-radius:99px;margin-top:6px;overflow:hidden;"><div style="width:{w}%;height:100%;background:{color};border-radius:99px;"></div></div>'
 
-        # ── Número protagonista ───────────────────────────────────────────────
-        _c_proy = _sc(_proy_vs_meta)
-        _estado_txt = "✅ La meta está en camino" if _proy_vs_meta >= 100 else ("⚠️ Recuperable con esfuerzo" if _proy_vs_meta >= 85 else "🔴 Meta en riesgo — se necesita acción")
+        _c_total = _sc(_cumpl_total)
+        _estado_txt = "✅ Meta total cumplida — cierre exitoso" if _cumpl_total >= 100 else ("🟡 Cierre por encima del 70%" if _cumpl_total >= 70 else "🔴 Meta total no alcanzada al cierre del mes")
+
+        # ── Protagonista: resultado final del mes ─────────────────────────────
         st.markdown(f"""
         <div style="background:linear-gradient(135deg,rgba(17,24,39,0.96),rgba(10,18,34,0.98));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:24px 28px;margin-bottom:16px;display:flex;align-items:center;gap:32px;">
             <div style="flex:0 0 auto;">
-                <div style="font-size:.72rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Proyección al cierre del mes</div>
-                <div style="font-size:3.8rem;font-weight:950;color:{_c_proy};line-height:1;">{_proy_vs_meta:.1f}%</div>
+                <div style="font-size:.72rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Resultado final · Mes completo</div>
+                <div style="font-size:3.8rem;font-weight:950;color:{_c_total};line-height:1;">{_cumpl_total:.1f}%</div>
                 <div style="font-size:.84rem;color:#CBD5E1;margin-top:6px;">{_estado_txt}</div>
-                {_bar(_proy_vs_meta, _c_proy)}
+                {_bar(_cumpl_total, _c_total)}
+                <div style="font-size:.70rem;color:#64748B;margin-top:4px;">Total: <b style="color:#F8FAFC;">{fmt_int(_ejec_total)}</b> de <b>{fmt_int(_meta_total)}</b> altas (orgánicas + inducidas)</div>
             </div>
-            <div style="width:1px;height:80px;background:rgba(255,255,255,0.08);flex-shrink:0;"></div>
+            <div style="width:1px;height:100px;background:rgba(255,255,255,0.08);flex-shrink:0;"></div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;flex:1;">
                 <div>
-                    <div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">Cumplimiento hoy</div>
-                    <div style="font-size:1.55rem;font-weight:900;color:{_sc(cumplimiento_nat if pd.notna(cumplimiento_nat) else 0)};">{fmt_pct_c(cumplimiento_nat)}</div>
-                    <div style="font-size:.72rem;color:#64748B;">{fmt_int(ejec_nat_total)} de {fmt_int(meta_nat_total)}</div>
-                    {_bar(cumplimiento_nat if pd.notna(cumplimiento_nat) else 0, _sc(cumplimiento_nat if pd.notna(cumplimiento_nat) else 0))}
+                    <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">Altas orgánicas</div>
+                    <div style="font-size:1.55rem;font-weight:900;color:{_sc(_cumpl_nat_tc1)};">{_cumpl_nat_tc1:.1f}%</div>
+                    <div style="font-size:.70rem;color:#64748B;">{fmt_int(ejec_nat_total)} de {fmt_int(meta_nat_total)}</div>
+                    {_bar(_cumpl_nat_tc1, _sc(_cumpl_nat_tc1))}
                 </div>
                 <div>
-                    <div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">Ritmo diario</div>
-                    <div style="font-size:1.55rem;font-weight:900;color:{_sc(_ritmo_pct)};">{fmt_int(_altas_dia_real)}<span style="font-size:.9rem;font-weight:600;"> /día</span></div>
-                    <div style="font-size:.72rem;color:#64748B;">Meta: {fmt_int(_meta_dia)}/día</div>
-                    {_bar(_ritmo_pct, _sc(_ritmo_pct))}
+                    <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">Altas inducidas</div>
+                    <div style="font-size:1.55rem;font-weight:900;color:{_sc(_cumpl_indu_tc1)};">{_cumpl_indu_tc1:.1f}%</div>
+                    <div style="font-size:.70rem;color:#64748B;">{fmt_int(ejec_indu_total)} de {fmt_int(meta_indu_total)}</div>
+                    {_bar(_cumpl_indu_tc1, _sc(_cumpl_indu_tc1))}
                 </div>
                 <div>
-                    <div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">PDVs con brecha</div>
+                    <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">PDVs bajo 70%</div>
                     <div style="font-size:1.55rem;font-weight:900;color:{_sc(100-_pct_bajo70)};">{fmt_int(_pdvs_bajo70)}</div>
-                    <div style="font-size:.72rem;color:#64748B;">{_pct_bajo70:.0f}% del portafolio activo</div>
+                    <div style="font-size:.70rem;color:#64748B;">{_pct_bajo70:.0f}% del portafolio activo</div>
                     {_bar(100-_pct_bajo70, _sc(100-_pct_bajo70))}
                 </div>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-        # ── Tarjetas de agente con barra de progreso ──────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Proyección por agente al cierre del mes</div>', unsafe_allow_html=True)
+        # ── Tarjetas de agente — resultado final del mes ──────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Resultado final por agente</div>', unsafe_allow_html=True)
         by_agente = df.groupby("AGENTE").agg(
-            pdvs=("ID","count"), meta_nat=("META ALTA NAT (>$2000)","sum"),
-            ejec_nat=("EJEC ALTA NAT","sum"), ejec_total=("EJE ALTA TOTAL","sum"),
+            pdvs=("ID","count"),
+            meta_nat=("META ALTA NAT (>$2000)","sum"),
+            ejec_nat=("EJEC ALTA NAT","sum"),
+            meta_indu=("META ALTA INDU (=< $2.000)","sum") if "META ALTA INDU (=< $2.000)" in df.columns else ("EJEC ALTA NAT","count"),
+            ejec_indu=("EJEC ALTA INDU","sum") if "EJEC ALTA INDU" in df.columns else ("EJEC ALTA NAT","count"),
+            ejec_total=("EJE ALTA TOTAL","sum"),
             cuota_alta=("CUOTA DE ALTA","mean"),
             var_alta=("VR_M-1.1","mean") if "VR_M-1.1" in df.columns else ("EJEC ALTA NAT","count"),
         ).reset_index()
-        by_agente["cumpl"]    = (by_agente["ejec_nat"] / by_agente["meta_nat"].replace(0,np.nan)*100).fillna(0)
-        by_agente["brecha"]   = by_agente["meta_nat"] - by_agente["ejec_nat"]
-        by_agente["proy_pct"] = (by_agente["ejec_nat"]*_FACTOR / by_agente["meta_nat"].replace(0,np.nan)*100).fillna(0)
-        by_agente["alt_dia"]  = by_agente["ejec_nat"] / _DIA_CORTE
-        _max_p = by_agente["proy_pct"].max(); _min_p = by_agente["proy_pct"].min()
+        by_agente["meta_total"] = by_agente["meta_nat"] + by_agente.get("meta_indu", 0)
+        by_agente["cumpl_total"]= (by_agente["ejec_total"] / by_agente["meta_total"].replace(0,np.nan)*100).fillna(0)
+        by_agente["cumpl_nat"]  = (by_agente["ejec_nat"]   / by_agente["meta_nat"].replace(0,np.nan)*100).fillna(0)
+        by_agente["brecha"]     = by_agente["meta_total"] - by_agente["ejec_total"]
+        _max_p = by_agente["cumpl_total"].max(); _min_p = by_agente["cumpl_total"].min()
 
         n_ag = min(len(by_agente), 4)
         ag_cols = st.columns(n_ag, gap="small")
-        for i, row in by_agente.sort_values("proy_pct", ascending=False).reset_index(drop=True).iterrows():
+        for i, row in by_agente.sort_values("cumpl_total", ascending=False).reset_index(drop=True).iterrows():
             ag_c   = AGENTE_COLORS.get(row["AGENTE"], AGENTE_COLORS.get(str(row["AGENTE"]).strip(), "#64748B"))
-            p      = row["proy_pct"]; cp = _sc(p)
+            p      = row["cumpl_total"]; cp = _sc(p)
             badge  = "🏆" if p == _max_p else ("⚠️" if p == _min_p else "")
             _var_a = row.get("var_alta", np.nan)
             _vt    = (f"{'↓' if pd.notna(_var_a) and _var_a < 0 else '↑'}{abs(_var_a):.1f}pp" if pd.notna(_var_a) and "VR_M-1.1" in df.columns else "")
             _vc    = "#EF4444" if pd.notna(_var_a) and _var_a < 0 else "#22C55E"
             with ag_cols[i % n_ag]:
+                st.markdown(f"""
+                <div class="card" style="min-height:0;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span style="width:9px;height:9px;border-radius:50%;background:{ag_c};display:inline-block;flex-shrink:0;"></span>
+                            <span style="font-size:.74rem;font-weight:900;color:#E2E8F0;">{row["AGENTE"]}</span>
+                        </div>
+                        <span style="font-size:.80rem;">{badge}</span>
+                    </div>
+                    <div style="font-size:2rem;font-weight:950;color:{cp};line-height:1.05;">{p:.1f}%</div>
+                    <div style="font-size:.68rem;color:#64748B;margin-top:1px;">cumplimiento total del mes</div>
+                    {_bar(p, cp)}
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px;">
+                        <div style="font-size:.70rem;color:#94A3B8;">Orgánicas: <span style="color:#F8FAFC;font-weight:800;">{row["cumpl_nat"]:.1f}%</span></div>
+                        <div style="font-size:.70rem;color:#94A3B8;">Brecha: <span style="color:#F8FAFC;font-weight:800;">{fmt_int(row["brecha"])}</span></div>
+                        <div style="font-size:.70rem;color:#94A3B8;">Ejec. total: <span style="color:#F8FAFC;font-weight:800;">{fmt_int(row["ejec_total"])}</span></div>
+                        <div style="font-size:.70rem;color:#94A3B8;">Cuota alta: <span style="color:#F8FAFC;font-weight:800;">{fmt_pct_c(row["cuota_alta"])}</span> <span style="color:{_vc};font-size:.65rem;">{_vt}</span></div>
+                    </div>
+                </div>""", unsafe_allow_html=True)
                 st.markdown(f"""
                 <div class="card" style="min-height:0;">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
@@ -3530,23 +3559,21 @@ def render_claro_view():
             meta_nat=("META ALTA NAT (>$2000)","sum"), cuota_alta=("CUOTA DE ALTA","mean"),
         ).reset_index()
         by_cat["cumpl"] = (by_cat["ejec_nat"]/by_cat["meta_nat"].replace(0,np.nan)*100).fillna(0)
-        by_cat["proy"]  = (by_cat["ejec_nat"]*_FACTOR/by_cat["meta_nat"].replace(0,np.nan)*100).fillna(0)
+        # Mes cerrado — no hay proyección, cumplimiento = resultado final
         cat_order = ["DIAMANTE","PLATINO","ORO","PLATA","BRONCE"]
         by_cat["CATEGORIA"] = pd.Categorical(by_cat["CATEGORIA"], categories=cat_order, ordered=True)
         by_cat = by_cat.sort_values("CATEGORIA")
 
         c1a, c1b = st.columns(2, gap="large")
         with c1a:
-            st.markdown('<div class="section-card"><div class="section-title">Cumplimiento vs proyección por categoría</div><div class="section-subtitle">🔴 Al corte · 🔸 Proyección fin de mes · línea verde = meta 100%</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-card"><div class="section-title">Cumplimiento final por categoría</div><div class="section-subtitle">Resultado final del mes por categoría · línea verde = 100% de meta</div>', unsafe_allow_html=True)
             if not by_cat.empty:
-                _mc = by_cat[["CATEGORIA","cumpl","proy"]].melt("CATEGORIA", var_name="Tipo", value_name="Valor")
-                _mc["Tipo"] = _mc["Tipo"].map({"cumpl":"Al corte (día 28)","proy":"Proyección fin mes"})
+                _mc = by_cat[["CATEGORIA","cumpl"]].copy()
                 ch = alt.Chart(_mc).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
                     x=alt.X("CATEGORIA:N",sort=cat_order,title=None),
-                    y=alt.Y("Valor:Q",title="% vs meta"),
-                    color=alt.Color("Tipo:N",scale=alt.Scale(domain=["Al corte (día 28)","Proyección fin mes"],range=["#E10600","rgba(225,6,0,0.28)"]),legend=alt.Legend(title="",orient="bottom")),
-                    xOffset="Tipo:N",
-                    tooltip=[alt.Tooltip("CATEGORIA:N"),alt.Tooltip("Tipo:N"),alt.Tooltip("Valor:Q",format=".1f",title="%")]
+                    y=alt.Y("cumpl:Q",title="Cumplimiento final (%)"),
+                    color=alt.Color("CATEGORIA:N",scale=alt.Scale(domain=cat_order,range=[CATEGORIA_COLORS.get(c,"#64748B") for c in cat_order]),legend=None),
+                    tooltip=[alt.Tooltip("CATEGORIA:N"),alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %"),alt.Tooltip("pdvs:Q",title="PDVs")]
                 ).properties(height=260)
                 r100 = alt.Chart(pd.DataFrame({"y":[100]})).mark_rule(color="#22C55E",strokeDash=[5,3],strokeWidth=2).encode(y="y:Q")
                 st.altair_chart(style_chart(ch+r100), use_container_width=True, theme=None)
@@ -3577,9 +3604,10 @@ def render_claro_view():
             cuota_alta=("CUOTA DE ALTA","mean"), rsrp=("RSRP","mean"),
         ).reset_index()
         by_ag_full["cumpl_nat"] = (by_ag_full["ejec_nat"]/by_ag_full["meta_nat"].replace(0,np.nan)*100).fillna(0)
-        by_ag_full["proy_nat"]  = (by_ag_full["ejec_nat"]*(_DIAS_MES/_DIA_CORTE)/by_ag_full["meta_nat"].replace(0,np.nan)*100).fillna(0)
+        by_ag_full["meta_total_ag"] = by_ag_full["meta_nat"] + by_ag_full.get("meta_indu",0)
+        by_ag_full["proy_nat"]  = (by_ag_full["ejec_total"]/by_ag_full["meta_total_ag"].replace(0,np.nan)*100).fillna(0)
         by_ag_full["part_ejec"] = (by_ag_full["ejec_nat"]/by_ag_full["ejec_nat"].sum()*100).fillna(0)
-        by_ag_full["brecha"]    = by_ag_full["meta_nat"] - by_ag_full["ejec_nat"]
+        by_ag_full["brecha"]    = by_ag_full["meta_total_ag"] - by_ag_full["ejec_total"]
 
         # ── Ranking visual de agentes ─────────────────────────────────────────
         st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Ranking de agentes — de mejor a peor proyección</div>', unsafe_allow_html=True)
@@ -3654,7 +3682,7 @@ def render_claro_view():
         st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:12px 0 6px 0;">Detalle completo por agente</div>', unsafe_allow_html=True)
         show_ag = safe_round_columns(by_ag_full[["AGENTE","pdvs","meta_nat","ejec_nat","cumpl_nat","proy_nat","brecha","cuota_alta"]].copy(),
             ["meta_nat","ejec_nat","cumpl_nat","proy_nat","brecha","cuota_alta"])
-        show_ag.columns = ["Agente","PDVs","Meta","Ejecutado","Cumpl. %","Proy. %","Brecha","Cuota Alta %"]
+        show_ag.columns = ["Agente","PDVs","Meta","Ejecutado","Cumpl. %","Cumpl. total %","Brecha","Cuota Alta %"]
         st.dataframe(show_ag, use_container_width=True, height=240)
 
 
@@ -3793,7 +3821,7 @@ def render_claro_view():
         ).reset_index()
         by_as_c3["cumpl"]  = (by_as_c3["ejec_nat"]/by_as_c3["meta_nat"].replace(0,np.nan)*100).fillna(0)
         by_as_c3["brecha"] = by_as_c3["meta_nat"] - by_as_c3["ejec_nat"]
-        by_as_c3["proy"]   = (by_as_c3["ejec_nat"]*_F_C3/by_as_c3["meta_nat"].replace(0,np.nan)*100).fillna(0)
+        by_as_c3["proy"]   = by_as_c3["cumpl"]  # mes cerrado — proyección = cumplimiento real
         # Umbral mínimo de meta para que sea relevante (median de meta para filtrar los muy pequeños)
         _meta_min_threshold = by_as_c3[by_as_c3["meta_nat"]>0]["meta_nat"].quantile(0.40)
         # Bottom performers = menor cumplimiento entre los que tienen meta significativa
@@ -3824,7 +3852,7 @@ def render_claro_view():
                     alt.Tooltip("AGENTE:N",        title="Agente"),
                     alt.Tooltip("cumpl:Q",         format=".1f", title="Cumpl. %"),
                     alt.Tooltip("brecha:Q",        format=",.0f", title="Altas pendientes"),
-                    alt.Tooltip("proy:Q",          format=".1f", title="Proyección %"),
+                    alt.Tooltip("proy_nat:Q",       format=".1f", title="Cumpl. total %"),
                     alt.Tooltip("ejec_total:Q",    format=",.0f", title="Altas ejecutadas"),
                     alt.Tooltip("cuota_alta:Q",    format=".1f", title="Cuota alta %"),
                     alt.Tooltip("pdvs:Q",          title="PDVs"),
@@ -4362,7 +4390,7 @@ def render_claro_view():
                 meta_nat=("META ALTA NAT (>$2000)","sum"),
             ).reset_index()
             _ag_mejora["cumpl"] = (_ag_mejora["ejec_nat"]/_ag_mejora["meta_nat"].replace(0,np.nan)*100).fillna(0)
-            _ag_mejora["proy"]  = (_ag_mejora["ejec_nat"]*(_DIAS_MES_NAV/_DIA_CORTE_NAV)/_ag_mejora["meta_nat"].replace(0,np.nan)*100).fillna(0)
+            _ag_mejora["proy"]  = (_ag_mejora["ejec_nat"]/_ag_mejora["meta_nat"].replace(0,np.nan)*100).fillna(0)  # mes cerrado
             _ag_mejora["brecha"]= _ag_mejora["meta_nat"] - _ag_mejora["ejec_nat"]
             _ag_mejora = _ag_mejora.sort_values("cuota_alta")
             st.markdown('<div class="section-card"><div class="section-title">Zona de mejora por agente</div><div class="section-subtitle">Ordenado por menor cuota de altas · muestra señal, captación y cumplimiento en una sola vista para identificar dónde actuar</div>', unsafe_allow_html=True)
@@ -4370,7 +4398,7 @@ def render_claro_view():
                 _ag_mejora[["AGENTE","pdvs","rsrp_medio","pct_criticos","cuota_alta","cuota_mkt","cumpl","proy","brecha"]].copy(),
                 ["rsrp_medio","pct_criticos","cuota_alta","cuota_mkt","cumpl","proy","brecha"]
             )
-            _show_mej.columns = ["Agente","PDVs","RSRP medio","% PDVs críticos","Cuota alta %","Cuota mkt %","Cumpl. %","Proy. %","Brecha"]
+            _show_mej.columns = ["Agente","PDVs","RSRP medio","% PDVs críticos","Cuota alta %","Cuota mkt %","Cumpl. %","Cumpl. total %","Brecha"]
             st.dataframe(_show_mej, use_container_width=True, height=260)
             st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">El agente arriba de la tabla tiene menor cuota de altas — es donde hay más potencial de captación por ganar · combina con la señal para priorizar</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
