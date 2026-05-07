@@ -3431,13 +3431,21 @@ def render_claro_view():
     # TAB C1 — ¿CÓMO VAMOS?
     # -------------------------------------------------------
     with tc1:
-        # Corte día 30 = mes completo — resultados finales, sin proyección
+        # Sistema dinámico: si día corte = días del mes → mes cerrado (resultado final)
+        # Si día corte < días del mes → mes en curso (mostrar proyección)
         _DIA_CORTE = 30; _DIAS_MES = 30
+        _MES_CERRADO_BANNER = (_DIA_CORTE >= _DIAS_MES)
+        _FACTOR_BANNER = 1.0 if _MES_CERRADO_BANNER else _DIAS_MES / _DIA_CORTE
+
         _meta_total     = meta_nat_total + meta_indu_total
         _ejec_total     = ejec_total_alta
         _cumpl_total    = (_ejec_total / _meta_total * 100) if _meta_total > 0 else 0
+        _proy_total     = (_ejec_total * _FACTOR_BANNER / _meta_total * 100) if _meta_total > 0 else 0
+        _valor_banner   = _cumpl_total if _MES_CERRADO_BANNER else _proy_total
         _cumpl_nat_tc1  = (ejec_nat_total  / meta_nat_total  * 100) if meta_nat_total  > 0 else 0
         _cumpl_indu_tc1 = (ejec_indu_total / meta_indu_total * 100) if meta_indu_total > 0 else 0
+        _proy_nat_tc1   = (_cumpl_nat_tc1  * _FACTOR_BANNER) if not _MES_CERRADO_BANNER else _cumpl_nat_tc1
+        _proy_indu_tc1  = (_cumpl_indu_tc1 * _FACTOR_BANNER) if not _MES_CERRADO_BANNER else _cumpl_indu_tc1
         _pdvs_con_meta  = int((df["META ALTA NAT (>$2000)"] > 0).sum())
         _cumpl_pdv_ser  = (df["EJEC ALTA NAT"] / df["META ALTA NAT (>$2000)"].replace(0, np.nan) * 100).fillna(0)
         _pdvs_bajo70    = int(((df["META ALTA NAT (>$2000)"] > 0) & (_cumpl_pdv_ser < 70)).sum())
@@ -3448,32 +3456,41 @@ def render_claro_view():
             w = min(max(pct, 0), 100)
             return f'<div style="width:100%;height:6px;background:rgba(255,255,255,0.08);border-radius:99px;margin-top:6px;overflow:hidden;"><div style="width:{w}%;height:100%;background:{color};border-radius:99px;"></div></div>'
 
-        _c_total = _sc(_cumpl_total)
-        _estado_txt = "✅ Meta total cumplida — cierre exitoso" if _cumpl_total >= 100 else ("🟡 Cierre por encima del 70%" if _cumpl_total >= 70 else "🔴 Meta total no alcanzada al cierre del mes")
+        _c_banner  = _sc(_valor_banner)
+        _titulo_banner = "Resultado final · Mes completo" if _MES_CERRADO_BANNER else f"Proyección al cierre · Día {_DIA_CORTE} de {_DIAS_MES}"
+        _lbl_nat   = "Orgánicas (final)" if _MES_CERRADO_BANNER else f"Orgánicas (proy.)"
+        _lbl_indu  = "Inducidas (final)" if _MES_CERRADO_BANNER else f"Inducidas (proy.)"
+        _val_nat   = _cumpl_nat_tc1 if _MES_CERRADO_BANNER else _proy_nat_tc1
+        _val_indu  = _cumpl_indu_tc1 if _MES_CERRADO_BANNER else _proy_indu_tc1
 
-        # ── Protagonista: resultado final del mes ─────────────────────────────
+        if _MES_CERRADO_BANNER:
+            _estado_txt = "✅ Meta total cumplida — cierre exitoso" if _valor_banner >= 100 else ("🟡 Cierre por encima del 70%" if _valor_banner >= 70 else "🔴 Meta total no alcanzada al cierre del mes")
+        else:
+            _estado_txt = "✅ En camino a cumplir la meta" if _valor_banner >= 100 else ("⚠️ Recuperable con esfuerzo" if _valor_banner >= 85 else "🔴 Meta en riesgo — se necesita acción")
+
+        # ── Protagonista ──────────────────────────────────────────────────────
         st.markdown(f"""
         <div style="background:linear-gradient(135deg,rgba(17,24,39,0.96),rgba(10,18,34,0.98));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:24px 28px;margin-bottom:16px;display:flex;align-items:center;gap:32px;">
             <div style="flex:0 0 auto;">
-                <div style="font-size:.72rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Resultado final · Mes completo</div>
-                <div style="font-size:3.8rem;font-weight:950;color:{_c_total};line-height:1;">{_cumpl_total:.1f}%</div>
+                <div style="font-size:.72rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">{_titulo_banner}</div>
+                <div style="font-size:3.8rem;font-weight:950;color:{_c_banner};line-height:1;">{_valor_banner:.1f}%</div>
                 <div style="font-size:.84rem;color:#CBD5E1;margin-top:6px;">{_estado_txt}</div>
-                {_bar(_cumpl_total, _c_total)}
+                {_bar(_valor_banner, _c_banner)}
                 <div style="font-size:.70rem;color:#64748B;margin-top:4px;">Total: <b style="color:#F8FAFC;">{fmt_int(_ejec_total)}</b> de <b>{fmt_int(_meta_total)}</b> altas (orgánicas + inducidas)</div>
             </div>
             <div style="width:1px;height:100px;background:rgba(255,255,255,0.08);flex-shrink:0;"></div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;flex:1;">
                 <div>
-                    <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">Altas orgánicas</div>
-                    <div style="font-size:1.55rem;font-weight:900;color:{_sc(_cumpl_nat_tc1)};">{_cumpl_nat_tc1:.1f}%</div>
+                    <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">{_lbl_nat}</div>
+                    <div style="font-size:1.55rem;font-weight:900;color:{_sc(_val_nat)};">{_val_nat:.1f}%</div>
                     <div style="font-size:.70rem;color:#64748B;">{fmt_int(ejec_nat_total)} de {fmt_int(meta_nat_total)}</div>
-                    {_bar(_cumpl_nat_tc1, _sc(_cumpl_nat_tc1))}
+                    {_bar(_val_nat, _sc(_val_nat))}
                 </div>
                 <div>
-                    <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">Altas inducidas</div>
-                    <div style="font-size:1.55rem;font-weight:900;color:{_sc(_cumpl_indu_tc1)};">{_cumpl_indu_tc1:.1f}%</div>
+                    <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">{_lbl_indu}</div>
+                    <div style="font-size:1.55rem;font-weight:900;color:{_sc(_val_indu)};">{_val_indu:.1f}%</div>
                     <div style="font-size:.70rem;color:#64748B;">{fmt_int(ejec_indu_total)} de {fmt_int(meta_indu_total)}</div>
-                    {_bar(_cumpl_indu_tc1, _sc(_cumpl_indu_tc1))}
+                    {_bar(_val_indu, _sc(_val_indu))}
                 </div>
                 <div>
                     <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">PDVs bajo 70%</div>
@@ -3485,8 +3502,15 @@ def render_claro_view():
         </div>
         """, unsafe_allow_html=True)
 
-        # ── Tarjetas de agente — resultado final del mes ──────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Resultado final por agente</div>', unsafe_allow_html=True)
+        # ── Tarjetas de agente — dinámicas según corte ───────────────────────
+        # Si _DIA_CORTE == _DIAS_MES: mes cerrado → mostrar cumplimiento real
+        # Si _DIA_CORTE < _DIAS_MES: mes en curso → mostrar proyección al cierre
+        _MES_CERRADO = (_DIA_CORTE >= _DIAS_MES)
+        _FACTOR = 1.0 if _MES_CERRADO else _DIAS_MES / _DIA_CORTE
+
+        _label_principal = "Resultado final del mes" if _MES_CERRADO else "Proyección al cierre del mes"
+        st.markdown(f'<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">{_label_principal} por agente</div>', unsafe_allow_html=True)
+
         by_agente = df.groupby("AGENTE").agg(
             pdvs=("ID","count"),
             meta_nat=("META ALTA NAT (>$2000)","sum"),
@@ -3497,21 +3521,29 @@ def render_claro_view():
             cuota_alta=("CUOTA DE ALTA","mean"),
             var_alta=("VR_M-1.1","mean") if "VR_M-1.1" in df.columns else ("EJEC ALTA NAT","count"),
         ).reset_index()
-        by_agente["meta_total"] = by_agente["meta_nat"] + by_agente.get("meta_indu", 0)
-        by_agente["cumpl_total"]= (by_agente["ejec_total"] / by_agente["meta_total"].replace(0,np.nan)*100).fillna(0)
-        by_agente["cumpl_nat"]  = (by_agente["ejec_nat"]   / by_agente["meta_nat"].replace(0,np.nan)*100).fillna(0)
-        by_agente["brecha"]     = by_agente["meta_total"] - by_agente["ejec_total"]
-        _max_p = by_agente["cumpl_total"].max(); _min_p = by_agente["cumpl_total"].min()
+        by_agente["meta_total"]  = by_agente["meta_nat"] + by_agente.get("meta_indu", 0)
+        by_agente["cumpl_total"] = (by_agente["ejec_total"] / by_agente["meta_total"].replace(0,np.nan)*100).fillna(0)
+        by_agente["cumpl_nat"]   = (by_agente["ejec_nat"]   / by_agente["meta_nat"].replace(0,np.nan)*100).fillna(0)
+        by_agente["proy_total"]  = (by_agente["ejec_total"] * _FACTOR / by_agente["meta_total"].replace(0,np.nan)*100).fillna(0)
+        by_agente["brecha"]      = by_agente["meta_total"] - by_agente["ejec_total"]
+        # Valor que se usa como protagonista en la tarjeta
+        by_agente["valor_principal"] = by_agente["cumpl_total"] if _MES_CERRADO else by_agente["proy_total"]
+        _max_p = by_agente["valor_principal"].max()
+        _min_p = by_agente["valor_principal"].min()
 
         n_ag = min(len(by_agente), 4)
         ag_cols = st.columns(n_ag, gap="small")
-        for i, row in by_agente.sort_values("cumpl_total", ascending=False).reset_index(drop=True).iterrows():
-            ag_c   = AGENTE_COLORS.get(row["AGENTE"], AGENTE_COLORS.get(str(row["AGENTE"]).strip(), "#64748B"))
-            p      = row["cumpl_total"]; cp = _sc(p)
-            badge  = "🏆" if p == _max_p else ("⚠️" if p == _min_p else "")
+        for i, row in by_agente.sort_values("valor_principal", ascending=False).reset_index(drop=True).iterrows():
+            ag_c  = AGENTE_COLORS.get(row["AGENTE"], AGENTE_COLORS.get(str(row["AGENTE"]).strip(), "#64748B"))
+            p     = row["valor_principal"]; cp = _sc(p)
+            badge = "🏆" if p == _max_p else ("⚠️" if p == _min_p else "")
             _var_a = row.get("var_alta", np.nan)
-            _vt    = (f"{'↓' if pd.notna(_var_a) and _var_a < 0 else '↑'}{abs(_var_a):.1f}pp" if pd.notna(_var_a) and "VR_M-1.1" in df.columns else "")
-            _vc    = "#EF4444" if pd.notna(_var_a) and _var_a < 0 else "#22C55E"
+            _vt   = (f"{'↓' if pd.notna(_var_a) and _var_a < 0 else '↑'}{abs(_var_a):.1f}pp" if pd.notna(_var_a) and "VR_M-1.1" in df.columns else "")
+            _vc   = "#EF4444" if pd.notna(_var_a) and _var_a < 0 else "#22C55E"
+            _sub  = "cumplimiento total del mes" if _MES_CERRADO else f"proyección al día {_DIAS_MES}"
+            # Segunda línea: si mes cerrado muestra cumpl orgánicas; si en curso muestra cumpl al corte
+            _linea2_lbl = "Orgánicas:" if _MES_CERRADO else f"Al corte (d{_DIA_CORTE}):"
+            _linea2_val = f"{row['cumpl_nat']:.1f}%"
             with ag_cols[i % n_ag]:
                 st.markdown(f"""
                 <div class="card" style="min-height:0;">
@@ -3523,29 +3555,10 @@ def render_claro_view():
                         <span style="font-size:.80rem;">{badge}</span>
                     </div>
                     <div style="font-size:2rem;font-weight:950;color:{cp};line-height:1.05;">{p:.1f}%</div>
-                    <div style="font-size:.68rem;color:#64748B;margin-top:1px;">cumplimiento total del mes</div>
+                    <div style="font-size:.68rem;color:#64748B;margin-top:1px;">{_sub}</div>
                     {_bar(p, cp)}
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px;">
-                        <div style="font-size:.70rem;color:#94A3B8;">Orgánicas: <span style="color:#F8FAFC;font-weight:800;">{row["cumpl_nat"]:.1f}%</span></div>
-                        <div style="font-size:.70rem;color:#94A3B8;">Brecha: <span style="color:#F8FAFC;font-weight:800;">{fmt_int(row["brecha"])}</span></div>
-                        <div style="font-size:.70rem;color:#94A3B8;">Ejec. total: <span style="color:#F8FAFC;font-weight:800;">{fmt_int(row["ejec_total"])}</span></div>
-                        <div style="font-size:.70rem;color:#94A3B8;">Cuota alta: <span style="color:#F8FAFC;font-weight:800;">{fmt_pct_c(row["cuota_alta"])}</span> <span style="color:{_vc};font-size:.65rem;">{_vt}</span></div>
-                    </div>
-                </div>""", unsafe_allow_html=True)
-                st.markdown(f"""
-                <div class="card" style="min-height:0;">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-                        <div style="display:flex;align-items:center;gap:6px;">
-                            <span style="width:9px;height:9px;border-radius:50%;background:{ag_c};display:inline-block;flex-shrink:0;"></span>
-                            <span style="font-size:.74rem;font-weight:900;color:#E2E8F0;">{row["AGENTE"]}</span>
-                        </div>
-                        <span style="font-size:.80rem;">{badge}</span>
-                    </div>
-                    <div style="font-size:2rem;font-weight:950;color:{cp};line-height:1.05;">{p:.1f}%</div>
-                    <div style="font-size:.68rem;color:#64748B;margin-top:1px;">cumplimiento total del mes</div>
-                    {_bar(p, cp)}
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px;">
-                        <div style="font-size:.70rem;color:#94A3B8;">Orgánicas: <span style="color:#F8FAFC;font-weight:800;">{row["cumpl_nat"]:.1f}%</span></div>
+                        <div style="font-size:.70rem;color:#94A3B8;">{_linea2_lbl} <span style="color:#F8FAFC;font-weight:800;">{_linea2_val}</span></div>
                         <div style="font-size:.70rem;color:#94A3B8;">Brecha: <span style="color:#F8FAFC;font-weight:800;">{fmt_int(row["brecha"])}</span></div>
                         <div style="font-size:.70rem;color:#94A3B8;">Ejec. total: <span style="color:#F8FAFC;font-weight:800;">{fmt_int(row["ejec_total"])}</span></div>
                         <div style="font-size:.70rem;color:#94A3B8;">Cuota alta: <span style="color:#F8FAFC;font-weight:800;">{fmt_pct_c(row["cuota_alta"])}</span> <span style="color:{_vc};font-size:.65rem;">{_vt}</span></div>
