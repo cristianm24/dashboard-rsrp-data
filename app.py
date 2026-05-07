@@ -3152,7 +3152,7 @@ def build_excel(summary_operator_df, zone_exec_df, variation_operator_df, variat
 
 CLARO_FILE_CANDIDATES = [
     os.path.join(BASE_DIR, "Plan_actualizado_CORTE_28_FINAL.xlsx"),
-    os.path.join(BASE_DIR, "Plan_actualizado_CORTE_28_FINAL(1).xlsx"),
+    os.path.join(BASE_DIR, "Plan_actualizado_CORTE_30_FINAL.xlsx"),
     os.path.join(BASE_DIR, "Plan_actualizado_CORTE_28_FINAL(2).xlsx"),
 ]
 
