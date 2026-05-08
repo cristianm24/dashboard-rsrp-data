@@ -4018,7 +4018,7 @@ def render_claro_view():
         # ── Headline: semana a semana ─────────────────────────────────────────
         st.markdown(f"""
         <div style="background:linear-gradient(135deg,rgba(17,24,39,0.96),rgba(10,18,34,0.98));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:20px 28px;margin-bottom:16px;">
-            <div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:14px;">Evolución semanal · 1–27 Abril 2026</div>
+            <div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:14px;">Evolución semanal · 1–30 Abril 2026</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;">
                 <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
                     <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 1</div>
