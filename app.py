@@ -2171,6 +2171,17 @@ def fmt_var_dBm(x):
     sign = "+" if x > 0 else ""
     return f"{sign}{x:.1f} dBm"
 
+def _safe_agente(x):
+    """Returns True if x is a valid non-empty AGENTE name. Handles pd.NA safely."""
+    try:
+        if x is None or x is pd.NA:
+            return False
+        s = str(x).strip()
+        return s not in ("", "nan", "None", "AGENTE", "<NA>", "NaN")
+    except Exception:
+        return False
+
+
 def fmt_int(x):
     if pd.isna(x):
         return "N/D"
@@ -3242,11 +3253,7 @@ def _process_claro_df(df_det):
     if "AGENTE" in df_det.columns:
         df_det["AGENTE"] = df_det["AGENTE"].astype(str).str.strip()
         df_det = df_det[
-            df_det["AGENTE"].notna() &
-            (df_det["AGENTE"] != "") &
-            (df_det["AGENTE"] != "nan") &
-            (df_det["AGENTE"] != "AGENTE") &
-            (df_det["AGENTE"] != "None")
+            df_det["AGENTE"].apply(_safe_agente)
         ].copy()
 
     return df_det, faltantes, nuevas
@@ -4026,7 +4033,7 @@ def render_claro_view():
 
         _by_ag_clean = by_agente[
             by_agente["AGENTE"].apply(
-                lambda x: bool(x and str(x).strip() not in ("","nan","None","AGENTE","<NA>"))
+                _safe_agente
             )
         ].sort_values("valor_principal", ascending=False).reset_index(drop=True)
 
@@ -4130,7 +4137,7 @@ def render_claro_view():
 
         # ── Ranking visual de agentes ─────────────────────────────────────────
         st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Ranking de agentes — de mejor a peor proyección</div>', unsafe_allow_html=True)
-        for _, row in by_ag_full[by_ag_full["AGENTE"].apply(lambda x: bool(x and str(x).strip() not in ("","nan","None","AGENTE")))].sort_values("proy_nat", ascending=False).reset_index(drop=True).iterrows():
+        for _, row in by_ag_full[by_ag_full["AGENTE"].apply(_safe_agente)].sort_values("proy_nat", ascending=False).reset_index(drop=True).iterrows():
             _ag_name2 = str(row["AGENTE"]).strip()
             ag_c  = AGENTE_COLORS.get(_ag_name2, "#64748B")
             p     = row["proy_nat"]; cp = _sc(p)
