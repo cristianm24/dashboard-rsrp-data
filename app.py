@@ -5404,450 +5404,513 @@ if _rsrp_available and not df_long.empty:
 else:
     mask = pd.Series(False, index=df_long.index if not df_long.empty else range(0))
 
-codigos_por_territorio = set(codigos_disponibles_por_territorio) if (territorial_filters_enabled and (localidad_sel or barrio_sel or ruta_sel or circuito_sel)) else set()
-codigos_manuales = set([str(x) for x in codigos_sel]) if codigos_sel else set()
-codigos_filtrados_finales = None
-if codigos_por_territorio and codigos_manuales:
-    codigos_filtrados_finales = sorted(codigos_por_territorio.intersection(codigos_manuales))
-elif codigos_por_territorio:
-    codigos_filtrados_finales = sorted(codigos_por_territorio)
-elif codigos_manuales:
-    codigos_filtrados_finales = sorted(codigos_manuales)
+if _rsrp_available and not df_long.empty:
+    codigos_por_territorio = set(codigos_disponibles_por_territorio) if (territorial_filters_enabled and (localidad_sel or barrio_sel or ruta_sel or circuito_sel)) else set()
+    codigos_manuales = set([str(x) for x in codigos_sel]) if codigos_sel else set()
+    codigos_filtrados_finales = None
+    if codigos_por_territorio and codigos_manuales:
+        codigos_filtrados_finales = sorted(codigos_por_territorio.intersection(codigos_manuales))
+    elif codigos_por_territorio:
+        codigos_filtrados_finales = sorted(codigos_por_territorio)
+    elif codigos_manuales:
+        codigos_filtrados_finales = sorted(codigos_manuales)
 
-if codigos_filtrados_finales is not None:
-    mask &= df_long["Codigo_postal"].astype(str).isin(codigos_filtrados_finales)
-
-df_f = df_long.loc[mask].copy()
-if solo_validos:
-    df_f = df_f[df_f["Con_medicion"]].copy()
-if df_f.empty and _rsrp_available:
-    st.warning("No hay registros para la combinación de filtros seleccionada. Ajusta los filtros.")
-    st.stop()
-
-network_records_visible = int(df_f["RSRP_valido"].count()) if "RSRP_valido" in df_f.columns else int(len(df_f))
-
-filtros_activos = []
-if localidad_sel: filtros_activos.append(f"{len(localidad_sel)} localidades")
-if barrio_sel: filtros_activos.append(f"{len(barrio_sel)} barrios")
-if ruta_sel: filtros_activos.append(f"{len(ruta_sel)} rutas")
-if circuito_sel: filtros_activos.append(f"{len(circuito_sel)} circuitos")
-if codigos_sel: filtros_activos.append(f"{len(codigos_sel)} CP manuales")
-if search_territory: filtros_activos.append(f'Búsqueda: "{search_territory}"')
-if zone_focus != "Todas": filtros_activos.append(zone_focus)
-
-business_all_f = business_long.copy() if business_long is not None else pd.DataFrame()
-if not business_all_f.empty:
-    business_all_f = business_all_f[
-        (business_all_f["Fecha de inicio"].dt.date >= fecha_ini) &
-        (business_all_f["Fecha de inicio"].dt.date <= fecha_fin)
-    ].copy()
     if codigos_filtrados_finales is not None:
-        business_all_f = business_all_f[business_all_f["Codigo_postal"].astype(str).isin(codigos_filtrados_finales)].copy()
-    business_all_f = business_all_f[~business_all_f["Codigo_postal"].astype(str).isin(BUSINESS_EXCLUDED_CP)].copy()
+        mask &= df_long["Codigo_postal"].astype(str).isin(codigos_filtrados_finales)
 
-business_f = business_all_f.copy()
+    df_f = df_long.loc[mask].copy()
+    if solo_validos:
+        df_f = df_f[df_f["Con_medicion"]].copy()
+    if df_f.empty and _rsrp_available:
+        st.warning("No hay registros para la combinación de filtros seleccionada. Ajusta los filtros.")
+        st.stop()
 
-if search_territory:
-    search_norm = normalize_text(search_territory)
-    rsrp_cols = [c for c in ["Codigo_postal", "LOCALIDAD", "BARRIO", "RUTA", "CIRCUITO"] if c in df_f.columns]
-    if rsrp_cols:
-        mask_search = pd.Series(False, index=df_f.index)
-        for col in rsrp_cols:
-            mask_search = mask_search | df_f[col].fillna("").astype(str).map(normalize_text).str.contains(search_norm, na=False)
-        df_f = df_f[mask_search].copy()
+    network_records_visible = int(df_f["RSRP_valido"].count()) if "RSRP_valido" in df_f.columns else int(len(df_f))
+
+    filtros_activos = []
+    if localidad_sel: filtros_activos.append(f"{len(localidad_sel)} localidades")
+    if barrio_sel: filtros_activos.append(f"{len(barrio_sel)} barrios")
+    if ruta_sel: filtros_activos.append(f"{len(ruta_sel)} rutas")
+    if circuito_sel: filtros_activos.append(f"{len(circuito_sel)} circuitos")
+    if codigos_sel: filtros_activos.append(f"{len(codigos_sel)} CP manuales")
+    if search_territory: filtros_activos.append(f'Búsqueda: "{search_territory}"')
+    if zone_focus != "Todas": filtros_activos.append(zone_focus)
+
+    business_all_f = business_long.copy() if business_long is not None else pd.DataFrame()
+    if not business_all_f.empty:
+        business_all_f = business_all_f[
+            (business_all_f["Fecha de inicio"].dt.date >= fecha_ini) &
+            (business_all_f["Fecha de inicio"].dt.date <= fecha_fin)
+        ].copy()
+        if codigos_filtrados_finales is not None:
+            business_all_f = business_all_f[business_all_f["Codigo_postal"].astype(str).isin(codigos_filtrados_finales)].copy()
+        business_all_f = business_all_f[~business_all_f["Codigo_postal"].astype(str).isin(BUSINESS_EXCLUDED_CP)].copy()
+
+    business_f = business_all_f.copy()
+
+    if search_territory:
+        search_norm = normalize_text(search_territory)
+        rsrp_cols = [c for c in ["Codigo_postal", "LOCALIDAD", "BARRIO", "RUTA", "CIRCUITO"] if c in df_f.columns]
+        if rsrp_cols:
+            mask_search = pd.Series(False, index=df_f.index)
+            for col in rsrp_cols:
+                mask_search = mask_search | df_f[col].fillna("").astype(str).map(normalize_text).str.contains(search_norm, na=False)
+            df_f = df_f[mask_search].copy()
+        if not business_f.empty:
+            biz_cols = [c for c in ["Codigo_postal", "LOCALIDAD", "BARRIO", "RUTA", "CIRCUITO"] if c in business_f.columns]
+            if biz_cols:
+                mask_biz = pd.Series(False, index=business_f.index)
+                for col in biz_cols:
+                    mask_biz = mask_biz | business_f[col].fillna("").astype(str).map(normalize_text).str.contains(search_norm, na=False)
+                business_f = business_f[mask_biz].copy()
+
     if not business_f.empty:
-        biz_cols = [c for c in ["Codigo_postal", "LOCALIDAD", "BARRIO", "RUTA", "CIRCUITO"] if c in business_f.columns]
-        if biz_cols:
-            mask_biz = pd.Series(False, index=business_f.index)
-            for col in biz_cols:
-                mask_biz = mask_biz | business_f[col].fillna("").astype(str).map(normalize_text).str.contains(search_norm, na=False)
-            business_f = business_f[mask_biz].copy()
+        low, high = share_range
+        mask_share = pd.Series(False, index=business_f.index)
+        if "Cuota_mercado" in business_f.columns:
+            mask_share = mask_share | business_f["Cuota_mercado"].between(low, high, inclusive="both")
+        if "Participacion_altas" in business_f.columns:
+            mask_share = mask_share | business_f["Participacion_altas"].between(low, high, inclusive="both")
+        if mask_share.any():
+            business_f = business_f[mask_share].copy()
 
-if not business_f.empty:
-    low, high = share_range
-    mask_share = pd.Series(False, index=business_f.index)
-    if "Cuota_mercado" in business_f.columns:
-        mask_share = mask_share | business_f["Cuota_mercado"].between(low, high, inclusive="both")
-    if "Participacion_altas" in business_f.columns:
-        mask_share = mask_share | business_f["Participacion_altas"].between(low, high, inclusive="both")
-    if mask_share.any():
-        business_f = business_f[mask_share].copy()
+        if zone_focus != "Todas":
+            zone_base = business_f.groupby("Codigo_postal", as_index=False).agg(share_max=("Cuota_mercado", "max"), mercado_total=("Mercado", "sum"))
+            if zone_focus == "Alta competencia":
+                valid_cp = zone_base[zone_base["share_max"] < 40]["Codigo_postal"].astype(str).tolist()
+            elif zone_focus == "Dominio claro":
+                valid_cp = zone_base[zone_base["share_max"] >= 60]["Codigo_postal"].astype(str).tolist()
+            else:
+                cut = zone_base["mercado_total"].quantile(0.35) if zone_base["mercado_total"].notna().any() else 0
+                valid_cp = zone_base[zone_base["mercado_total"] <= cut]["Codigo_postal"].astype(str).tolist()
+            business_f = business_f[business_f["Codigo_postal"].astype(str).isin(valid_cp)].copy()
 
-    if zone_focus != "Todas":
-        zone_base = business_f.groupby("Codigo_postal", as_index=False).agg(share_max=("Cuota_mercado", "max"), mercado_total=("Mercado", "sum"))
-        if zone_focus == "Alta competencia":
-            valid_cp = zone_base[zone_base["share_max"] < 40]["Codigo_postal"].astype(str).tolist()
-        elif zone_focus == "Dominio claro":
-            valid_cp = zone_base[zone_base["share_max"] >= 60]["Codigo_postal"].astype(str).tolist()
-        else:
-            cut = zone_base["mercado_total"].quantile(0.35) if zone_base["mercado_total"].notna().any() else 0
-            valid_cp = zone_base[zone_base["mercado_total"] <= cut]["Codigo_postal"].astype(str).tolist()
-        business_f = business_f[business_f["Codigo_postal"].astype(str).isin(valid_cp)].copy()
+    if not business_f.empty:
+        business_f = business_f[business_f["Operador"].isin(operadores_sel)].copy()
 
-if not business_f.empty:
-    business_f = business_f[business_f["Operador"].isin(operadores_sel)].copy()
+    business_records_visible = int(len(business_f)) if business_f is not None and not business_f.empty else 0
 
-business_records_visible = int(len(business_f)) if business_f is not None and not business_f.empty else 0
-
-# =========================================================
-# AGREGADOS RSRP
-# =========================================================
-summary_operator = (
-    df_f.groupby("Operador", as_index=False)
-    .agg(
-        RSRP_promedio=("RSRP_valido", "mean"),
-        RSRP_mediana=("RSRP_valido", "median"),
-        Observaciones=("RSRP_valido", "count"),
-        Codigos=("Codigo_postal", "nunique"),
-        Excelente=("Categoria_RSRP", lambda s: (s == "Excelente").mean() * 100),
-        Buena=("Categoria_RSRP", lambda s: (s == "Buena").mean() * 100),
-        Aceptable=("Categoria_RSRP", lambda s: (s == "Aceptable").mean() * 100),
-        Critica=("Categoria_RSRP", lambda s: (s == "Crítica").mean() * 100),
-        Buena_o_mejor=("Categoria_RSRP", lambda s: s.isin(["Excelente", "Buena"]).mean() * 100),
+    # =========================================================
+    # AGREGADOS RSRP
+    # =========================================================
+    summary_operator = (
+        df_f.groupby("Operador", as_index=False)
+        .agg(
+            RSRP_promedio=("RSRP_valido", "mean"),
+            RSRP_mediana=("RSRP_valido", "median"),
+            Observaciones=("RSRP_valido", "count"),
+            Codigos=("Codigo_postal", "nunique"),
+            Excelente=("Categoria_RSRP", lambda s: (s == "Excelente").mean() * 100),
+            Buena=("Categoria_RSRP", lambda s: (s == "Buena").mean() * 100),
+            Aceptable=("Categoria_RSRP", lambda s: (s == "Aceptable").mean() * 100),
+            Critica=("Categoria_RSRP", lambda s: (s == "Crítica").mean() * 100),
+            Buena_o_mejor=("Categoria_RSRP", lambda s: s.isin(["Excelente", "Buena"]).mean() * 100),
+        )
+        .sort_values("RSRP_mediana", ascending=False)
     )
-    .sort_values("RSRP_mediana", ascending=False)
-)
-summary_operator["Score_operador"] = summary_operator.apply(compute_operator_score, axis=1)
-summary_operator["Clasificacion_score"] = summary_operator["Score_operador"].apply(lambda x: score_label(x)[0])
-summary_operator["Semaforo_operador"] = summary_operator["Buena_o_mejor"].apply(lambda x: quality_status(x)[0])
+    summary_operator["Score_operador"] = summary_operator.apply(compute_operator_score, axis=1)
+    summary_operator["Clasificacion_score"] = summary_operator["Score_operador"].apply(lambda x: score_label(x)[0])
+    summary_operator["Semaforo_operador"] = summary_operator["Buena_o_mejor"].apply(lambda x: quality_status(x)[0])
 
-if not summary_operator.empty:
-    best_operator = summary_operator.sort_values("RSRP_mediana", ascending=False).iloc[0]
-    worst_operator = summary_operator.sort_values("RSRP_mediana", ascending=True).iloc[0]
-    worst_operator_crit = summary_operator.sort_values("Critica", ascending=False).iloc[0]
+    if not summary_operator.empty:
+        best_operator = summary_operator.sort_values("RSRP_mediana", ascending=False).iloc[0]
+        worst_operator = summary_operator.sort_values("RSRP_mediana", ascending=True).iloc[0]
+        worst_operator_crit = summary_operator.sort_values("Critica", ascending=False).iloc[0]
+    else:
+        _empty_op = pd.Series({"Operador":"N/D","RSRP_mediana":np.nan,"Buena_o_mejor":0.0,
+                                "Critica":0.0,"Observaciones":0,"Codigos":0,"Score_operador":0.0,
+                                "Aceptable":0.0,"Excelente":0.0,"Buena":0.0,"RSRP_promedio":np.nan})
+        best_operator = _empty_op.copy()
+        worst_operator = _empty_op.copy()
+        worst_operator_crit = _empty_op.copy()
+
+    global_median = df_f["RSRP_valido"].median()
+    global_mean = df_f["RSRP_valido"].mean()
+    pct_good = df_f["Categoria_RSRP"].isin(["Excelente", "Buena"]).mean() * 100
+    pct_critical = (df_f["Categoria_RSRP"] == "Crítica").mean() * 100
+    cp_critical_mask = df_f.groupby("Codigo_postal")["Categoria_RSRP"].apply(lambda s: (s == "Crítica").mean() >= 0.5)
+    cp_critical_count = int(cp_critical_mask.sum()) if not cp_critical_mask.empty else 0
+    cp_total_count = int(df_f["Codigo_postal"].nunique())
+    cp_critical_share = (cp_critical_count / cp_total_count * 100) if cp_total_count > 0 else np.nan
+    status_text, status_class = executive_status(global_median)
+
+    zone_summary = (
+        df_f.groupby("Codigo_postal", as_index=False)
+        .agg(
+            RSRP_promedio=("RSRP_valido", "mean"),
+            RSRP_mediana=("RSRP_valido", "median"),
+            Registros=("RSRP_valido", "count"),
+            Operadores_presentes=("Operador", "nunique"),
+            Pct_critica=("Categoria_RSRP", lambda s: (s == "Crítica").mean() * 100),
+            Pct_buena_o_mejor=("Categoria_RSRP", lambda s: s.isin(["Excelente", "Buena"]).mean() * 100),
+            Pct_aceptable=("Categoria_RSRP", lambda s: (s == "Aceptable").mean() * 100),
+        )
+    )
+    territory_group_cols = [col for col in TERRITORIAL_STANDARD_COLS if col in df_f.columns]
+    if territory_group_cols:
+        territory_agg = df_f.groupby("Codigo_postal", as_index=False)[territory_group_cols].agg(lambda s: first_not_null(s))
+        zone_summary = zone_summary.merge(territory_agg, on="Codigo_postal", how="left")
+
+    zone_worst_operator = (
+        df_f.groupby(["Codigo_postal", "Operador"], as_index=False)
+        .agg(RSRP_mediana=("RSRP_valido", "median"))
+        .sort_values(["Codigo_postal", "RSRP_mediana"], ascending=[True, True])
+        .groupby("Codigo_postal", as_index=False)
+        .first()
+        .rename(columns={"Operador": "Operador_mas_debil", "RSRP_mediana": "RSRP_mas_debil"})
+    )
+    zone_best_operator = (
+        df_f.groupby(["Codigo_postal", "Operador"], as_index=False)
+        .agg(RSRP_mediana=("RSRP_valido", "median"))
+        .sort_values(["Codigo_postal", "RSRP_mediana"], ascending=[True, False])
+        .groupby("Codigo_postal", as_index=False)
+        .first()
+        .rename(columns={"Operador": "Operador_lider", "RSRP_mediana": "RSRP_lider"})
+    )
+    zone_summary = zone_summary.merge(zone_worst_operator, on="Codigo_postal", how="left")
+    zone_summary = zone_summary.merge(zone_best_operator, on="Codigo_postal", how="left")
+    zone_summary["Indice_prioridad"] = (((-1 * zone_summary["RSRP_mediana"]) * 0.40) + (zone_summary["Pct_critica"] * 0.35) - (zone_summary["Pct_buena_o_mejor"] * 0.15) + (zone_summary["Pct_aceptable"] * 0.10))
+    zone_summary["Semaforo"] = zone_summary.apply(lambda r: zone_semaphore(r["Pct_critica"], r["RSRP_mediana"]), axis=1)
+    zone_summary = zone_summary.sort_values(["Pct_critica", "RSRP_mediana"], ascending=[False, True])
+
+    top_zones = zone_summary.head(15).copy()
+    worst_zone = top_zones.iloc[0] if not top_zones.empty else None
+    best_zones = zone_summary.sort_values(["Pct_buena_o_mejor", "RSRP_mediana"], ascending=[False, False]).head(15).copy()
+    best_zone = best_zones.iloc[0] if not best_zones.empty else None
+
+    trend = df_f.groupby(["Fecha de inicio", "Operador"], as_index=False).agg(RSRP_mediana=("RSRP_valido", "median"))
+    quality = df_f.groupby(["Operador", "Categoria_RSRP"], as_index=False).size().rename(columns={"size": "Cantidad"})
+    quality_pct = quality.copy()
+    quality_totals = quality_pct.groupby("Operador", as_index=False)["Cantidad"].sum().rename(columns={"Cantidad": "Total"})
+    quality_pct = quality_pct.merge(quality_totals, on="Operador", how="left")
+    quality_pct["Porcentaje"] = np.where(quality_pct["Total"] > 0, quality_pct["Cantidad"] / quality_pct["Total"] * 100, np.nan)
+
+    matrix_source = (
+        df_f[df_f["Codigo_postal"].isin(top_zones["Codigo_postal"])] if not top_zones.empty else df_f.iloc[0:0]
+    ).groupby(["Codigo_postal", "Operador"], as_index=False).agg(RSRP_mediana=("RSRP_valido", "median"))
+
+    trend_min = float(trend["RSRP_mediana"].min()) if not trend.empty else -125.0
+    trend_max = float(trend["RSRP_mediana"].max()) if not trend.empty else -60.0
+    y_min = max(-125, trend_min - 2)
+    y_max = min(-60, trend_max + 2)
+
+    variation_result = compute_variation_tables(df_f, nivel_temporal_variacion)
+    variation_operator = variation_result["variation_operator"].copy()
+    variation_route = variation_result["variation_route"].copy()
+    variation_circuit = variation_result["variation_circuit"].copy()
+    variation_cp = variation_result["variation_cp"].copy()
+    variation_localidad = variation_result["variation_localidad"].copy()
+    variation_period = variation_result["variation_period"].copy()
+
+    if variation_result["tiene_variacion"] and not variation_cp.empty:
+        mayor_mejora = variation_cp.sort_values("Variacion_RSRP", ascending=False).iloc[0]
+        mayor_deterioro = variation_cp.sort_values("Variacion_RSRP", ascending=True).iloc[0]
+    else:
+        mayor_mejora = None
+        mayor_deterioro = None
+
+    zone_exec_cols = ["Codigo_postal", "Semaforo", "RSRP_mediana", "Pct_critica", "Pct_aceptable", "Pct_buena_o_mejor", "Operador_mas_debil", "RSRP_mas_debil", "Operador_lider", "RSRP_lider", "Operadores_presentes", "Registros"] + [c for c in TERRITORIAL_STANDARD_COLS if c in top_zones.columns]
+    zone_exec_export = top_zones[zone_exec_cols].copy() if not top_zones.empty else pd.DataFrame(columns=zone_exec_cols)
+
+    business_metrics = compute_business_metrics(business_all_f, df_f)
+    market_operator = business_metrics.get("market_operator", pd.DataFrame())
+    altas_operator = business_metrics.get("altas_operator", pd.DataFrame())
+    cross_operator = business_metrics.get("cross_operator", pd.DataFrame())
+    market_time = business_metrics.get("market_time", pd.DataFrame())
+    altas_time = business_metrics.get("altas_time", pd.DataFrame())
+    scatter_df = business_metrics.get("scatter_df", pd.DataFrame())
+    territorial_cross = business_metrics.get("territorial_cross", pd.DataFrame())
+    risk_table = business_metrics.get("risk_table", pd.DataFrame())
+    opportunity_table = business_metrics.get("opportunity_table", pd.DataFrame())
+    leader_market = business_metrics.get("leader_market")
+    leader_altas = business_metrics.get("leader_altas")
+    market_month_initial_label = business_metrics.get("market_month_initial_label")
+    market_month_final_label = business_metrics.get("market_month_final_label")
+    altas_month_initial_label = business_metrics.get("altas_month_initial_label")
+    altas_month_final_label = business_metrics.get("altas_month_final_label")
+    market_month_initial_value = business_metrics.get("market_month_initial_value")
+    market_month_final_value = business_metrics.get("market_month_final_value")
+    altas_month_initial_value = business_metrics.get("altas_month_initial_value")
+    altas_month_final_value = business_metrics.get("altas_month_final_value")
+    market_month_initial_operator = business_metrics.get("market_month_initial_operator")
+    market_month_final_operator = business_metrics.get("market_month_final_operator")
+    altas_month_initial_operator = business_metrics.get("altas_month_initial_operator")
+    altas_month_final_operator = business_metrics.get("altas_month_final_operator")
+
+    market_total_visible = market_operator["Mercado_total"].sum() if not market_operator.empty and "Mercado_total" in market_operator.columns else np.nan
+    altas_total_visible = altas_operator["Altas_total"].sum() if not altas_operator.empty and "Altas_total" in altas_operator.columns else np.nan
+    market_follow_share = market_operator.iloc[1]["Cuota_mercado_global"] if len(market_operator) > 1 else np.nan
+    market_lead_gap = (leader_market["Cuota_mercado_global"] - market_follow_share) if leader_market is not None and pd.notna(market_follow_share) else np.nan
+    altas_follow_share = altas_operator.iloc[1]["Participacion_altas_global"] if len(altas_operator) > 1 else np.nan
+    altas_lead_gap = (leader_altas["Participacion_altas_global"] - altas_follow_share) if leader_altas is not None and pd.notna(altas_follow_share) else np.nan
+    risk_count = len(risk_table) if risk_table is not None else 0
+    opportunity_count = len(opportunity_table) if opportunity_table is not None else 0
+
+    market_top2_share = market_operator["Cuota_mercado_global"].head(2).sum() if not market_operator.empty and "Cuota_mercado_global" in market_operator.columns else np.nan
+    altas_top2_share = altas_operator["Participacion_altas_global"].head(2).sum() if not altas_operator.empty and "Participacion_altas_global" in altas_operator.columns else np.nan
+
+    def compute_period_operator_delta(df_in, period_col, value_col):
+        if df_in is None or df_in.empty or period_col not in df_in.columns or value_col not in df_in.columns:
+            return pd.DataFrame()
+        base = df_in[[period_col, "Operador", value_col]].dropna().copy()
+        if base.empty:
+            return pd.DataFrame()
+        base = base.sort_values([period_col, "Operador"])
+        first_df = base.groupby("Operador", as_index=False).first().rename(columns={value_col: "Valor_inicial", period_col: "Periodo_inicial"})
+        last_df = base.groupby("Operador", as_index=False).last().rename(columns={value_col: "Valor_final", period_col: "Periodo_final"})
+        delta = first_df.merge(last_df, on="Operador", how="outer")
+        delta["Variacion"] = delta["Valor_final"] - delta["Valor_inicial"]
+        return delta.sort_values("Variacion", ascending=False).reset_index(drop=True)
+
+
+    def compute_total_growth(df_in, period_col, value_col):
+        if df_in is None or df_in.empty or period_col not in df_in.columns or value_col not in df_in.columns:
+            return np.nan, np.nan, np.nan, None, None
+        base = df_in[[period_col, value_col]].dropna().copy()
+        if base.empty:
+            return np.nan, np.nan, np.nan, None, None
+        total_by_period = base.groupby(period_col, as_index=False)[value_col].sum().sort_values(period_col)
+        if total_by_period.shape[0] < 2:
+            val = total_by_period.iloc[-1][value_col]
+            per = total_by_period.iloc[-1][period_col]
+            return np.nan, val, val, per, per
+        initial_val = total_by_period.iloc[0][value_col]
+        final_val = total_by_period.iloc[-1][value_col]
+        if pd.notna(initial_val) and initial_val != 0:
+            growth = ((final_val - initial_val) / initial_val) * 100
+        else:
+            growth = np.nan
+        return growth, initial_val, final_val, total_by_period.iloc[0][period_col], total_by_period.iloc[-1][period_col]
+
+    def build_business_executive_summary(leader_market, leader_altas, market_best_gain, altas_best_gain, market_growth, altas_growth):
+        fragments = []
+        if leader_market is not None:
+            fragments.append(f"El liderazgo de mercado lo conserva <b>{leader_market['Operador']}</b> con <b>{leader_market['Cuota_mercado_global']:.1f}%</b> de cuota visible.")
+        if leader_altas is not None:
+            fragments.append(f"En captación, el liderazgo corresponde a <b>{leader_altas['Operador']}</b> con <b>{leader_altas['Participacion_altas_global']:.1f}%</b> de participación en altas.")
+        if market_best_gain is not None and pd.notna(market_best_gain.get('Variacion')):
+            direction = "gana" if market_best_gain["Variacion"] >= 0 else "cede"
+            fragments.append(f"<b>{market_best_gain['Operador']}</b> {direction} mayor participación de mercado en el periodo con una variación de <b>{market_best_gain['Variacion']:+.1f} pp</b>.")
+        if altas_best_gain is not None and pd.notna(altas_best_gain.get('Variacion')):
+            direction = "gana" if altas_best_gain["Variacion"] >= 0 else "cede"
+            fragments.append(f"En altas, <b>{altas_best_gain['Operador']}</b> {direction} mayor participación con <b>{altas_best_gain['Variacion']:+.1f} pp</b>.")
+        if pd.notna(market_growth):
+            trend = "crece" if market_growth > 0 else "cae" if market_growth < 0 else "se mantiene"
+            fragments.append(f"El volumen total de mercado visible <b>{trend}</b> <b>{market_growth:+.1f}%</b> entre el primer y el último mes disponible.")
+        if pd.notna(altas_growth):
+            trend = "crecen" if altas_growth > 0 else "caen" if altas_growth < 0 else "se mantienen"
+            fragments.append(f"Las altas visibles <b>{trend}</b> <b>{altas_growth:+.1f}%</b> en ese mismo intervalo.")
+        return " ".join(fragments)
+
+    market_operator_delta = compute_period_operator_delta(market_time, "Periodo_Mes", "Cuota_mercado")
+    altas_operator_delta = compute_period_operator_delta(altas_time, "Periodo_Mes", "Participacion_altas")
+
+    market_best_gain = market_operator_delta.iloc[0] if not market_operator_delta.empty else None
+    altas_best_gain = altas_operator_delta.iloc[0] if not altas_operator_delta.empty else None
+
+    cp_highest_market = None
+    cp_highest_altas = None
+    if business_f is not None and not business_f.empty:
+        cp_market_df = business_f.groupby("Codigo_postal", as_index=False).agg(Mercado_total=("Mercado", "sum"))
+        cp_altas_df = business_f.groupby("Codigo_postal", as_index=False).agg(Altas_total=("Altas", "sum"))
+        if not cp_market_df.empty:
+            cp_highest_market = cp_market_df.sort_values("Mercado_total", ascending=False).iloc[0]
+        if not cp_altas_df.empty:
+            cp_highest_altas = cp_altas_df.sort_values("Altas_total", ascending=False).iloc[0]
+
+    market_growth_pct, market_total_initial, market_total_final, market_period_initial, market_period_final = compute_total_growth(market_time, "Periodo_Mes", "Mercado_total")
+    altas_growth_pct, altas_total_initial, altas_total_final, altas_period_initial, altas_period_final = compute_total_growth(altas_time, "Periodo_Mes", "Altas_total")
+    business_executive_summary = build_business_executive_summary(
+        leader_market=leader_market,
+        leader_altas=leader_altas,
+        market_best_gain=market_best_gain,
+        altas_best_gain=altas_best_gain,
+        market_growth=market_growth_pct,
+        altas_growth=altas_growth_pct,
+    )
+
+    try:
+        score_gap = (
+            best_operator["RSRP_mediana"] - worst_operator["RSRP_mediana"]
+            if best_operator is not None and worst_operator is not None
+            and pd.notna(best_operator.get("RSRP_mediana", np.nan))
+            and pd.notna(worst_operator.get("RSRP_mediana", np.nan))
+            else np.nan
+        )
+    except Exception:
+        score_gap = np.nan
+
+    # Insights blindados: no dependen de que variables visuales previas existan en un orden específico.
+    try:
+        _insight_title = locals().get("insight_title", None)
+        _insight_action = locals().get("insight_action", None)
+        if _insight_title and _insight_action:
+            tab1_insight_body = f"{_insight_title}. {_insight_action}"
+        elif pd.notna(global_median):
+            tab1_insight_body = f"El periodo seleccionado presenta una mediana de intensidad de señal de {fmt_dBm(global_median)} y {fmt_int(cp_critical_count)} CP críticos visibles."
+        else:
+            tab1_insight_body = "No hay información suficiente para generar un insight del resumen."
+    except Exception:
+        tab1_insight_body = "No hay información suficiente para generar un insight del resumen."
+
+    try:
+        _best_op_name = best_operator["Operador"] if best_operator is not None and "Operador" in best_operator.index else "N/D"
+        _gap_text = fmt_dBm(score_gap) if pd.notna(score_gap) else "N/D"
+        tab2_insight_body = f"{_best_op_name} lidera en señal con mediana {fmt_dBm(best_operator['RSRP_mediana'])}; la brecha de señal frente al operador más débil es de {_gap_text} dBm."
+    except Exception:
+        tab2_insight_body = "No hay información suficiente para generar la lectura competitiva."
+
+    try:
+        if worst_zone is not None:
+            tab3_insight_body = (
+                f"El foco territorial principal es el CP {worst_zone['Codigo_postal']}, "
+                f"con {fmt_pct(worst_zone['Pct_critica'])} en condición crítica."
+            )
+        else:
+            tab3_insight_body = "No se identifica un CP prioritario con los filtros seleccionados."
+    except Exception:
+        tab3_insight_body = "No hay información suficiente para generar la lectura territorial."
+
+    try:
+        _var_global = variation_result.get("variacion_global", np.nan) if isinstance(variation_result, dict) else np.nan
+        tab4_insight_body = (
+            f"La variación global de intensidad de señal es {fmt_var_dBm(_var_global)}; "
+            f"revisa los extremos para separar mejora real de puntos aislados."
+        )
+    except Exception:
+        tab4_insight_body = "No hay información suficiente para generar la lectura de variación."
+
+    try:
+        if business_executive_summary:
+            tab5_insight_body = business_executive_summary
+        elif leader_market is not None or leader_altas is not None:
+            _lm = leader_market["Operador"] if leader_market is not None and "Operador" in leader_market.index else "N/D"
+            _la = leader_altas["Operador"] if leader_altas is not None and "Operador" in leader_altas.index else "N/D"
+            tab5_insight_body = f"Mercado liderado por {_lm}; captación liderada por {_la} en el universo visible."
+        else:
+            tab5_insight_body = "No hay suficientes datos de mercado o altas para generar una lectura comercial completa."
+    except Exception:
+        tab5_insight_body = "No hay suficientes datos de mercado o altas para generar una lectura comercial completa."
+
+
+    excel_bytes = build_excel(
+        summary_operator_df=safe_round_columns(summary_operator, ["RSRP_promedio", "RSRP_mediana", "Excelente", "Buena", "Aceptable", "Critica", "Buena_o_mejor", "Score_operador"]),
+        zone_exec_df=safe_round_columns(zone_exec_export, ["RSRP_mediana", "Pct_critica", "Pct_aceptable", "Pct_buena_o_mejor", "RSRP_mas_debil", "RSRP_lider"]),
+        variation_operator_df=safe_round_columns(variation_operator, ["RSRP_inicial", "RSRP_final", "Variacion_RSRP"]),
+        variation_route_df=safe_round_columns(variation_route, ["RSRP_inicial", "RSRP_final", "Variacion_RSRP"]),
+        variation_circuit_df=safe_round_columns(variation_circuit, ["RSRP_inicial", "RSRP_final", "Variacion_RSRP"]),
+        market_df=safe_round_columns(market_operator, ["Mercado_total", "Cuota_mercado", "Cuota_mercado_global"]),
+        altas_df=safe_round_columns(altas_operator, ["Altas_total", "Participacion_altas", "Participacion_altas_global"]),
+    )
+
+    exec_narrative = build_exec_narrative(global_median, pct_good, pct_critical, best_operator, worst_zone, variation_result, business_metrics)
+    alerts = build_alerts(summary_operator, zone_summary, variation_result, business_metrics)
+
+    if pct_critical >= 30:
+        insight_title = "Riesgo alto de intensidad de señal"
+        insight_body = f"La red muestra una presión crítica relevante: {fmt_pct(pct_critical)} de las mediciones y {cp_critical_count} códigos postales concentran condición crítica."
+        insight_action = "Priorizar intervención en los CP con deterioro reciente y mayor exposición crítica."
+    elif pct_critical >= 15:
+        insight_title = "Red bajo vigilancia"
+        insight_body = f"El comportamiento agregado es mixto: {fmt_pct(pct_critical)} de criticidad y {cp_critical_count} códigos postales en condición crítica requieren monitoreo cercano."
+        insight_action = "Enfocar optimización en zonas con deterioro y proteger las áreas que hoy se mantienen estables."
+    else:
+        insight_title = "Desempeño estable de intensidad de señal"
+        insight_body = f"La red mantiene baja criticidad visible: {fmt_pct(pct_critical)} de las mediciones y {cp_critical_count} códigos postales en condición crítica."
+        insight_action = "Sostener la estabilidad y concentrar mejoras finas en territorios puntuales de menor señal."
+
+    # =========================================================
+    # SWITCH PRINCIPAL
+    # =========================================================
+    _vista_claro = (
+        st.session_state.get("vista_activa", "Red y Mercado · Operadores") == "Agentes Claro · PDVs"
+        or _vista_claro_direct
+    )
+
+    if not _show_welcome:
+        if _vista_claro:
+            render_claro_view()
+            st.stop()
+
+    # =========================================================
+    # HEADER (VISTA RED/MERCADO)
+    # =========================================================
+    if _show_welcome:
+        st.stop()
+
+    # Guard: if no RSRP data, show friendly message instead of crashing operators view
+    if not _rsrp_available:
+        st.markdown("""
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:40px;text-align:center;margin:40px auto;max-width:560px;">
+            <div style="font-size:2rem;margin-bottom:12px;">📡</div>
+            <div style="font-size:1.1rem;font-weight:800;color:#F8FAFC;margin-bottom:8px;">Sin datos de señal RSRP</div>
+            <div style="font-size:.84rem;color:#94A3B8;margin-bottom:16px;">Para ver la vista de Red y Mercado necesitas subir el archivo CSV de señal RSRP usando el cargador del sidebar.</div>
+            <div style="font-size:.76rem;color:#64748B;">Si solo tienes el plan de trabajo de agentes, selecciona la vista <b style="color:#E2E8F0;">Agentes Claro · PDVs</b> en el sidebar.</div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.stop()
+
 else:
-    _empty_op = pd.Series({"Operador":"N/D","RSRP_mediana":np.nan,"Buena_o_mejor":0.0,
-                            "Critica":0.0,"Observaciones":0,"Codigos":0,"Score_operador":0.0,
-                            "Aceptable":0.0,"Excelente":0.0,"Buena":0.0,"RSRP_promedio":np.nan})
+    df_f = pd.DataFrame()
+    network_records_visible = 0
+    business_records_visible = 0
+    filtros_activos = []
+    summary_operator = pd.DataFrame()
+    quality_pct = pd.DataFrame()
+    zone_summary = pd.DataFrame()
+    top_zones = pd.DataFrame()
+    zone_exec_cols = []
+    worst_zone = None
+    best_zone = None
+    cp_critical_count = 0
+    cp_critical_share = 0.0
+    pct_good = 0.0
+    pct_critical = 0.0
+    global_median = None
+    global_mean = None
+    obs_validas = 0
+    variation_result = {"variacion_global": 0, "tiene_variacion": False,
+                        "periodo_inicial": "N/D", "periodo_final": "N/D",
+                        "message": "Sin datos RSRP."}
+    variation_operator = pd.DataFrame()
+    variation_period = pd.DataFrame()
+    variation_cp = pd.DataFrame()
+    mayor_mejora = None
+    mayor_deterioro = None
+    nivel_temporal_variacion = st.session_state.get("nivel_temporal_variacion", "Mes")
+    business_metrics = {"available": False, "message": "Sin datos RSRP."}
+    market_operator = pd.DataFrame()
+    altas_operator = pd.DataFrame()
+    market_time = pd.DataFrame()
+    altas_time = pd.DataFrame()
+    market_operator_delta = pd.DataFrame()
+    altas_operator_delta = pd.DataFrame()
+    cross_operator = pd.DataFrame()
+    territorial_cross = pd.DataFrame()
+    risk_table = pd.DataFrame()
+    opportunity_table = pd.DataFrame()
+    scatter_df = pd.DataFrame()
+    leader_market = None
+    leader_altas = None
+    market_lead_gap = np.nan
+    altas_lead_gap = np.nan
+    market_growth_pct = np.nan
+    altas_growth_pct = np.nan
+    market_period_initial = "N/D"
+    market_period_final = "N/D"
+    altas_period_initial = "N/D"
+    altas_period_final = "N/D"
+    risk_count = 0
+    opportunity_count = 0
+    _empty_op = pd.Series({"Operador": "N/D", "RSRP_mediana": np.nan,
+                            "Buena_o_mejor": 0.0, "Critica": 0.0,
+                            "Observaciones": 0, "Codigos": 0,
+                            "Score_operador": 0.0, "Aceptable": 0.0,
+                            "Excelente": 0.0, "Buena": 0.0,
+                            "RSRP_promedio": np.nan})
     best_operator = _empty_op.copy()
     worst_operator = _empty_op.copy()
     worst_operator_crit = _empty_op.copy()
-
-global_median = df_f["RSRP_valido"].median()
-global_mean = df_f["RSRP_valido"].mean()
-pct_good = df_f["Categoria_RSRP"].isin(["Excelente", "Buena"]).mean() * 100
-pct_critical = (df_f["Categoria_RSRP"] == "Crítica").mean() * 100
-cp_critical_mask = df_f.groupby("Codigo_postal")["Categoria_RSRP"].apply(lambda s: (s == "Crítica").mean() >= 0.5)
-cp_critical_count = int(cp_critical_mask.sum()) if not cp_critical_mask.empty else 0
-cp_total_count = int(df_f["Codigo_postal"].nunique())
-cp_critical_share = (cp_critical_count / cp_total_count * 100) if cp_total_count > 0 else np.nan
-status_text, status_class = executive_status(global_median)
-
-zone_summary = (
-    df_f.groupby("Codigo_postal", as_index=False)
-    .agg(
-        RSRP_promedio=("RSRP_valido", "mean"),
-        RSRP_mediana=("RSRP_valido", "median"),
-        Registros=("RSRP_valido", "count"),
-        Operadores_presentes=("Operador", "nunique"),
-        Pct_critica=("Categoria_RSRP", lambda s: (s == "Crítica").mean() * 100),
-        Pct_buena_o_mejor=("Categoria_RSRP", lambda s: s.isin(["Excelente", "Buena"]).mean() * 100),
-        Pct_aceptable=("Categoria_RSRP", lambda s: (s == "Aceptable").mean() * 100),
-    )
-)
-territory_group_cols = [col for col in TERRITORIAL_STANDARD_COLS if col in df_f.columns]
-if territory_group_cols:
-    territory_agg = df_f.groupby("Codigo_postal", as_index=False)[territory_group_cols].agg(lambda s: first_not_null(s))
-    zone_summary = zone_summary.merge(territory_agg, on="Codigo_postal", how="left")
-
-zone_worst_operator = (
-    df_f.groupby(["Codigo_postal", "Operador"], as_index=False)
-    .agg(RSRP_mediana=("RSRP_valido", "median"))
-    .sort_values(["Codigo_postal", "RSRP_mediana"], ascending=[True, True])
-    .groupby("Codigo_postal", as_index=False)
-    .first()
-    .rename(columns={"Operador": "Operador_mas_debil", "RSRP_mediana": "RSRP_mas_debil"})
-)
-zone_best_operator = (
-    df_f.groupby(["Codigo_postal", "Operador"], as_index=False)
-    .agg(RSRP_mediana=("RSRP_valido", "median"))
-    .sort_values(["Codigo_postal", "RSRP_mediana"], ascending=[True, False])
-    .groupby("Codigo_postal", as_index=False)
-    .first()
-    .rename(columns={"Operador": "Operador_lider", "RSRP_mediana": "RSRP_lider"})
-)
-zone_summary = zone_summary.merge(zone_worst_operator, on="Codigo_postal", how="left")
-zone_summary = zone_summary.merge(zone_best_operator, on="Codigo_postal", how="left")
-zone_summary["Indice_prioridad"] = (((-1 * zone_summary["RSRP_mediana"]) * 0.40) + (zone_summary["Pct_critica"] * 0.35) - (zone_summary["Pct_buena_o_mejor"] * 0.15) + (zone_summary["Pct_aceptable"] * 0.10))
-zone_summary["Semaforo"] = zone_summary.apply(lambda r: zone_semaphore(r["Pct_critica"], r["RSRP_mediana"]), axis=1)
-zone_summary = zone_summary.sort_values(["Pct_critica", "RSRP_mediana"], ascending=[False, True])
-
-top_zones = zone_summary.head(15).copy()
-worst_zone = top_zones.iloc[0] if not top_zones.empty else None
-best_zones = zone_summary.sort_values(["Pct_buena_o_mejor", "RSRP_mediana"], ascending=[False, False]).head(15).copy()
-best_zone = best_zones.iloc[0] if not best_zones.empty else None
-
-trend = df_f.groupby(["Fecha de inicio", "Operador"], as_index=False).agg(RSRP_mediana=("RSRP_valido", "median"))
-quality = df_f.groupby(["Operador", "Categoria_RSRP"], as_index=False).size().rename(columns={"size": "Cantidad"})
-quality_pct = quality.copy()
-quality_totals = quality_pct.groupby("Operador", as_index=False)["Cantidad"].sum().rename(columns={"Cantidad": "Total"})
-quality_pct = quality_pct.merge(quality_totals, on="Operador", how="left")
-quality_pct["Porcentaje"] = np.where(quality_pct["Total"] > 0, quality_pct["Cantidad"] / quality_pct["Total"] * 100, np.nan)
-
-matrix_source = (
-    df_f[df_f["Codigo_postal"].isin(top_zones["Codigo_postal"])] if not top_zones.empty else df_f.iloc[0:0]
-).groupby(["Codigo_postal", "Operador"], as_index=False).agg(RSRP_mediana=("RSRP_valido", "median"))
-
-trend_min = float(trend["RSRP_mediana"].min()) if not trend.empty else -125.0
-trend_max = float(trend["RSRP_mediana"].max()) if not trend.empty else -60.0
-y_min = max(-125, trend_min - 2)
-y_max = min(-60, trend_max + 2)
-
-variation_result = compute_variation_tables(df_f, nivel_temporal_variacion)
-variation_operator = variation_result["variation_operator"].copy()
-variation_route = variation_result["variation_route"].copy()
-variation_circuit = variation_result["variation_circuit"].copy()
-variation_cp = variation_result["variation_cp"].copy()
-variation_localidad = variation_result["variation_localidad"].copy()
-variation_period = variation_result["variation_period"].copy()
-
-if variation_result["tiene_variacion"] and not variation_cp.empty:
-    mayor_mejora = variation_cp.sort_values("Variacion_RSRP", ascending=False).iloc[0]
-    mayor_deterioro = variation_cp.sort_values("Variacion_RSRP", ascending=True).iloc[0]
-else:
-    mayor_mejora = None
-    mayor_deterioro = None
-
-zone_exec_cols = ["Codigo_postal", "Semaforo", "RSRP_mediana", "Pct_critica", "Pct_aceptable", "Pct_buena_o_mejor", "Operador_mas_debil", "RSRP_mas_debil", "Operador_lider", "RSRP_lider", "Operadores_presentes", "Registros"] + [c for c in TERRITORIAL_STANDARD_COLS if c in top_zones.columns]
-zone_exec_export = top_zones[zone_exec_cols].copy() if not top_zones.empty else pd.DataFrame(columns=zone_exec_cols)
-
-business_metrics = compute_business_metrics(business_all_f, df_f)
-market_operator = business_metrics.get("market_operator", pd.DataFrame())
-altas_operator = business_metrics.get("altas_operator", pd.DataFrame())
-cross_operator = business_metrics.get("cross_operator", pd.DataFrame())
-market_time = business_metrics.get("market_time", pd.DataFrame())
-altas_time = business_metrics.get("altas_time", pd.DataFrame())
-scatter_df = business_metrics.get("scatter_df", pd.DataFrame())
-territorial_cross = business_metrics.get("territorial_cross", pd.DataFrame())
-risk_table = business_metrics.get("risk_table", pd.DataFrame())
-opportunity_table = business_metrics.get("opportunity_table", pd.DataFrame())
-leader_market = business_metrics.get("leader_market")
-leader_altas = business_metrics.get("leader_altas")
-market_month_initial_label = business_metrics.get("market_month_initial_label")
-market_month_final_label = business_metrics.get("market_month_final_label")
-altas_month_initial_label = business_metrics.get("altas_month_initial_label")
-altas_month_final_label = business_metrics.get("altas_month_final_label")
-market_month_initial_value = business_metrics.get("market_month_initial_value")
-market_month_final_value = business_metrics.get("market_month_final_value")
-altas_month_initial_value = business_metrics.get("altas_month_initial_value")
-altas_month_final_value = business_metrics.get("altas_month_final_value")
-market_month_initial_operator = business_metrics.get("market_month_initial_operator")
-market_month_final_operator = business_metrics.get("market_month_final_operator")
-altas_month_initial_operator = business_metrics.get("altas_month_initial_operator")
-altas_month_final_operator = business_metrics.get("altas_month_final_operator")
-
-market_total_visible = market_operator["Mercado_total"].sum() if not market_operator.empty and "Mercado_total" in market_operator.columns else np.nan
-altas_total_visible = altas_operator["Altas_total"].sum() if not altas_operator.empty and "Altas_total" in altas_operator.columns else np.nan
-market_follow_share = market_operator.iloc[1]["Cuota_mercado_global"] if len(market_operator) > 1 else np.nan
-market_lead_gap = (leader_market["Cuota_mercado_global"] - market_follow_share) if leader_market is not None and pd.notna(market_follow_share) else np.nan
-altas_follow_share = altas_operator.iloc[1]["Participacion_altas_global"] if len(altas_operator) > 1 else np.nan
-altas_lead_gap = (leader_altas["Participacion_altas_global"] - altas_follow_share) if leader_altas is not None and pd.notna(altas_follow_share) else np.nan
-risk_count = len(risk_table) if risk_table is not None else 0
-opportunity_count = len(opportunity_table) if opportunity_table is not None else 0
-
-market_top2_share = market_operator["Cuota_mercado_global"].head(2).sum() if not market_operator.empty and "Cuota_mercado_global" in market_operator.columns else np.nan
-altas_top2_share = altas_operator["Participacion_altas_global"].head(2).sum() if not altas_operator.empty and "Participacion_altas_global" in altas_operator.columns else np.nan
-
-def compute_period_operator_delta(df_in, period_col, value_col):
-    if df_in is None or df_in.empty or period_col not in df_in.columns or value_col not in df_in.columns:
-        return pd.DataFrame()
-    base = df_in[[period_col, "Operador", value_col]].dropna().copy()
-    if base.empty:
-        return pd.DataFrame()
-    base = base.sort_values([period_col, "Operador"])
-    first_df = base.groupby("Operador", as_index=False).first().rename(columns={value_col: "Valor_inicial", period_col: "Periodo_inicial"})
-    last_df = base.groupby("Operador", as_index=False).last().rename(columns={value_col: "Valor_final", period_col: "Periodo_final"})
-    delta = first_df.merge(last_df, on="Operador", how="outer")
-    delta["Variacion"] = delta["Valor_final"] - delta["Valor_inicial"]
-    return delta.sort_values("Variacion", ascending=False).reset_index(drop=True)
-
-
-def compute_total_growth(df_in, period_col, value_col):
-    if df_in is None or df_in.empty or period_col not in df_in.columns or value_col not in df_in.columns:
-        return np.nan, np.nan, np.nan, None, None
-    base = df_in[[period_col, value_col]].dropna().copy()
-    if base.empty:
-        return np.nan, np.nan, np.nan, None, None
-    total_by_period = base.groupby(period_col, as_index=False)[value_col].sum().sort_values(period_col)
-    if total_by_period.shape[0] < 2:
-        val = total_by_period.iloc[-1][value_col]
-        per = total_by_period.iloc[-1][period_col]
-        return np.nan, val, val, per, per
-    initial_val = total_by_period.iloc[0][value_col]
-    final_val = total_by_period.iloc[-1][value_col]
-    if pd.notna(initial_val) and initial_val != 0:
-        growth = ((final_val - initial_val) / initial_val) * 100
-    else:
-        growth = np.nan
-    return growth, initial_val, final_val, total_by_period.iloc[0][period_col], total_by_period.iloc[-1][period_col]
-
-def build_business_executive_summary(leader_market, leader_altas, market_best_gain, altas_best_gain, market_growth, altas_growth):
-    fragments = []
-    if leader_market is not None:
-        fragments.append(f"El liderazgo de mercado lo conserva <b>{leader_market['Operador']}</b> con <b>{leader_market['Cuota_mercado_global']:.1f}%</b> de cuota visible.")
-    if leader_altas is not None:
-        fragments.append(f"En captación, el liderazgo corresponde a <b>{leader_altas['Operador']}</b> con <b>{leader_altas['Participacion_altas_global']:.1f}%</b> de participación en altas.")
-    if market_best_gain is not None and pd.notna(market_best_gain.get('Variacion')):
-        direction = "gana" if market_best_gain["Variacion"] >= 0 else "cede"
-        fragments.append(f"<b>{market_best_gain['Operador']}</b> {direction} mayor participación de mercado en el periodo con una variación de <b>{market_best_gain['Variacion']:+.1f} pp</b>.")
-    if altas_best_gain is not None and pd.notna(altas_best_gain.get('Variacion')):
-        direction = "gana" if altas_best_gain["Variacion"] >= 0 else "cede"
-        fragments.append(f"En altas, <b>{altas_best_gain['Operador']}</b> {direction} mayor participación con <b>{altas_best_gain['Variacion']:+.1f} pp</b>.")
-    if pd.notna(market_growth):
-        trend = "crece" if market_growth > 0 else "cae" if market_growth < 0 else "se mantiene"
-        fragments.append(f"El volumen total de mercado visible <b>{trend}</b> <b>{market_growth:+.1f}%</b> entre el primer y el último mes disponible.")
-    if pd.notna(altas_growth):
-        trend = "crecen" if altas_growth > 0 else "caen" if altas_growth < 0 else "se mantienen"
-        fragments.append(f"Las altas visibles <b>{trend}</b> <b>{altas_growth:+.1f}%</b> en ese mismo intervalo.")
-    return " ".join(fragments)
-
-market_operator_delta = compute_period_operator_delta(market_time, "Periodo_Mes", "Cuota_mercado")
-altas_operator_delta = compute_period_operator_delta(altas_time, "Periodo_Mes", "Participacion_altas")
-
-market_best_gain = market_operator_delta.iloc[0] if not market_operator_delta.empty else None
-altas_best_gain = altas_operator_delta.iloc[0] if not altas_operator_delta.empty else None
-
-cp_highest_market = None
-cp_highest_altas = None
-if business_f is not None and not business_f.empty:
-    cp_market_df = business_f.groupby("Codigo_postal", as_index=False).agg(Mercado_total=("Mercado", "sum"))
-    cp_altas_df = business_f.groupby("Codigo_postal", as_index=False).agg(Altas_total=("Altas", "sum"))
-    if not cp_market_df.empty:
-        cp_highest_market = cp_market_df.sort_values("Mercado_total", ascending=False).iloc[0]
-    if not cp_altas_df.empty:
-        cp_highest_altas = cp_altas_df.sort_values("Altas_total", ascending=False).iloc[0]
-
-market_growth_pct, market_total_initial, market_total_final, market_period_initial, market_period_final = compute_total_growth(market_time, "Periodo_Mes", "Mercado_total")
-altas_growth_pct, altas_total_initial, altas_total_final, altas_period_initial, altas_period_final = compute_total_growth(altas_time, "Periodo_Mes", "Altas_total")
-business_executive_summary = build_business_executive_summary(
-    leader_market=leader_market,
-    leader_altas=leader_altas,
-    market_best_gain=market_best_gain,
-    altas_best_gain=altas_best_gain,
-    market_growth=market_growth_pct,
-    altas_growth=altas_growth_pct,
-)
-
-try:
-    score_gap = (
-        best_operator["RSRP_mediana"] - worst_operator["RSRP_mediana"]
-        if best_operator is not None and worst_operator is not None
-        and pd.notna(best_operator.get("RSRP_mediana", np.nan))
-        and pd.notna(worst_operator.get("RSRP_mediana", np.nan))
-        else np.nan
-    )
-except Exception:
-    score_gap = np.nan
-
-# Insights blindados: no dependen de que variables visuales previas existan en un orden específico.
-try:
-    _insight_title = locals().get("insight_title", None)
-    _insight_action = locals().get("insight_action", None)
-    if _insight_title and _insight_action:
-        tab1_insight_body = f"{_insight_title}. {_insight_action}"
-    elif pd.notna(global_median):
-        tab1_insight_body = f"El periodo seleccionado presenta una mediana de intensidad de señal de {fmt_dBm(global_median)} y {fmt_int(cp_critical_count)} CP críticos visibles."
-    else:
-        tab1_insight_body = "No hay información suficiente para generar un insight del resumen."
-except Exception:
-    tab1_insight_body = "No hay información suficiente para generar un insight del resumen."
-
-try:
-    _best_op_name = best_operator["Operador"] if best_operator is not None and "Operador" in best_operator.index else "N/D"
-    _gap_text = fmt_dBm(score_gap) if pd.notna(score_gap) else "N/D"
-    tab2_insight_body = f"{_best_op_name} lidera en señal con mediana {fmt_dBm(best_operator['RSRP_mediana'])}; la brecha de señal frente al operador más débil es de {_gap_text} dBm."
-except Exception:
-    tab2_insight_body = "No hay información suficiente para generar la lectura competitiva."
-
-try:
-    if worst_zone is not None:
-        tab3_insight_body = (
-            f"El foco territorial principal es el CP {worst_zone['Codigo_postal']}, "
-            f"con {fmt_pct(worst_zone['Pct_critica'])} en condición crítica."
-        )
-    else:
-        tab3_insight_body = "No se identifica un CP prioritario con los filtros seleccionados."
-except Exception:
-    tab3_insight_body = "No hay información suficiente para generar la lectura territorial."
-
-try:
-    _var_global = variation_result.get("variacion_global", np.nan) if isinstance(variation_result, dict) else np.nan
-    tab4_insight_body = (
-        f"La variación global de intensidad de señal es {fmt_var_dBm(_var_global)}; "
-        f"revisa los extremos para separar mejora real de puntos aislados."
-    )
-except Exception:
-    tab4_insight_body = "No hay información suficiente para generar la lectura de variación."
-
-try:
-    if business_executive_summary:
-        tab5_insight_body = business_executive_summary
-    elif leader_market is not None or leader_altas is not None:
-        _lm = leader_market["Operador"] if leader_market is not None and "Operador" in leader_market.index else "N/D"
-        _la = leader_altas["Operador"] if leader_altas is not None and "Operador" in leader_altas.index else "N/D"
-        tab5_insight_body = f"Mercado liderado por {_lm}; captación liderada por {_la} en el universo visible."
-    else:
-        tab5_insight_body = "No hay suficientes datos de mercado o altas para generar una lectura comercial completa."
-except Exception:
-    tab5_insight_body = "No hay suficientes datos de mercado o altas para generar una lectura comercial completa."
-
-
-excel_bytes = build_excel(
-    summary_operator_df=safe_round_columns(summary_operator, ["RSRP_promedio", "RSRP_mediana", "Excelente", "Buena", "Aceptable", "Critica", "Buena_o_mejor", "Score_operador"]),
-    zone_exec_df=safe_round_columns(zone_exec_export, ["RSRP_mediana", "Pct_critica", "Pct_aceptable", "Pct_buena_o_mejor", "RSRP_mas_debil", "RSRP_lider"]),
-    variation_operator_df=safe_round_columns(variation_operator, ["RSRP_inicial", "RSRP_final", "Variacion_RSRP"]),
-    variation_route_df=safe_round_columns(variation_route, ["RSRP_inicial", "RSRP_final", "Variacion_RSRP"]),
-    variation_circuit_df=safe_round_columns(variation_circuit, ["RSRP_inicial", "RSRP_final", "Variacion_RSRP"]),
-    market_df=safe_round_columns(market_operator, ["Mercado_total", "Cuota_mercado", "Cuota_mercado_global"]),
-    altas_df=safe_round_columns(altas_operator, ["Altas_total", "Participacion_altas", "Participacion_altas_global"]),
-)
-
-exec_narrative = build_exec_narrative(global_median, pct_good, pct_critical, best_operator, worst_zone, variation_result, business_metrics)
-alerts = build_alerts(summary_operator, zone_summary, variation_result, business_metrics)
-
-if pct_critical >= 30:
-    insight_title = "Riesgo alto de intensidad de señal"
-    insight_body = f"La red muestra una presión crítica relevante: {fmt_pct(pct_critical)} de las mediciones y {cp_critical_count} códigos postales concentran condición crítica."
-    insight_action = "Priorizar intervención en los CP con deterioro reciente y mayor exposición crítica."
-elif pct_critical >= 15:
-    insight_title = "Red bajo vigilancia"
-    insight_body = f"El comportamiento agregado es mixto: {fmt_pct(pct_critical)} de criticidad y {cp_critical_count} códigos postales en condición crítica requieren monitoreo cercano."
-    insight_action = "Enfocar optimización en zonas con deterioro y proteger las áreas que hoy se mantienen estables."
-else:
-    insight_title = "Desempeño estable de intensidad de señal"
-    insight_body = f"La red mantiene baja criticidad visible: {fmt_pct(pct_critical)} de las mediciones y {cp_critical_count} códigos postales en condición crítica."
-    insight_action = "Sostener la estabilidad y concentrar mejoras finas en territorios puntuales de menor señal."
-
-# =========================================================
-# SWITCH PRINCIPAL
-# =========================================================
-_vista_claro = (
-    st.session_state.get("vista_activa", "Red y Mercado · Operadores") == "Agentes Claro · PDVs"
-    or _vista_claro_direct
-)
-
-if not _show_welcome:
-    if _vista_claro:
-        render_claro_view()
-        st.stop()
-
-# =========================================================
-# HEADER (VISTA RED/MERCADO)
-# =========================================================
-if _show_welcome:
-    st.stop()
-
-# Guard: if no RSRP data, show friendly message instead of crashing operators view
-if not _rsrp_available:
-    st.markdown("""
-    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:40px;text-align:center;margin:40px auto;max-width:560px;">
-        <div style="font-size:2rem;margin-bottom:12px;">📡</div>
-        <div style="font-size:1.1rem;font-weight:800;color:#F8FAFC;margin-bottom:8px;">Sin datos de señal RSRP</div>
-        <div style="font-size:.84rem;color:#94A3B8;margin-bottom:16px;">Para ver la vista de Red y Mercado necesitas subir el archivo CSV de señal RSRP usando el cargador del sidebar.</div>
-        <div style="font-size:.76rem;color:#64748B;">Si solo tienes el plan de trabajo de agentes, selecciona la vista <b style="color:#E2E8F0;">Agentes Claro · PDVs</b> en el sidebar.</div>
-    </div>
-    """, unsafe_allow_html=True)
-    st.stop()
 
 if _rsrp_available and not df_f.empty:
     periodo_txt = f"{pd.to_datetime(fecha_ini).strftime('%d/%m/%Y')} a {pd.to_datetime(fecha_fin).strftime('%d/%m/%Y')}"
