@@ -77,6 +77,25 @@ QUALITY_COLORS = {
     "Sin medición": "#64748B",
 }
 
+AGENTE_COLORS = {
+    "LIKE USME":        "#E10600",
+    "MI RED MOVIL":     "#38BDF8",
+    "ICELL R4":         "#22C55E",
+    "MAX EVOLUCION BOG":"#F59E0B",
+    "TEAM":             "#A855F7",
+    "LIKE ZONA SUR":    "#EF4444",
+    "MAX EVOLUCION ":   "#F97316",
+    "MAX EVOLUCION":    "#F97316",
+}
+
+CATEGORIA_COLORS = {
+    "DIAMANTE": "#38BDF8",
+    "PLATINO":  "#A855F7",
+    "ORO":      "#F59E0B",
+    "PLATA":    "#94A3B8",
+    "BRONCE":   "#92400E",
+}
+
 # =========================================================
 # ESTILOS
 # =========================================================
@@ -6934,4 +6953,3 @@ with tab5:
             <div style="font-size:.84rem;color:#E2E8F0;line-height:1.7;">{_concl_mkt}</div>
         </div>
         """, unsafe_allow_html=True)
-
