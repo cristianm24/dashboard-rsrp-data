@@ -3178,6 +3178,58 @@ _COLS_PLAN_IDENTIFIERS = ["AGENTE", "META ALTA NAT (>$2000)", "EJEC ALTA NAT", "
 # Columnas que identifican una hoja de cierre mensual
 _COLS_CIERRE_IDENTIFIERS = ["ID POS", "MAR", "MAR.1"]  # flexible — 2+ cols numéricas + ID
 
+
+def _process_claro_df(df_det):
+    """
+    Limpia y coerciona tipos del dataframe de plan.
+    Rellena columnas opcionales faltantes con valores por defecto.
+    Retorna (df_limpio, columnas_faltantes, columnas_nuevas).
+    """
+    df_det.columns = [str(c).strip() for c in df_det.columns]
+    cols_excel = set(df_det.columns)
+
+    # Columnas requeridas faltantes
+    faltantes = [c for c in COLUMNAS_REQUERIDAS if c not in cols_excel]
+
+    # Columnas opcionales faltantes → rellenar con valor por defecto
+    for c, default in COLUMNAS_OPCIONALES.items():
+        if c not in df_det.columns:
+            df_det[c] = default
+
+    # Columnas nuevas no reconocidas
+    conocidas = set(COLUMNAS_REQUERIDAS) | set(COLUMNAS_OPCIONALES.keys()) | {
+        "TOTAL META ALTA", "% CUMPLI", "META ARPU", "EJEC ARPU",
+        "VR_M-1.2", "VR_M-12.2", "TIPO", "CODIGO POSTAL",
+        "S1.2","S2.2","S3.2","S4.2","S1.3","S2.3","S3.3",",",
+        "% CUMP","% CUMP.1","%","%.1","META ARPU","EJEC ARPU",
+    }
+    nuevas = sorted(cols_excel - conocidas - {
+        "AGENTE","ID","ASESOR","CATEGORIA","TIPOLOGIA",
+        "CLASIFICACION","BARRIO","ZONA","RUTA","CIRCUITO","TIPO","CODIGO POSTAL"
+    })
+
+    # Coerción numérica
+    num_cols = list(COLUMNAS_OPCIONALES.keys()) + [
+        "TOTAL META ALTA", "EJE ALTA TOTAL", "META ALTA NAT (>$2000)", "EJEC ALTA NAT",
+        "% CUMPLI", "META ARPU", "EJEC ARPU", "META INGRESOS M0", "EJEC INGRESOS M0",
+        "S1.2","S2.2","S3.2","S4.2","S1.3","S2.3","S3.3",
+    ]
+    for c in num_cols:
+        if c in df_det.columns:
+            df_det[c] = pd.to_numeric(df_det[c], errors="coerce")
+
+    # Coerción string
+    for c in ["AGENTE","CATEGORIA","TIPOLOGIA","CLASIFICACION","ZONA",
+              "TIPO","ASESOR","RUTA","CIRCUITO","BARRIO"]:
+        if c in df_det.columns:
+            df_det[c] = df_det[c].astype(str).str.strip().replace("nan", pd.NA)
+
+    # Remove rows where AGENTE is null (header repeats or empty rows)
+    if "AGENTE" in df_det.columns:
+        df_det = df_det[df_det["AGENTE"].notna() & (df_det["AGENTE"].astype(str).str.strip() != "")]
+
+    return df_det, faltantes, nuevas
+
 def _scan_all_sheets(xl):
     """
     Escanea todas las hojas del Excel y las clasifica por contenido.
@@ -4744,6 +4796,142 @@ _has_rsrp_file = find_existing_file(DATA_FILE_CANDIDATES) is not None if 'DATA_F
 _show_welcome = not _has_claro_file and not _has_rsrp_file
 if _show_welcome:
     st.markdown(f"""
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;">
+        <div style="width:52px;height:52px;background:#E10600;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        </div>
+        <div>
+            <div style="font-size:1.6rem;font-weight:950;color:#F8FAFC;line-height:1.1;">Dashboard de Inteligencia Comercial</div>
+            <div style="font-size:.84rem;color:#64748B;margin-top:3px;">Claro Colombia · Red y Mercado · Gestión de Agentes PDVs</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Two views explanation
+    col_w1, col_w2 = st.columns(2, gap="large")
+
+    with col_w1:
+        st.markdown("""
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.95),rgba(10,18,34,0.98));border:1px solid rgba(56,189,248,0.25);border-radius:20px;padding:24px 26px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                <div style="width:36px;height:36px;background:rgba(56,189,248,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </div>
+                <div style="font-size:.95rem;font-weight:900;color:#38BDF8;">Vista Red y Mercado</div>
+            </div>
+            <div style="font-size:.80rem;color:#94A3B8;line-height:1.7;margin-bottom:16px;">
+                Analiza la calidad de señal RSRP de todos los operadores (Claro, Tigo, Movistar, etc.)
+                por código postal, con comparativo de cuota de mercado y captación de altas.
+            </div>
+            <div style="font-size:.72rem;font-weight:900;color:#64748B;text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px;">Archivos necesarios</div>
+
+            <div style="background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.15);border-radius:12px;padding:12px 14px;margin-bottom:8px;">
+                <div style="font-size:.76rem;font-weight:900;color:#38BDF8;margin-bottom:3px;">📄 RSRP_COMPLETO.csv <span style="background:#38BDF8;color:#0F172A;font-size:.60rem;padding:1px 6px;border-radius:99px;margin-left:4px;">REQUERIDO</span></div>
+                <div style="font-size:.72rem;color:#94A3B8;line-height:1.6;">Señal RSRP por código postal, operador y fecha.<br>Columnas: <code style="color:#E2E8F0;">Codigo_postal · Fecha de inicio · Claro · Tigo · Movistar...</code></div>
+            </div>
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px 14px;margin-bottom:8px;">
+                <div style="font-size:.76rem;font-weight:900;color:#E2E8F0;margin-bottom:3px;">📊 Cuota_mercado_completo.xlsx <span style="background:rgba(255,255,255,0.1);color:#94A3B8;font-size:.60rem;padding:1px 6px;border-radius:99px;margin-left:4px;">OPCIONAL</span></div>
+                <div style="font-size:.72rem;color:#94A3B8;">Cuota de mercado por CP y operador. Habilita el tab de Mercado.</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px 14px;">
+                <div style="font-size:.76rem;font-weight:900;color:#E2E8F0;margin-bottom:3px;">📊 Cuota_alta_completo.xlsx <span style="background:rgba(255,255,255,0.1);color:#94A3B8;font-size:.60rem;padding:1px 6px;border-radius:99px;margin-left:4px;">OPCIONAL</span></div>
+                <div style="font-size:.72rem;color:#94A3B8;">Captación de altas por CP y operador. Complementa el análisis de mercado.</div>
+            </div>
+
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);">
+                <div style="font-size:.72rem;font-weight:900;color:#64748B;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;">Cómo activar</div>
+                <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;">
+                    <span style="background:#38BDF8;color:#0F172A;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;">1</span>
+                    <span style="font-size:.74rem;color:#CBD5E1;">Sube el CSV de señal RSRP usando el cargador <b>"Señal RSRP"</b> del sidebar.</span>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:8px;">
+                    <span style="background:#38BDF8;color:#0F172A;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;">2</span>
+                    <span style="font-size:.74rem;color:#CBD5E1;">Los archivos de cuota van en la carpeta del proyecto en el servidor.</span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_w2:
+        st.markdown("""
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.95),rgba(10,18,34,0.98));border:1px solid rgba(225,6,0,0.25);border-radius:20px;padding:24px 26px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                <div style="width:36px;height:36px;background:rgba(225,6,0,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E10600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div style="font-size:.95rem;font-weight:900;color:#E10600;">Vista Agentes Claro</div>
+            </div>
+            <div style="font-size:.80rem;color:#94A3B8;line-height:1.7;margin-bottom:16px;">
+                Seguimiento comercial del plan de trabajo mensual de agentes Claro:
+                metas, ejecución semanal, PDVs, asesores, cuota de altas y señal RSRP por agente.
+            </div>
+            <div style="font-size:.72rem;font-weight:900;color:#64748B;text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px;">Archivo necesario</div>
+
+            <div style="background:rgba(225,6,0,0.06);border:1px solid rgba(225,6,0,0.20);border-radius:12px;padding:12px 14px;margin-bottom:8px;">
+                <div style="font-size:.76rem;font-weight:900;color:#FCA5A5;margin-bottom:3px;">📋 Plan de trabajo mensual .xlsx <span style="background:#E10600;color:white;font-size:.60rem;padding:1px 6px;border-radius:99px;margin-left:4px;">REQUERIDO</span></div>
+                <div style="font-size:.72rem;color:#94A3B8;line-height:1.6;">
+                    Excel con los datos del mes de agentes Claro.<br>
+                    <b style="color:#E2E8F0;">El nombre del archivo puede ser cualquiera</b> — el sistema detecta automáticamente la hoja correcta por su contenido.<br><br>
+                    La hoja principal debe tener columnas como:<br>
+                    <code style="color:#E2E8F0;">AGENTE · META ALTA NAT · EJEC ALTA NAT · EJE ALTA TOTAL · ASESOR</code>
+                </div>
+            </div>
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px 14px;">
+                <div style="font-size:.74rem;color:#94A3B8;line-height:1.6;">
+                    El archivo puede tener <b style="color:#E2E8F0;">múltiples hojas de datos</b> (una por mes).
+                    El sistema las detecta todas y muestra un selector de periodo en el sidebar.
+                </div>
+            </div>
+
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);">
+                <div style="font-size:.72rem;font-weight:900;color:#64748B;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;">Cómo activar</div>
+                <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;">
+                    <span style="background:#E10600;color:white;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;">1</span>
+                    <span style="font-size:.74rem;color:#CBD5E1;">Sube el Excel usando el cargador <b>"Plan de trabajo"</b> del sidebar.</span>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;">
+                    <span style="background:#E10600;color:white;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;">2</span>
+                    <span style="font-size:.74rem;color:#CBD5E1;">Selecciona <b>"Agentes Claro · PDVs"</b> en el selector de vista del sidebar.</span>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:8px;">
+                    <span style="background:#E10600;color:white;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;">3</span>
+                    <span style="font-size:.74rem;color:#CBD5E1;">Si el archivo tiene varios meses, aparece un selector de periodo en el sidebar.</span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Tabs reference
+    st.markdown("""
+    <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:18px 22px;margin-top:14px;">
+        <div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px;">¿Qué puedes analizar en cada vista?</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <div>
+                <div style="font-size:.74rem;font-weight:900;color:#38BDF8;margin-bottom:6px;">Red y Mercado — 5 tabs</div>
+                <div style="font-size:.72rem;color:#94A3B8;line-height:1.9;">
+                    <b style="color:#E2E8F0;">Resumen</b> — Estado global de señal y posición comercial<br>
+                    <b style="color:#E2E8F0;">Operadores</b> — Ranking de señal por operador<br>
+                    <b style="color:#E2E8F0;">Territorio</b> — CP críticos y zonas prioritarias<br>
+                    <b style="color:#E2E8F0;">Variación</b> — Cambio de señal en el tiempo<br>
+                    <b style="color:#E2E8F0;">Mercado</b> — Cuota, captación y análisis competitivo por CP
+                </div>
+            </div>
+            <div>
+                <div style="font-size:.74rem;font-weight:900;color:#E10600;margin-bottom:6px;">Agentes Claro — 5 tabs</div>
+                <div style="font-size:.72rem;color:#94A3B8;line-height:1.9;">
+                    <b style="color:#E2E8F0;">↗ ¿Cómo vamos?</b> — Resultado del mes completo<br>
+                    <b style="color:#E2E8F0;">◈ ¿Quién cumple?</b> — Ranking y cumplimiento por agente<br>
+                    <b style="color:#E2E8F0;">◎ La brecha</b> — PDVs críticos y capacidad de mejora<br>
+                    <b style="color:#E2E8F0;">∿ El ritmo</b> — Curva semanal de ventas<br>
+                    <b style="color:#E2E8F0;">◉ Oportunidades</b> — Cuota de altas y señal RSRP
+                </div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div style="font-size:.68rem;color:#475569;text-align:center;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05);">Los archivos se procesan localmente en tu sesión y no se almacenan en ningún servidor · Dashboard desarrollado para Claro Colombia</div>', unsafe_allow_html=True)
+    st.markdown(f"""
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px;">
         <div style="width:52px;height:52px;background:#E10600;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
@@ -4841,52 +5029,67 @@ if _show_welcome:
 st.sidebar.markdown("## Centro de control")
 st.sidebar.markdown(f"""<div class="sidebar-guide-row"><span class="sidebar-guide-pill">{icon_svg("filter",12)} Ajusta universo</span><span class="sidebar-guide-pill">{icon_svg("users",12)} Define operadores</span><span class="sidebar-guide-pill">{icon_svg("target",12)} Enfoca lectura</span></div>""", unsafe_allow_html=True)
 
-# ---- CARGADOR DE ARCHIVO ----
-st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("spark",12)} Datos del mes</div><div class="sidebar-title">Cargar archivo Excel</div><div class="sidebar-sub">Sube el archivo del mes para actualizar el dashboard. El archivo no se guarda en ningún servidor — se procesa solo en tu sesión.</div>', unsafe_allow_html=True)
+# ---- CARGADOR 1: AGENTES CLARO ----
+st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("users",12)} Vista Agentes Claro</div><div class="sidebar-title">Plan de trabajo mensual</div><div class="sidebar-sub">Excel con metas, ejecución semanal, PDVs y asesores Claro. El sistema detecta la hoja y el periodo automáticamente.</div>', unsafe_allow_html=True)
 
-_uploaded = st.sidebar.file_uploader(
-    "Seleccionar archivo (.xlsx)",
+_uploaded_claro = st.sidebar.file_uploader(
+    "Plan de trabajo (.xlsx)",
     type=["xlsx"],
     key="claro_file_upload",
     label_visibility="collapsed",
-    help="El dashboard detecta automáticamente la hoja correcta. Nombre sugerido: Plan_actualizado_CORTE_XX_FINAL.xlsx"
+    help="Puede llamarse de cualquier forma. El sistema detecta la hoja correcta por su contenido."
 )
 
-if _uploaded is not None:
-    # Store in session state so load_claro_data() picks it up
-    st.session_state["claro_uploaded_file"] = _uploaded
-    # Quick validation preview
+if _uploaded_claro is not None:
+    st.session_state["claro_uploaded_file"] = _uploaded_claro
     try:
-        _xl_prev = pd.ExcelFile(_uploaded)
+        _xl_prev = pd.ExcelFile(_uploaded_claro)
         _sheet_prev, _header_prev, _err_prev = _find_detail_sheet(_xl_prev)
-        _uploaded.seek(0)
+        _uploaded_claro.seek(0)
         if _err_prev:
             st.sidebar.error(f"⚠️ {_err_prev}")
         else:
-            _preview = pd.read_excel(_xl_prev, sheet_name=_sheet_prev, header=0, nrows=3)
+            _preview = pd.read_excel(_xl_prev, sheet_name=_sheet_prev, header=_header_prev, nrows=3)
             _preview.columns = [str(c).strip() for c in _preview.columns]
-            _uploaded.seek(0)
-            _faltantes = [c for c in COLUMNAS_REQUERIDAS if c not in _preview.columns]
-            _nuevas    = [c for c in _preview.columns
-                          if c not in set(COLUMNAS_REQUERIDAS) | set(COLUMNAS_OPCIONALES.keys())
-                          | {"TOTAL META ALTA","% CUMPLI","META ARPU","EJEC ARPU","TIPO","CODIGO POSTAL",
-                             "VR_M-1.2","VR_M-12.2","AGENTE","ID","ASESOR","CATEGORIA","TIPOLOGIA",
-                             "CLASIFICACION","BARRIO","ZONA","RUTA","CIRCUITO"}]
-            if _faltantes:
-                st.sidebar.error(f"⚠️ Faltan columnas requeridas:\n{', '.join(_faltantes)}")
+            _uploaded_claro.seek(0)
+            _faltantes_c = [c for c in COLUMNAS_REQUERIDAS if c not in _preview.columns]
+            _all_plan_c  = _find_all_plan_sheets(_xl_prev)
+            if _faltantes_c:
+                st.sidebar.error(f"⚠️ Faltan columnas: {', '.join(_faltantes_c)}")
             else:
-                st.sidebar.success(f"✅ {_uploaded.name} · hoja: '{_sheet_prev}'")
-                if _nuevas:
-                    st.sidebar.info(f"ℹ️ Columnas nuevas detectadas:\n{', '.join(_nuevas)}")
+                _meses_txt = f" · {len(_all_plan_c)} periodo(s)" if len(_all_plan_c) > 1 else f" · hoja: {_sheet_prev}"
+                st.sidebar.success(f"✅ {_uploaded_claro.name}{_meses_txt}")
     except Exception as _e:
-        st.sidebar.error(f"Error leyendo el archivo: {_e}")
+        st.sidebar.error(f"Error: {_e}")
 else:
-    # Check if there's a file on disk as fallback
-    _disk_path = find_existing_file(CLARO_FILE_CANDIDATES)
-    if _disk_path:
-        st.sidebar.info(f"Usando archivo del servidor: {os.path.basename(_disk_path)}")
+    _disk_claro = find_existing_file(CLARO_FILE_CANDIDATES)
+    if _disk_claro:
+        st.sidebar.info(f"Servidor: {os.path.basename(_disk_claro)}")
     else:
-        st.sidebar.warning("Sin archivo cargado. Sube el Excel del mes para ver la vista de Agentes.")
+        st.sidebar.caption("Sin archivo cargado")
+
+st.sidebar.markdown('</div>', unsafe_allow_html=True)
+
+# ---- CARGADOR 2: RED Y MERCADO ----
+st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("eye",12)} Vista Red y Mercado</div><div class="sidebar-title">Archivo de señal RSRP</div><div class="sidebar-sub">CSV con señal RSRP por código postal, operador y fecha. Los archivos de cuota de mercado y altas van en la carpeta del proyecto.</div>', unsafe_allow_html=True)
+
+_uploaded_rsrp = st.sidebar.file_uploader(
+    "Señal RSRP (.csv)",
+    type=["csv"],
+    key="rsrp_file_upload",
+    label_visibility="collapsed",
+    help="CSV de señal RSRP. Ej: RSRP_COMPLETO.csv — columnas: Codigo_postal, Fecha de inicio, Claro, Tigo, Movistar..."
+)
+
+if _uploaded_rsrp is not None:
+    st.session_state["rsrp_uploaded_file"] = _uploaded_rsrp
+    st.sidebar.success(f"✅ {_uploaded_rsrp.name}")
+else:
+    _disk_rsrp = find_existing_file(DATA_FILE_CANDIDATES)
+    if _disk_rsrp:
+        st.sidebar.info(f"Servidor: {os.path.basename(_disk_rsrp)}")
+    else:
+        st.sidebar.caption("Sin archivo RSRP cargado")
 
 st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
