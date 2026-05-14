@@ -5969,19 +5969,6 @@ if _rsrp_available and not df_long.empty:
 
 
     # Safe defaults for variables only defined inside if _rsrp_available block
-    _zone_exec_export   = zone_exec_export   if "zone_exec_export"   in dir() else pd.DataFrame()
-    _variation_route    = variation_route    if "variation_route"    in dir() else pd.DataFrame()
-    _variation_circuit  = variation_circuit  if "variation_circuit"  in dir() else pd.DataFrame()
-    excel_bytes = build_excel(
-        summary_operator_df=safe_round_columns(summary_operator, ["RSRP_promedio", "RSRP_mediana", "Excelente", "Buena", "Aceptable", "Critica", "Buena_o_mejor", "Score_operador"]),
-        zone_exec_df=safe_round_columns(_zone_exec_export, ["RSRP_mediana", "Pct_critica", "Pct_aceptable", "Pct_buena_o_mejor", "RSRP_mas_debil", "RSRP_lider"]),
-        variation_operator_df=safe_round_columns(variation_operator, ["RSRP_inicial", "RSRP_final", "Variacion_RSRP"]),
-        variation_route_df=safe_round_columns(_variation_route, ["RSRP_inicial", "RSRP_final", "Variacion_RSRP"]),
-        variation_circuit_df=safe_round_columns(_variation_circuit, ["RSRP_inicial", "RSRP_final", "Variacion_RSRP"]),
-        market_df=safe_round_columns(market_operator, ["Mercado_total", "Cuota_mercado", "Cuota_mercado_global"]),
-        altas_df=safe_round_columns(altas_operator, ["Altas_total", "Participacion_altas", "Participacion_altas_global"]),
-    )
-
     exec_narrative = build_exec_narrative(global_median, pct_good, pct_critical, best_operator, worst_zone, variation_result, business_metrics)
     alerts = build_alerts(summary_operator, zone_summary, variation_result, business_metrics)
 
@@ -5997,41 +5984,6 @@ if _rsrp_available and not df_long.empty:
         insight_title = "Desempeño estable de intensidad de señal"
         insight_body = f"La red mantiene baja criticidad visible: {fmt_pct(pct_critical)} de las mediciones y {cp_critical_count} códigos postales en condición crítica."
         insight_action = "Sostener la estabilidad y concentrar mejoras finas en territorios puntuales de menor señal."
-
-    # =========================================================
-    # SWITCH PRINCIPAL
-    # =========================================================
-    _vista_claro = (
-        st.session_state.get("vista_activa", "Red y Mercado · Operadores") == "Agentes Claro · PDVs"
-        or _vista_claro_direct
-    )
-    _vista_instructivo = st.session_state.get("vista_activa", "") == "Instructivo · Guía de uso"
-
-    if not _show_welcome:
-        if _vista_instructivo:
-            render_instructivo()
-            st.stop()
-        if _vista_claro:
-            render_claro_view()
-            st.stop()
-
-    # =========================================================
-    # HEADER (VISTA RED/MERCADO)
-    # =========================================================
-    if _show_welcome:
-        st.stop()
-
-    # Guard: if no RSRP data, show friendly message instead of crashing operators view
-    if not _rsrp_available:
-        st.markdown("""
-        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:40px;text-align:center;margin:40px auto;max-width:560px;">
-            <div style="font-size:2rem;margin-bottom:12px;">📡</div>
-            <div style="font-size:1.1rem;font-weight:800;color:#F8FAFC;margin-bottom:8px;">Sin datos de señal RSRP</div>
-            <div style="font-size:.84rem;color:#94A3B8;margin-bottom:16px;">Para ver la vista de Red y Mercado necesitas subir el archivo CSV de señal RSRP usando el cargador del sidebar.</div>
-            <div style="font-size:.76rem;color:#64748B;">Si solo tienes el plan de trabajo de agentes, selecciona la vista <b style="color:#E2E8F0;">Agentes Claro · PDVs</b> en el sidebar.</div>
-        </div>
-        """, unsafe_allow_html=True)
-        st.stop()
 
 else:
     df_f = pd.DataFrame()
@@ -6095,13 +6047,67 @@ else:
     worst_operator = _empty_op.copy()
     worst_operator_crit = _empty_op.copy()
 
+# =========================================================
+# SWITCH PRINCIPAL
+# =========================================================
+_vista_claro = (
+    st.session_state.get("vista_activa", "Red y Mercado · Operadores") == "Agentes Claro · PDVs"
+    or _vista_claro_direct
+)
+_vista_instructivo = st.session_state.get("vista_activa", "") == "Instructivo · Guía de uso"
+
+if not _show_welcome:
+    if _vista_instructivo:
+        render_instructivo()
+        st.stop()
+    if _vista_claro:
+        render_claro_view()
+        st.stop()
+
+# =========================================================
+# HEADER (VISTA RED/MERCADO)
+# =========================================================
+if _show_welcome:
+    st.stop()
+
+# Guard: if no RSRP data, show friendly message instead of crashing operators view
+if not _rsrp_available:
+    st.markdown("""
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:40px;text-align:center;margin:40px auto;max-width:560px;">
+        <div style="font-size:2rem;margin-bottom:12px;">📡</div>
+        <div style="font-size:1.1rem;font-weight:800;color:#F8FAFC;margin-bottom:8px;">Sin datos de señal RSRP</div>
+        <div style="font-size:.84rem;color:#94A3B8;margin-bottom:16px;">Para ver la vista de Red y Mercado necesitas subir el archivo CSV de señal RSRP usando el cargador del sidebar.</div>
+        <div style="font-size:.76rem;color:#64748B;">Si solo tienes el plan de trabajo de agentes, selecciona la vista <b style="color:#E2E8F0;">Agentes Claro · PDVs</b> en el sidebar.</div>
+    </div>
+    """, unsafe_allow_html=True)
+    st.stop()
+
+
+# excel_bytes — defined at module level so download button always works
+if _rsrp_available and not summary_operator.empty:
+    _zone_exec_exp = zone_exec_export if 'zone_exec_export' in dir() else pd.DataFrame()
+    _var_route     = variation_route   if 'variation_route'   in dir() else pd.DataFrame()
+    _var_circuit   = variation_circuit if 'variation_circuit' in dir() else pd.DataFrame()
+    excel_bytes = build_excel(
+        summary_operator_df=safe_round_columns(summary_operator, ['RSRP_promedio','RSRP_mediana','Excelente','Buena','Aceptable','Critica','Buena_o_mejor','Score_operador']),
+        zone_exec_df=safe_round_columns(_zone_exec_exp, ['RSRP_mediana','Pct_critica','Pct_aceptable','Pct_buena_o_mejor','RSRP_mas_debil','RSRP_lider']),
+        variation_operator_df=safe_round_columns(variation_operator, ['RSRP_inicial','RSRP_final','Variacion_RSRP']),
+        variation_route_df=safe_round_columns(_var_route, ['RSRP_inicial','RSRP_final','Variacion_RSRP']),
+        variation_circuit_df=safe_round_columns(_var_circuit, ['RSRP_inicial','RSRP_final','Variacion_RSRP']),
+        market_df=safe_round_columns(market_operator, ['Mercado_total','Cuota_mercado','Cuota_mercado_global']),
+        altas_df=safe_round_columns(altas_operator, ['Altas_total','Participacion_altas','Participacion_altas_global']),
+    )
+else:
+    excel_bytes = b''
+
+
 if _rsrp_available and not df_f.empty:
     periodo_txt = f"{pd.to_datetime(fecha_ini).strftime('%d/%m/%Y')} a {pd.to_datetime(fecha_fin).strftime('%d/%m/%Y')}"
     periodo_txt_corto = f"{pd.to_datetime(fecha_ini).strftime('%d/%m/%Y')} - {pd.to_datetime(fecha_fin).strftime('%d/%m/%Y')}"
-    obs_validas = int(df_f["RSRP_valido"].count()) if "RSRP_valido" in df_f.columns else int(len(df_f))
+    obs_validas = int(df_f['RSRP_valido'].count()) if 'RSRP_valido' in df_f.columns else int(len(df_f))
 else:
-    periodo_txt = "Sin datos"
-    periodo_txt_corto = "Sin datos"
+    periodo_txt = 'Sin datos'
+    periodo_txt_corto = 'Sin datos'
     obs_validas = 0
 if network_records_visible < 100:
     st.markdown(
