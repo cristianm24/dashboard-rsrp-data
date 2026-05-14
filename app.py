@@ -4858,7 +4858,7 @@ if _uploaded is not None:
     # Quick validation preview
     try:
         _xl_prev = pd.ExcelFile(_uploaded)
-        _sheet_prev, _err_prev = _find_detail_sheet(_xl_prev)
+        _sheet_prev, _header_prev, _err_prev = _find_detail_sheet(_xl_prev)
         _uploaded.seek(0)
         if _err_prev:
             st.sidebar.error(f"⚠️ {_err_prev}")
