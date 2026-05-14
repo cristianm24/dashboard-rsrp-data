@@ -33,7 +33,9 @@ DASHBOARD_TITLE = "Panel Ejecutivo de Desempeño de Red y Mercado"
 
 DATA_FILE_CANDIDATES = [
     os.path.join(BASE_DIR, "RSRP_COMPLETO.csv"),
+    os.path.join(BASE_DIR, "RSRP_COMPLETO.xlsx"),
     os.path.join(BASE_DIR, "RSRP_COMPLETO(1).csv"),
+    os.path.join(BASE_DIR, "RSRP_COMPLETO(1).xlsx"),
     os.path.join(BASE_DIR, "RSRP_COMPLETO(2).csv"),
 ]
 
@@ -2978,12 +2980,18 @@ def load_data():
 
     if uploaded_rsrp is not None:
         try:
-            import io
             uploaded_rsrp.seek(0)
-            df = pd.read_csv(uploaded_rsrp, sep=None, engine="python", encoding="utf-8", on_bad_lines="skip")
-        except Exception:
-            uploaded_rsrp.seek(0)
-            df = pd.read_csv(uploaded_rsrp, sep=";", encoding="latin-1", on_bad_lines="skip")
+            fname = getattr(uploaded_rsrp, "name", "")
+            if fname.endswith(".xlsx") or fname.endswith(".xls"):
+                df = pd.read_excel(uploaded_rsrp, header=0)
+            else:
+                try:
+                    df = pd.read_csv(uploaded_rsrp, sep=None, engine="python", encoding="utf-8", on_bad_lines="skip")
+                except Exception:
+                    uploaded_rsrp.seek(0)
+                    df = pd.read_csv(uploaded_rsrp, sep=";", encoding="latin-1", on_bad_lines="skip")
+        except Exception as _e:
+            raise FileNotFoundError(f"No se pudo leer el archivo RSRP: {_e}")
     else:
         df, csv_encoding, csv_sep = robust_read_csv(data_path)
     df.columns = make_unique_columns(clean_columns(df.columns))
@@ -5003,7 +5011,7 @@ _has_rsrp_file = (
 )
 _rsrp_available = _has_rsrp_file
 _vista_sel = st.session_state.get("vista_activa", "Instructivo · Guía de uso")
-_show_welcome   = not _has_claro_file and not _has_rsrp_file and _vista_sel != "Instructivo · Guía de uso"
+_show_welcome   = False  # Views always accessible - each view shows its own "no data" message
 
 # If only claro file loaded, go straight to agentes view
 _vista_claro_direct = _has_claro_file and not _has_rsrp_file
@@ -5077,16 +5085,15 @@ else:
 st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
 # ---- CARGADOR 2: RED Y MERCADO ----
-st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("eye",12)} Vista Red y Mercado</div><div class="sidebar-title">Archivo de señal RSRP</div><div class="sidebar-sub">CSV con señal RSRP por código postal, operador y fecha. Los archivos de cuota de mercado y altas van en la carpeta del proyecto.</div>', unsafe_allow_html=True)
+st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("eye",12)} Vista Red y Mercado</div><div class="sidebar-title">Archivos de señal y mercado</div><div class="sidebar-sub">Sube los archivos de la vista de operadores. El RSRP es requerido; cuota de mercado y altas son opcionales.</div>', unsafe_allow_html=True)
 
 _uploaded_rsrp = st.sidebar.file_uploader(
-    "Señal RSRP (.csv)",
-    type=["csv"],
+    "Señal RSRP · requerido (.csv o .xlsx)",
+    type=["csv","xlsx"],
     key="rsrp_file_upload",
-    label_visibility="collapsed",
-    help="CSV de señal RSRP. Ej: RSRP_COMPLETO.csv — columnas: Codigo_postal, Fecha de inicio, Claro, Tigo, Movistar..."
+    label_visibility="visible",
+    help="RSRP_COMPLETO.csv o .xlsx — columnas: Codigo_postal, Fecha de inicio, Claro, Tigo, Movistar..."
 )
-
 if _uploaded_rsrp is not None:
     st.session_state["rsrp_uploaded_file"] = _uploaded_rsrp
     st.sidebar.success(f"✅ {_uploaded_rsrp.name}")
@@ -5095,7 +5102,37 @@ else:
     if _disk_rsrp:
         st.sidebar.info(f"Servidor: {os.path.basename(_disk_rsrp)}")
     else:
-        st.sidebar.caption("Sin archivo RSRP cargado")
+        st.sidebar.caption("Sin archivo RSRP")
+
+_uploaded_market = st.sidebar.file_uploader(
+    "Cuota de mercado · opcional (.xlsx)",
+    type=["xlsx"],
+    key="market_file_upload",
+    label_visibility="visible",
+    help="Cuota_mercado_completo.xlsx — cuota de mercado por CP y operador"
+)
+if _uploaded_market is not None:
+    st.session_state["market_uploaded_file"] = _uploaded_market
+    st.sidebar.success(f"✅ {_uploaded_market.name}")
+else:
+    _disk_market = find_existing_file(MARKET_FILE_CANDIDATES)
+    if _disk_market:
+        st.sidebar.caption(f"Servidor: {os.path.basename(_disk_market)}")
+
+_uploaded_altas = st.sidebar.file_uploader(
+    "Cuota de altas · opcional (.xlsx)",
+    type=["xlsx"],
+    key="altas_file_upload",
+    label_visibility="visible",
+    help="Cuota_alta_completo.xlsx — captación de altas por CP y operador"
+)
+if _uploaded_altas is not None:
+    st.session_state["altas_uploaded_file"] = _uploaded_altas
+    st.sidebar.success(f"✅ {_uploaded_altas.name}")
+else:
+    _disk_altas = find_existing_file(ALTAS_FILE_CANDIDATES)
+    if _disk_altas:
+        st.sidebar.caption(f"Servidor: {os.path.basename(_disk_altas)}")
 
 st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
@@ -5960,30 +5997,34 @@ _vista_claro = (
 )
 _vista_instructivo = st.session_state.get("vista_activa", "") == "Instructivo · Guía de uso"
 
-if not _show_welcome:
-    if _vista_instructivo:
-        render_instructivo()
-        st.stop()
-    if _vista_claro:
-        render_claro_view()
-        st.stop()
+if _vista_instructivo:
+    render_instructivo()
+    st.stop()
+
+if _vista_claro:
+    render_claro_view()
+    st.stop()
 
 # =========================================================
 # HEADER (VISTA RED/MERCADO)
 # =========================================================
 
-# Guard: if no RSRP data, show friendly message instead of crashing operators view
+# Guard: if no RSRP data, show friendly message
 if not _rsrp_available:
-    st.markdown("""
-    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:40px;text-align:center;margin:40px auto;max-width:560px;">
-        <div style="font-size:2rem;margin-bottom:12px;">📡</div>
-        <div style="font-size:1.1rem;font-weight:800;color:#F8FAFC;margin-bottom:8px;">Sin datos de señal RSRP</div>
-        <div style="font-size:.84rem;color:#94A3B8;margin-bottom:16px;">Para ver la vista de Red y Mercado necesitas subir el archivo CSV de señal RSRP usando el cargador del sidebar.</div>
-        <div style="font-size:.76rem;color:#64748B;">Si solo tienes el plan de trabajo de agentes, selecciona la vista <b style="color:#E2E8F0;">Agentes Claro · PDVs</b> en el sidebar.</div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(
+        "<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);"
+        "border-radius:20px;padding:48px 32px;text-align:center;margin:60px auto;max-width:520px;'>"
+        "<div style='font-size:2.5rem;margin-bottom:14px;'>📡</div>"
+        "<div style='font-size:1.1rem;font-weight:800;color:#F8FAFC;margin-bottom:8px;'>Sin datos de señal RSRP</div>"
+        "<div style='font-size:.84rem;color:#94A3B8;margin-bottom:16px;'>"
+        "Sube el archivo de señal RSRP usando el cargador del sidebar para activar esta vista.</div>"
+        "<div style='font-size:.76rem;color:#64748B;'>"
+        "Acepta archivos .csv y .xlsx &middot; "
+        "Columnas requeridas: Codigo_postal &middot; Fecha de inicio &middot; Claro &middot; Tigo &middot; Movistar...</div>"
+        "</div>",
+        unsafe_allow_html=True
+    )
     st.stop()
-
 
 # excel_bytes — defined at module level so download button always works
 if _rsrp_available and not summary_operator.empty:
