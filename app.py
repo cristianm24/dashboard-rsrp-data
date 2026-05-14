@@ -3476,6 +3476,180 @@ def load_claro_data():
     }
 
 
+def render_instructivo():
+    """Vista permanente de instructivo — explica los archivos y el uso del dashboard."""
+
+    st.markdown("""
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
+        <div style="width:46px;height:46px;background:#E10600;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+        </div>
+        <div>
+            <div style="font-size:1.4rem;font-weight:950;color:#F8FAFC;">Guía de uso del dashboard</div>
+            <div style="font-size:.82rem;color:#64748B;margin-top:2px;">Claro Colombia · Inteligencia Comercial y de Red</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_i1, col_i2 = st.columns(2, gap="large")
+
+    with col_i1:
+        # Vista Red y Mercado
+        st.markdown(
+            "<div style='background:linear-gradient(135deg,rgba(17,24,39,0.95),rgba(10,18,34,0.98));"
+            "border:1px solid rgba(56,189,248,0.25);border-radius:20px;padding:22px 24px;margin-bottom:14px;'>"
+            "<div style='display:flex;align-items:center;gap:10px;margin-bottom:12px;'>"
+            "<div style='width:34px;height:34px;background:rgba(56,189,248,0.15);border-radius:9px;"
+            "display:flex;align-items:center;justify-content:center;flex-shrink:0;'>"
+            "<svg width='17' height='17' viewBox='0 0 24 24' fill='none' stroke='#38BDF8' stroke-width='2'"
+            " stroke-linecap='round' stroke-linejoin='round'><path d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z'/>"
+            "<circle cx='12' cy='12' r='3'/></svg></div>"
+            "<div style='font-size:.92rem;font-weight:900;color:#38BDF8;'>Vista Red y Mercado</div></div>"
+            "<div style='font-size:.78rem;color:#94A3B8;line-height:1.7;margin-bottom:14px;'>"
+            "Analiza la calidad de se&#241;al RSRP de todos los operadores (Claro, Tigo, Movistar...) "
+            "por c&#243;digo postal. Incluye comparativo de cuota de mercado y captaci&#243;n de altas.</div>"
+            "<div style='font-size:.68rem;font-weight:900;color:#64748B;text-transform:uppercase;"
+            "letter-spacing:.3px;margin-bottom:8px;'>Archivos necesarios</div>"
+            "<div style='background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.18);"
+            "border-radius:11px;padding:11px 13px;margin-bottom:7px;'>"
+            "<div style='font-size:.74rem;font-weight:900;color:#38BDF8;margin-bottom:2px;'>"
+            "&#128196; RSRP_COMPLETO.csv &nbsp;"
+            "<span style='background:#38BDF8;color:#0F172A;font-size:.58rem;padding:1px 5px;"
+            "border-radius:99px;'>REQUERIDO</span></div>"
+            "<div style='font-size:.70rem;color:#94A3B8;line-height:1.5;'>"
+            "Se&#241;al RSRP por CP, operador y fecha.<br>"
+            "Columnas: Codigo_postal &middot; Fecha de inicio &middot; Claro &middot; Tigo &middot; Movistar...</div></div>"
+            "<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);"
+            "border-radius:11px;padding:11px 13px;margin-bottom:7px;'>"
+            "<div style='font-size:.74rem;font-weight:900;color:#E2E8F0;margin-bottom:2px;'>"
+            "&#128202; Cuota_mercado_completo.xlsx &nbsp;"
+            "<span style='background:rgba(255,255,255,0.10);color:#94A3B8;font-size:.58rem;"
+            "padding:1px 5px;border-radius:99px;'>OPCIONAL</span></div>"
+            "<div style='font-size:.70rem;color:#94A3B8;'>Cuota de mercado por CP y operador. Habilita el tab Mercado.</div></div>"
+            "<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);"
+            "border-radius:11px;padding:11px 13px;margin-bottom:14px;'>"
+            "<div style='font-size:.74rem;font-weight:900;color:#E2E8F0;margin-bottom:2px;'>"
+            "&#128202; Cuota_alta_completo.xlsx &nbsp;"
+            "<span style='background:rgba(255,255,255,0.10);color:#94A3B8;font-size:.58rem;"
+            "padding:1px 5px;border-radius:99px;'>OPCIONAL</span></div>"
+            "<div style='font-size:.70rem;color:#94A3B8;'>Captaci&#243;n de altas por CP y operador. "
+            "Complementa el an&#225;lisis competitivo.</div></div>"
+            "<div style='font-size:.68rem;font-weight:900;color:#64748B;text-transform:uppercase;"
+            "letter-spacing:.3px;margin-bottom:7px;'>C&#243;mo cargar</div>"
+            "<div style='display:flex;gap:7px;margin-bottom:5px;align-items:flex-start;'>"
+            "<span style='background:#38BDF8;color:#0F172A;font-size:.60rem;font-weight:900;"
+            "padding:2px 6px;border-radius:99px;flex-shrink:0;'>1</span>"
+            "<span style='font-size:.72rem;color:#CBD5E1;'>Sube el CSV usando el cargador "
+            "<b>Se&#241;al RSRP</b> en el sidebar.</span></div>"
+            "<div style='display:flex;gap:7px;align-items:flex-start;'>"
+            "<span style='background:#38BDF8;color:#0F172A;font-size:.60rem;font-weight:900;"
+            "padding:2px 6px;border-radius:99px;flex-shrink:0;'>2</span>"
+            "<span style='font-size:.72rem;color:#CBD5E1;'>Los archivos de cuota van en la "
+            "carpeta del proyecto en el servidor.</span></div></div>",
+            unsafe_allow_html=True
+        )
+
+        # Tabs Red y Mercado
+        st.markdown(
+            "<div style='background:rgba(56,189,248,0.04);border:1px solid rgba(56,189,248,0.12);"
+            "border-radius:14px;padding:14px 16px;'>"
+            "<div style='font-size:.68rem;font-weight:900;color:#38BDF8;text-transform:uppercase;"
+            "letter-spacing:.3px;margin-bottom:8px;'>5 tabs disponibles</div>"
+            "<div style='font-size:.72rem;color:#94A3B8;line-height:1.9;'>"
+            "<b style='color:#E2E8F0;'>Resumen</b> &mdash; Estado global de se&#241;al + posici&#243;n comercial<br>"
+            "<b style='color:#E2E8F0;'>Operadores</b> &mdash; Ranking de se&#241;al entre operadores<br>"
+            "<b style='color:#E2E8F0;'>Territorio</b> &mdash; CP cr&#237;ticos y zonas prioritarias<br>"
+            "<b style='color:#E2E8F0;'>Variaci&#243;n</b> &mdash; C&#243;mo cambi&#243; la se&#241;al en el tiempo<br>"
+            "<b style='color:#E2E8F0;'>Mercado</b> &mdash; Cuota, captaci&#243;n y an&#225;lisis CP a CP</div></div>",
+            unsafe_allow_html=True
+        )
+
+    with col_i2:
+        # Vista Agentes
+        st.markdown(
+            "<div style='background:linear-gradient(135deg,rgba(17,24,39,0.95),rgba(10,18,34,0.98));"
+            "border:1px solid rgba(225,6,0,0.25);border-radius:20px;padding:22px 24px;margin-bottom:14px;'>"
+            "<div style='display:flex;align-items:center;gap:10px;margin-bottom:12px;'>"
+            "<div style='width:34px;height:34px;background:rgba(225,6,0,0.15);border-radius:9px;"
+            "display:flex;align-items:center;justify-content:center;flex-shrink:0;'>"
+            "<svg width='17' height='17' viewBox='0 0 24 24' fill='none' stroke='#E10600' stroke-width='2'"
+            " stroke-linecap='round' stroke-linejoin='round'><path d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/>"
+            "<circle cx='9' cy='7' r='4'/><path d='M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'/>"
+            "</svg></div>"
+            "<div style='font-size:.92rem;font-weight:900;color:#E10600;'>Vista Agentes Claro</div></div>"
+            "<div style='font-size:.78rem;color:#94A3B8;line-height:1.7;margin-bottom:14px;'>"
+            "Seguimiento del plan de trabajo mensual: metas, ejecuci&#243;n semanal, PDVs, "
+            "asesores, cuota de altas y se&#241;al RSRP por agente y circuito.</div>"
+            "<div style='font-size:.68rem;font-weight:900;color:#64748B;text-transform:uppercase;"
+            "letter-spacing:.3px;margin-bottom:8px;'>Archivo necesario</div>"
+            "<div style='background:rgba(225,6,0,0.06);border:1px solid rgba(225,6,0,0.20);"
+            "border-radius:11px;padding:11px 13px;margin-bottom:7px;'>"
+            "<div style='font-size:.74rem;font-weight:900;color:#FCA5A5;margin-bottom:2px;'>"
+            "&#128203; Plan de trabajo mensual .xlsx &nbsp;"
+            "<span style='background:#E10600;color:white;font-size:.58rem;padding:1px 5px;"
+            "border-radius:99px;'>REQUERIDO</span></div>"
+            "<div style='font-size:.70rem;color:#94A3B8;line-height:1.5;'>"
+            "<b style='color:#E2E8F0;'>El nombre del archivo y de la hoja pueden ser cualquiera</b> "
+            "&mdash; el sistema detecta autom&#225;ticamente la hoja correcta por su contenido.<br><br>"
+            "La hoja debe contener columnas como:<br>"
+            "<span style='color:#E2E8F0;'>AGENTE &middot; META ALTA NAT &middot; EJEC ALTA NAT "
+            "&middot; EJE ALTA TOTAL &middot; ASESOR</span></div></div>"
+            "<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);"
+            "border-radius:11px;padding:11px 13px;margin-bottom:14px;'>"
+            "<div style='font-size:.70rem;color:#94A3B8;line-height:1.5;'>"
+            "Si el archivo tiene <b style='color:#E2E8F0;'>m&#250;ltiples hojas</b> (una por mes), "
+            "el sistema las detecta todas y muestra un selector de periodo en el sidebar.</div></div>"
+            "<div style='font-size:.68rem;font-weight:900;color:#64748B;text-transform:uppercase;"
+            "letter-spacing:.3px;margin-bottom:7px;'>C&#243;mo cargar</div>"
+            "<div style='display:flex;gap:7px;margin-bottom:5px;align-items:flex-start;'>"
+            "<span style='background:#E10600;color:white;font-size:.60rem;font-weight:900;"
+            "padding:2px 6px;border-radius:99px;flex-shrink:0;'>1</span>"
+            "<span style='font-size:.72rem;color:#CBD5E1;'>Sube el Excel en el cargador "
+            "<b>Plan de trabajo</b> del sidebar.</span></div>"
+            "<div style='display:flex;gap:7px;margin-bottom:5px;align-items:flex-start;'>"
+            "<span style='background:#E10600;color:white;font-size:.60rem;font-weight:900;"
+            "padding:2px 6px;border-radius:99px;flex-shrink:0;'>2</span>"
+            "<span style='font-size:.72rem;color:#CBD5E1;'>Selecciona "
+            "<b>Agentes Claro &middot; PDVs</b> en el selector de vista.</span></div>"
+            "<div style='display:flex;gap:7px;align-items:flex-start;'>"
+            "<span style='background:#E10600;color:white;font-size:.60rem;font-weight:900;"
+            "padding:2px 6px;border-radius:99px;flex-shrink:0;'>3</span>"
+            "<span style='font-size:.72rem;color:#CBD5E1;'>Si hay varios meses, aparece un "
+            "selector de periodo en el sidebar autom&#225;ticamente.</span></div></div>",
+            unsafe_allow_html=True
+        )
+
+        # Tabs Agentes
+        st.markdown(
+            "<div style='background:rgba(225,6,0,0.04);border:1px solid rgba(225,6,0,0.15);"
+            "border-radius:14px;padding:14px 16px;'>"
+            "<div style='font-size:.68rem;font-weight:900;color:#E10600;text-transform:uppercase;"
+            "letter-spacing:.3px;margin-bottom:8px;'>5 tabs disponibles</div>"
+            "<div style='font-size:.72rem;color:#94A3B8;line-height:1.9;'>"
+            "<b style='color:#E2E8F0;'>&#8599; &#191;C&#243;mo vamos?</b> &mdash; Resultado total del mes<br>"
+            "<b style='color:#E2E8F0;'>&#9830; &#191;Qui&#233;n cumple?</b> &mdash; Ranking y brecha por agente<br>"
+            "<b style='color:#E2E8F0;'>&#9678; La brecha</b> &mdash; PDVs cr&#237;ticos y capacidad de mejora<br>"
+            "<b style='color:#E2E8F0;'>&#8767; El ritmo</b> &mdash; Curva semanal S1&#8594;S4<br>"
+            "<b style='color:#E2E8F0;'>&#9677; Oportunidades</b> &mdash; Cuota de altas y se&#241;al RSRP</div></div>",
+            unsafe_allow_html=True
+        )
+
+    # Privacy note
+    st.markdown(
+        "<div style='background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);"
+        "border-radius:12px;padding:12px 16px;margin-top:14px;text-align:center;'>"
+        "<div style='font-size:.68rem;color:#475569;'>"
+        "&#128274; Los archivos se procesan localmente en tu sesi&#243;n y no se almacenan en ning&#250;n servidor &middot; "
+        "Dashboard desarrollado para Claro Colombia &middot; "
+        "Para soporte t&#233;cnico contacta al administrador del repositorio</div></div>",
+        unsafe_allow_html=True
+    )
+
+
 def render_claro_view():
     """Renderiza la vista completa de Claro — Plan y Ejecución de Agentes."""
 
@@ -5145,14 +5319,15 @@ st.sidebar.markdown('</div>', unsafe_allow_html=True)
 st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("spark",12)} Modo de visualización</div><div class="sidebar-title">Selecciona la vista</div><div class="sidebar-sub">Alterna entre el panel de red y mercado por operador, y la vista focalizada en el desempeño comercial de agentes Claro.</div>', unsafe_allow_html=True)
 vista_activa = st.sidebar.radio(
     "Vista del dashboard",
-    options=["Red y Mercado · Operadores", "Agentes Claro · PDVs"],
+    options=["Red y Mercado · Operadores", "Agentes Claro · PDVs", "Instructivo · Guía de uso"],
     key="vista_activa",
     horizontal=False,
 )
 st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
 
-_vista_claro_sidebar = st.session_state.get("vista_activa", "Red y Mercado · Operadores") == "Agentes Claro · PDVs"
+_vista_claro_sidebar     = st.session_state.get("vista_activa", "Red y Mercado · Operadores") == "Agentes Claro · PDVs"
+_vista_instructivo_sidebar = st.session_state.get("vista_activa", "") == "Instructivo · Guía de uso"
 
 if not _rsrp_available or df.empty or "Fecha de inicio" not in df.columns:
     fecha_min = pd.Timestamp("2024-01-01")
@@ -5793,12 +5968,16 @@ if _rsrp_available and not df_long.empty:
         tab5_insight_body = "No hay suficientes datos de mercado o altas para generar una lectura comercial completa."
 
 
+    # Safe defaults for variables only defined inside if _rsrp_available block
+    _zone_exec_export   = zone_exec_export   if "zone_exec_export"   in dir() else pd.DataFrame()
+    _variation_route    = variation_route    if "variation_route"    in dir() else pd.DataFrame()
+    _variation_circuit  = variation_circuit  if "variation_circuit"  in dir() else pd.DataFrame()
     excel_bytes = build_excel(
         summary_operator_df=safe_round_columns(summary_operator, ["RSRP_promedio", "RSRP_mediana", "Excelente", "Buena", "Aceptable", "Critica", "Buena_o_mejor", "Score_operador"]),
-        zone_exec_df=safe_round_columns(zone_exec_export, ["RSRP_mediana", "Pct_critica", "Pct_aceptable", "Pct_buena_o_mejor", "RSRP_mas_debil", "RSRP_lider"]),
+        zone_exec_df=safe_round_columns(_zone_exec_export, ["RSRP_mediana", "Pct_critica", "Pct_aceptable", "Pct_buena_o_mejor", "RSRP_mas_debil", "RSRP_lider"]),
         variation_operator_df=safe_round_columns(variation_operator, ["RSRP_inicial", "RSRP_final", "Variacion_RSRP"]),
-        variation_route_df=safe_round_columns(variation_route, ["RSRP_inicial", "RSRP_final", "Variacion_RSRP"]),
-        variation_circuit_df=safe_round_columns(variation_circuit, ["RSRP_inicial", "RSRP_final", "Variacion_RSRP"]),
+        variation_route_df=safe_round_columns(_variation_route, ["RSRP_inicial", "RSRP_final", "Variacion_RSRP"]),
+        variation_circuit_df=safe_round_columns(_variation_circuit, ["RSRP_inicial", "RSRP_final", "Variacion_RSRP"]),
         market_df=safe_round_columns(market_operator, ["Mercado_total", "Cuota_mercado", "Cuota_mercado_global"]),
         altas_df=safe_round_columns(altas_operator, ["Altas_total", "Participacion_altas", "Participacion_altas_global"]),
     )
@@ -5826,8 +6005,12 @@ if _rsrp_available and not df_long.empty:
         st.session_state.get("vista_activa", "Red y Mercado · Operadores") == "Agentes Claro · PDVs"
         or _vista_claro_direct
     )
+    _vista_instructivo = st.session_state.get("vista_activa", "") == "Instructivo · Guía de uso"
 
     if not _show_welcome:
+        if _vista_instructivo:
+            render_instructivo()
+            st.stop()
         if _vista_claro:
             render_claro_view()
             st.stop()
