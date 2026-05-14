@@ -3149,6 +3149,12 @@ def build_excel(summary_operator_df, zone_exec_df, variation_operator_df, variat
 # =========================================================
 # Columnas críticas y opcionales para validación
 # =========================================================
+CLARO_FILE_CANDIDATES = [
+    os.path.join(BASE_DIR, "Plan_actualizado_CORTE_30_FINAL.xlsx"),
+    os.path.join(BASE_DIR, "Plan_actualizado_CORTE_28_FINAL.xlsx"),
+    os.path.join(BASE_DIR, "Plan_actualizado_CORTE_28_FINAL(1).xlsx"),
+]
+
 COLUMNAS_REQUERIDAS = [
     "AGENTE", "ID", "META ALTA NAT (>$2000)", "EJEC ALTA NAT",
     "EJE ALTA TOTAL", "CATEGORIA", "ASESOR",
@@ -4692,6 +4698,109 @@ for key, default in {
 }.items():
     if key not in st.session_state:
         st.session_state[key] = default
+
+# =========================================================
+# PANTALLA DE BIENVENIDA — se muestra solo si no hay datos cargados aún
+# =========================================================
+_has_claro_file = (
+    st.session_state.get("claro_uploaded_file") is not None or
+    find_existing_file(CLARO_FILE_CANDIDATES) is not None
+)
+_has_rsrp_file = find_existing_file(DATA_FILE_CANDIDATES) is not None if 'DATA_FILE_CANDIDATES' in dir() else False
+
+if not _has_claro_file and not _has_rsrp_file:
+    st.markdown(f"""
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px;">
+        <div style="width:52px;height:52px;background:#E10600;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        </div>
+        <div>
+            <div style="font-size:1.6rem;font-weight:950;color:#F8FAFC;line-height:1.1;">Dashboard de Inteligencia Comercial</div>
+            <div style="font-size:.84rem;color:#64748B;margin-top:3px;">Claro Colombia · Red y Mercado · Gestión de Agentes</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_w1, col_w2 = st.columns(2, gap="large")
+
+    with col_w1:
+        st.markdown("""
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.95),rgba(10,18,34,0.98));border:1px solid rgba(255,255,255,0.09);border-radius:20px;padding:24px 26px;height:100%;">
+            <div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px;">Vista de Red y Mercado</div>
+            <div style="font-size:.84rem;color:#E2E8F0;line-height:1.7;margin-bottom:14px;">
+                Analiza la calidad de señal RSRP por operador, territorio y variación temporal.
+                Incluye análisis competitivo de cuota de mercado y captación de altas.
+            </div>
+            <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;">
+                <div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:8px;">Cómo activar</div>
+                <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
+                    <span style="background:#38BDF8;color:#0F172A;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;margin-top:1px;">1</span>
+                    <span style="font-size:.76rem;color:#CBD5E1;">El archivo CSV de señal debe estar en la misma carpeta del proyecto en el servidor.</span>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:8px;">
+                    <span style="background:#38BDF8;color:#0F172A;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;margin-top:1px;">2</span>
+                    <span style="font-size:.76rem;color:#CBD5E1;">Selecciona "Red y Mercado · Operadores" en el selector del sidebar.</span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_w2:
+        st.markdown("""
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.95),rgba(10,18,34,0.98));border:1px solid rgba(225,6,0,0.20);border-radius:20px;padding:24px 26px;height:100%;">
+            <div style="font-size:.68rem;font-weight:900;color:#FCA5A5;text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px;">Vista de Agentes Claro</div>
+            <div style="font-size:.84rem;color:#E2E8F0;line-height:1.7;margin-bottom:14px;">
+                Seguimiento comercial de metas, altas orgánicas e inducidas, PDVs, asesores,
+                cuota de altas y señal RSRP por agente y circuito.
+            </div>
+            <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:14px;">
+                <div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:8px;">Cómo activar</div>
+                <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
+                    <span style="background:#E10600;color:white;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;margin-top:1px;">1</span>
+                    <span style="font-size:.76rem;color:#CBD5E1;">En el sidebar, haz clic en <b style="color:#F8FAFC;">"Cargar archivo Excel"</b> y selecciona el archivo del mes.</span>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
+                    <span style="background:#E10600;color:white;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;margin-top:1px;">2</span>
+                    <span style="font-size:.76rem;color:#CBD5E1;">El archivo debe tener la hoja <b style="color:#F8FAFC;">"Detalle"</b> con las columnas estándar del plan.</span>
+                </div>
+                <div style="display:flex;align-items:flex-start;gap:8px;">
+                    <span style="background:#E10600;color:white;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;margin-top:1px;">3</span>
+                    <span style="font-size:.76rem;color:#CBD5E1;">Selecciona <b style="color:#F8FAFC;">"Agentes Claro · PDVs"</b> en el selector del sidebar.</span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:18px 22px;margin-top:16px;">
+        <div style="font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;">Tabs disponibles en cada vista</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div>
+                <div style="font-size:.72rem;font-weight:800;color:#38BDF8;margin-bottom:5px;">Red y Mercado</div>
+                <div style="font-size:.74rem;color:#94A3B8;line-height:1.8;">
+                    Resumen · Estado global de señal<br>
+                    Operadores · Ranking competitivo<br>
+                    Territorio · Zonas críticas por CP<br>
+                    Variación · Cambio de señal en el tiempo<br>
+                    Mercado · Cuota y captación vs competencia
+                </div>
+            </div>
+            <div>
+                <div style="font-size:.72rem;font-weight:800;color:#E10600;margin-bottom:5px;">Agentes Claro</div>
+                <div style="font-size:.74rem;color:#94A3B8;line-height:1.8;">
+                    ↗ ¿Cómo vamos? · Resultado del mes<br>
+                    ◈ ¿Quién cumple? · Ranking de agentes<br>
+                    ◎ La brecha · PDVs y capacidad de mejora<br>
+                    ∿ El ritmo · Curva semanal de ventas<br>
+                    ◉ Oportunidades · Cuota, señal y mercado
+                </div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div style="font-size:.70rem;color:#475569;text-align:center;margin-top:20px;">Los datos procesados en este dashboard no se almacenan en ningún servidor. Todo se procesa localmente en tu sesión.</div>', unsafe_allow_html=True)
+    st.stop()
 
 # =========================================================
 # SIDEBAR
