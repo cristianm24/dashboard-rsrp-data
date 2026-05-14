@@ -3173,7 +3173,35 @@ COLUMNAS_OPCIONALES = {
     "META INGRESOS M0": np.nan, "EJEC INGRESOS M0": np.nan,
 }
 
-def _process_claro_df(df_det):
+def _find_detail_sheet(xl):
+    """
+    Detecta automáticamente la hoja principal de datos buscando por contenido,
+    no por nombre. Busca la hoja que tenga al menos 3 columnas requeridas.
+    Retorna (sheet_name, None) si encuentra, (None, mensaje_error) si no.
+    """
+    available = xl.sheet_names
+    best_sheet = None
+    best_score = 0
+
+    for sheet in available:
+        try:
+            # Read only headers — fast
+            preview = pd.read_excel(xl, sheet_name=sheet, header=0, nrows=0)
+            cols = [str(c).strip() for c in preview.columns]
+            score = sum(1 for c in COLUMNAS_REQUERIDAS if c in cols)
+            if score > best_score:
+                best_score = score
+                best_sheet = sheet
+        except Exception:
+            continue
+
+    if best_sheet is None or best_score < 3:
+        return None, (
+            f"No se encontró ninguna hoja con las columnas del plan de trabajo. "
+            f"Hojas disponibles: {', '.join(available)}. "
+            f"La hoja principal debe tener columnas como: {', '.join(COLUMNAS_REQUERIDAS[:4])}..."
+        )
+    return best_sheet, None
     """Limpia y coerciona tipos. Retorna (df_limpio, columnas_faltantes, columnas_nuevas)."""
     df_det.columns = [str(c).strip() for c in df_det.columns]
     cols_excel = set(df_det.columns)
@@ -3221,23 +3249,23 @@ def load_claro_data_from_path(path):
             "found": False, "message": f"No se pudo abrir el archivo: {e}"
         }
 
-    # Hoja Detalle — requerida
-    if "plan_trabajo" not in available_sheets:
+    # Hoja principal — detección automática por contenido
+    sheet_name, err = _find_detail_sheet(xl)
+    if err:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
-            "found": False,
-            "message": f"El archivo no tiene la hoja 'plan_trabajo'. Hojas encontradas: {', '.join(available_sheets)}"
+            "found": False, "message": err
         }
     try:
-        df_det = pd.read_excel(xl, sheet_name="plan_trabajo", header=0)
+        df_det = pd.read_excel(xl, sheet_name=sheet_name, header=0)
         df_det, faltantes, nuevas = _process_claro_df(df_det)
         if faltantes:
             return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
                 "found": False,
-                "message": f"Faltan columnas requeridas en 'plan_trabajo': {', '.join(faltantes)}"
+                "message": f"Faltan columnas requeridas en '{sheet_name}': {', '.join(faltantes)}"
             }
     except Exception as e:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
-            "found": False, "message": f"Error leyendo hoja 'plan_trabajo': {e}"
+            "found": False, "message": f"Error leyendo hoja '{sheet_name}': {e}"
         }
 
     # Hoja Cierre — opcional
@@ -3286,22 +3314,22 @@ def load_claro_data_from_upload(uploaded_file):
             "found": False, "message": f"No se pudo abrir el archivo: {e}"
         }
 
-    if "plan_trabajo" not in available_sheets:
+    sheet_name, err = _find_detail_sheet(xl)
+    if err:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
-            "found": False,
-            "message": f"El archivo no tiene la hoja 'plan_trabajo'. Hojas encontradas: {', '.join(available_sheets)}"
+            "found": False, "message": err
         }
     try:
-        df_det = pd.read_excel(xl, sheet_name="plan_trabajo", header=0)
+        df_det = pd.read_excel(xl, sheet_name=sheet_name, header=0)
         df_det, faltantes, nuevas = _process_claro_df(df_det)
         if faltantes:
             return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
                 "found": False,
-                "message": f"Faltan columnas requeridas en 'plan_trabajo': {', '.join(faltantes)}"
+                "message": f"Faltan columnas requeridas en '{sheet_name}': {', '.join(faltantes)}"
             }
     except Exception as e:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
-            "found": False, "message": f"Error leyendo hoja 'plan_trabajo': {e}"
+            "found": False, "message": f"Error leyendo hoja '{sheet_name}': {e}"
         }
 
     df_cierre = pd.DataFrame()
@@ -4762,7 +4790,7 @@ if _show_welcome:
                 </div>
                 <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
                     <span style="background:#E10600;color:white;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;margin-top:1px;">2</span>
-                    <span style="font-size:.76rem;color:#CBD5E1;">El archivo debe tener la hoja <b style="color:#F8FAFC;">"plan_trabajo"</b> con las columnas estándar del plan.</span>
+                    <span style="font-size:.76rem;color:#CBD5E1;">El archivo puede tener cualquier nombre de hoja — el sistema detecta automáticamente la hoja que contiene el plan de trabajo por sus columnas.</span>
                 </div>
                 <div style="display:flex;align-items:flex-start;gap:8px;">
                     <span style="background:#E10600;color:white;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;margin-top:1px;">3</span>
@@ -4816,7 +4844,7 @@ _uploaded = st.sidebar.file_uploader(
     type=["xlsx"],
     key="claro_file_upload",
     label_visibility="collapsed",
-    help="Archivo Excel con hoja 'plan_trabajo'. Nombre sugerido: Plan_actualizado_CORTE_XX_FINAL.xlsx"
+    help="El dashboard detecta automáticamente la hoja correcta. Nombre sugerido: Plan_actualizado_CORTE_XX_FINAL.xlsx"
 )
 
 if _uploaded is not None:
@@ -4824,21 +4852,27 @@ if _uploaded is not None:
     st.session_state["claro_uploaded_file"] = _uploaded
     # Quick validation preview
     try:
-        _preview = pd.read_excel(_uploaded, sheet_name="plan_trabajo", header=0, nrows=3)
-        _preview.columns = [str(c).strip() for c in _preview.columns]
+        _xl_prev = pd.ExcelFile(_uploaded)
+        _sheet_prev, _err_prev = _find_detail_sheet(_xl_prev)
         _uploaded.seek(0)
-        _faltantes = [c for c in COLUMNAS_REQUERIDAS if c not in _preview.columns]
-        _nuevas    = [c for c in _preview.columns
-                      if c not in set(COLUMNAS_REQUERIDAS) | set(COLUMNAS_OPCIONALES.keys())
-                      | {"TOTAL META ALTA","% CUMPLI","META ARPU","EJEC ARPU","TIPO","CODIGO POSTAL",
-                         "VR_M-1.2","VR_M-12.2","AGENTE","ID","ASESOR","CATEGORIA","TIPOLOGIA",
-                         "CLASIFICACION","BARRIO","ZONA","RUTA","CIRCUITO"}]
-        if _faltantes:
-            st.sidebar.error(f"⚠️ Faltan columnas requeridas:\n{', '.join(_faltantes)}")
+        if _err_prev:
+            st.sidebar.error(f"⚠️ {_err_prev}")
         else:
-            st.sidebar.success(f"✅ {_uploaded.name}")
-            if _nuevas:
-                st.sidebar.info(f"ℹ️ Columnas nuevas detectadas (no usadas aún):\n{', '.join(_nuevas)}")
+            _preview = pd.read_excel(_xl_prev, sheet_name=_sheet_prev, header=0, nrows=3)
+            _preview.columns = [str(c).strip() for c in _preview.columns]
+            _uploaded.seek(0)
+            _faltantes = [c for c in COLUMNAS_REQUERIDAS if c not in _preview.columns]
+            _nuevas    = [c for c in _preview.columns
+                          if c not in set(COLUMNAS_REQUERIDAS) | set(COLUMNAS_OPCIONALES.keys())
+                          | {"TOTAL META ALTA","% CUMPLI","META ARPU","EJEC ARPU","TIPO","CODIGO POSTAL",
+                             "VR_M-1.2","VR_M-12.2","AGENTE","ID","ASESOR","CATEGORIA","TIPOLOGIA",
+                             "CLASIFICACION","BARRIO","ZONA","RUTA","CIRCUITO"}]
+            if _faltantes:
+                st.sidebar.error(f"⚠️ Faltan columnas requeridas:\n{', '.join(_faltantes)}")
+            else:
+                st.sidebar.success(f"✅ {_uploaded.name} · hoja: '{_sheet_prev}'")
+                if _nuevas:
+                    st.sidebar.info(f"ℹ️ Columnas nuevas detectadas:\n{', '.join(_nuevas)}")
     except Exception as _e:
         st.sidebar.error(f"Error leyendo el archivo: {_e}")
 else:
