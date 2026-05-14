@@ -3048,7 +3048,9 @@ def compute_variation_tables(df_source, nivel_temporal):
         result["message"] = "Se requiere al menos dos periodos con datos válidos para calcular variación."
         return result
 
-    periodo_inicial = variation_period.iloc[0][period_col]
+    if total_by_period.empty:
+        return np.nan, np.nan, np.nan, "N/D", "N/D"
+    periodo_inicial = variation_period.iloc[0][period_col] if not variation_period.empty else "N/D"
     periodo_final = variation_period.iloc[-1][period_col]
     result["periodo_inicial"] = periodo_inicial
     result["periodo_final"] = periodo_final
@@ -4021,45 +4023,54 @@ def render_claro_view():
         by_agente["brecha"]      = by_agente["meta_total"] - by_agente["ejec_total"]
         # Valor que se usa como protagonista en la tarjeta
         by_agente["valor_principal"] = by_agente["cumpl_total"] if _MES_CERRADO else by_agente["proy_total"]
-        _max_p = by_agente["valor_principal"].max()
-        _min_p = by_agente["valor_principal"].min()
 
-        n_ag = min(len(by_agente), 4)
-        ag_cols = st.columns(n_ag, gap="small")
-        _by_ag_clean = by_agente[by_agente["AGENTE"].apply(lambda x: bool(x and str(x).strip() not in ("", "nan", "None", "AGENTE")))].sort_values("valor_principal", ascending=False).reset_index(drop=True)
-        for i, row in _by_ag_clean.iterrows():
-            _ag_name = str(row["AGENTE"]).strip()
-            ag_c  = AGENTE_COLORS.get(_ag_name, "#64748B")
-            p     = row["valor_principal"]; cp = _sc(p)
-            badge = "🏆" if p == _max_p else ("⚠️" if p == _min_p else "")
-            _var_a = row.get("var_alta", np.nan)
-            _vt   = (f"{'↓' if pd.notna(_var_a) and _var_a < 0 else '↑'}{abs(_var_a):.1f}pp" if pd.notna(_var_a) and "VR_M-1.1" in df.columns else "")
-            _vc   = "#EF4444" if pd.notna(_var_a) and _var_a < 0 else "#22C55E"
-            _sub  = "cumplimiento total del mes" if _MES_CERRADO else f"proyección al día {_DIAS_MES}"
-            # Segunda línea: si mes cerrado muestra cumpl orgánicas; si en curso muestra cumpl al corte
-            _linea2_lbl = "Orgánicas:" if _MES_CERRADO else f"Al corte (d{_DIA_CORTE}):"
-            _linea2_val = f"{row['cumpl_nat']:.1f}%"
-            with ag_cols[i % n_ag]:
-                st.markdown(f"""
-                <div class="card" style="min-height:0;">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-                        <div style="display:flex;align-items:center;gap:6px;">
-                            <span style="width:9px;height:9px;border-radius:50%;background:{ag_c};display:inline-block;flex-shrink:0;"></span>
-                            <span style="font-size:.74rem;font-weight:900;color:#E2E8F0;">{row["AGENTE"]}</span>
+        _by_ag_clean = by_agente[
+            by_agente["AGENTE"].apply(
+                lambda x: bool(x and str(x).strip() not in ("","nan","None","AGENTE","<NA>"))
+            )
+        ].sort_values("valor_principal", ascending=False).reset_index(drop=True)
+
+        _max_p = _by_ag_clean["valor_principal"].max() if not _by_ag_clean.empty else 0
+        _min_p = _by_ag_clean["valor_principal"].min() if not _by_ag_clean.empty else 0
+        n_ag   = min(len(_by_ag_clean), 4)
+
+        if n_ag == 0:
+            st.info("Sin datos de agentes. Verifica que el archivo tenga la columna AGENTE con valores válidos.")
+        else:
+            ag_cols = st.columns(n_ag, gap="small")
+            for i, row in _by_ag_clean.iterrows():
+                _ag_name = str(row["AGENTE"]).strip()
+                ag_c  = AGENTE_COLORS.get(_ag_name, "#64748B")
+                p     = row["valor_principal"]; cp = _sc(p)
+                badge = "🏆" if p == _max_p else ("⚠️" if p == _min_p else "")
+                _var_a = row.get("var_alta", np.nan)
+                _vt   = (f"{'↓' if pd.notna(_var_a) and _var_a < 0 else '↑'}{abs(_var_a):.1f}pp" if pd.notna(_var_a) and "VR_M-1.1" in df.columns else "")
+                _vc   = "#EF4444" if pd.notna(_var_a) and _var_a < 0 else "#22C55E"
+                _sub  = "cumplimiento total del mes" if _MES_CERRADO else f"proyección al día {_DIAS_MES}"
+                # Segunda línea: si mes cerrado muestra cumpl orgánicas; si en curso muestra cumpl al corte
+                _linea2_lbl = "Orgánicas:" if _MES_CERRADO else f"Al corte (d{_DIA_CORTE}):"
+                _linea2_val = f"{row['cumpl_nat']:.1f}%"
+                with ag_cols[i % n_ag]:
+                    st.markdown(f"""
+                    <div class="card" style="min-height:0;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <span style="width:9px;height:9px;border-radius:50%;background:{ag_c};display:inline-block;flex-shrink:0;"></span>
+                                <span style="font-size:.74rem;font-weight:900;color:#E2E8F0;">{row["AGENTE"]}</span>
+                            </div>
+                            <span style="font-size:.80rem;">{badge}</span>
                         </div>
-                        <span style="font-size:.80rem;">{badge}</span>
-                    </div>
-                    <div style="font-size:2rem;font-weight:950;color:{cp};line-height:1.05;">{p:.1f}%</div>
-                    <div style="font-size:.68rem;color:#64748B;margin-top:1px;">{_sub}</div>
-                    {_bar(p, cp)}
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px;">
-                        <div style="font-size:.70rem;color:#94A3B8;">{_linea2_lbl} <span style="color:#F8FAFC;font-weight:800;">{_linea2_val}</span></div>
-                        <div style="font-size:.70rem;color:#94A3B8;">Brecha: <span style="color:#F8FAFC;font-weight:800;">{fmt_int(row["brecha"])}</span></div>
-                        <div style="font-size:.70rem;color:#94A3B8;">Ejec. total: <span style="color:#F8FAFC;font-weight:800;">{fmt_int(row["ejec_total"])}</span></div>
-                        <div style="font-size:.70rem;color:#94A3B8;">Cuota alta: <span style="color:#F8FAFC;font-weight:800;">{fmt_pct_c(row["cuota_alta"])}</span> <span style="color:{_vc};font-size:.65rem;">{_vt}</span></div>
-                    </div>
-                </div>""", unsafe_allow_html=True)
-
+                        <div style="font-size:2rem;font-weight:950;color:{cp};line-height:1.05;">{p:.1f}%</div>
+                        <div style="font-size:.68rem;color:#64748B;margin-top:1px;">{_sub}</div>
+                        {_bar(p, cp)}
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px;">
+                            <div style="font-size:.70rem;color:#94A3B8;">{_linea2_lbl} <span style="color:#F8FAFC;font-weight:800;">{_linea2_val}</span></div>
+                            <div style="font-size:.70rem;color:#94A3B8;">Brecha: <span style="color:#F8FAFC;font-weight:800;">{fmt_int(row["brecha"])}</span></div>
+                            <div style="font-size:.70rem;color:#94A3B8;">Ejec. total: <span style="color:#F8FAFC;font-weight:800;">{fmt_int(row["ejec_total"])}</span></div>
+                            <div style="font-size:.70rem;color:#94A3B8;">Cuota alta: <span style="color:#F8FAFC;font-weight:800;">{fmt_pct_c(row["cuota_alta"])}</span> <span style="color:{_vc};font-size:.65rem;">{_vt}</span></div>
+                        </div>
+                    </div>""", unsafe_allow_html=True)
+    
         # ── Gráfica de categorías ─────────────────────────────────────────────
         st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Cumplimiento por categoría de PDV</div>', unsafe_allow_html=True)
         by_cat = df.groupby("CATEGORIA").agg(
@@ -5720,7 +5731,9 @@ if _rsrp_available and not df_long.empty:
             growth = ((final_val - initial_val) / initial_val) * 100
         else:
             growth = np.nan
-        return growth, initial_val, final_val, total_by_period.iloc[0][period_col], total_by_period.iloc[-1][period_col]
+        _p0 = str(total_by_period.iloc[0][period_col]) if not total_by_period.empty else "N/D"
+        _pf = str(total_by_period.iloc[-1][period_col]) if not total_by_period.empty else "N/D"
+        return growth, initial_val, final_val, _p0, _pf
 
     def build_business_executive_summary(leader_market, leader_altas, market_best_gain, altas_best_gain, market_growth, altas_growth):
         fragments = []
@@ -5754,9 +5767,9 @@ if _rsrp_available and not df_long.empty:
         cp_market_df = business_f.groupby("Codigo_postal", as_index=False).agg(Mercado_total=("Mercado", "sum"))
         cp_altas_df = business_f.groupby("Codigo_postal", as_index=False).agg(Altas_total=("Altas", "sum"))
         if not cp_market_df.empty:
-            cp_highest_market = cp_market_df.sort_values("Mercado_total", ascending=False).iloc[0]
+            cp_highest_market = cp_market_df.sort_values("Mercado_total", ascending=False).iloc[0] if not cp_market_df.empty else None
         if not cp_altas_df.empty:
-            cp_highest_altas = cp_altas_df.sort_values("Altas_total", ascending=False).iloc[0]
+            cp_highest_altas = cp_altas_df.sort_values("Altas_total", ascending=False).iloc[0] if not cp_altas_df.empty else None
 
     market_growth_pct, market_total_initial, market_total_final, market_period_initial, market_period_final = compute_total_growth(market_time, "Periodo_Mes", "Mercado_total")
     altas_growth_pct, altas_total_initial, altas_total_final, altas_period_initial, altas_period_final = compute_total_growth(altas_time, "Periodo_Mes", "Altas_total")
