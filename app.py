@@ -3222,22 +3222,22 @@ def load_claro_data_from_path(path):
         }
 
     # Hoja Detalle — requerida
-    if "Detalle" not in available_sheets:
+    if "plan_trabajo" not in available_sheets:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
             "found": False,
-            "message": f"El archivo no tiene la hoja 'Detalle'. Hojas encontradas: {', '.join(available_sheets)}"
+            "message": f"El archivo no tiene la hoja 'plan_trabajo'. Hojas encontradas: {', '.join(available_sheets)}"
         }
     try:
-        df_det = pd.read_excel(xl, sheet_name="Detalle", header=0)
+        df_det = pd.read_excel(xl, sheet_name="plan_trabajo", header=0)
         df_det, faltantes, nuevas = _process_claro_df(df_det)
         if faltantes:
             return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
                 "found": False,
-                "message": f"Faltan columnas requeridas en 'Detalle': {', '.join(faltantes)}"
+                "message": f"Faltan columnas requeridas en 'plan_trabajo': {', '.join(faltantes)}"
             }
     except Exception as e:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
-            "found": False, "message": f"Error leyendo hoja 'Detalle': {e}"
+            "found": False, "message": f"Error leyendo hoja 'plan_trabajo': {e}"
         }
 
     # Hoja Cierre — opcional
@@ -3260,7 +3260,7 @@ def load_claro_data_from_path(path):
 
     # Hoja plan agente — opcional
     df_plan = pd.DataFrame()
-    for sheet_name in [s for s in available_sheets if s not in ["Detalle"] and
+    for sheet_name in [s for s in available_sheets if s not in ["plan_trabajo"] and
                         not s.lower().startswith("cierre")]:
         try:
             df_plan = pd.read_excel(xl, sheet_name=sheet_name, header=5)
@@ -3286,22 +3286,22 @@ def load_claro_data_from_upload(uploaded_file):
             "found": False, "message": f"No se pudo abrir el archivo: {e}"
         }
 
-    if "Detalle" not in available_sheets:
+    if "plan_trabajo" not in available_sheets:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
             "found": False,
-            "message": f"El archivo no tiene la hoja 'Detalle'. Hojas encontradas: {', '.join(available_sheets)}"
+            "message": f"El archivo no tiene la hoja 'plan_trabajo'. Hojas encontradas: {', '.join(available_sheets)}"
         }
     try:
-        df_det = pd.read_excel(xl, sheet_name="Detalle", header=0)
+        df_det = pd.read_excel(xl, sheet_name="plan_trabajo", header=0)
         df_det, faltantes, nuevas = _process_claro_df(df_det)
         if faltantes:
             return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
                 "found": False,
-                "message": f"Faltan columnas requeridas en 'Detalle': {', '.join(faltantes)}"
+                "message": f"Faltan columnas requeridas en 'plan_trabajo': {', '.join(faltantes)}"
             }
     except Exception as e:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
-            "found": False, "message": f"Error leyendo hoja 'Detalle': {e}"
+            "found": False, "message": f"Error leyendo hoja 'plan_trabajo': {e}"
         }
 
     df_cierre = pd.DataFrame()
@@ -3322,7 +3322,7 @@ def load_claro_data_from_upload(uploaded_file):
             break
 
     df_plan = pd.DataFrame()
-    for sheet_name in [s for s in available_sheets if s not in ["Detalle"] and
+    for sheet_name in [s for s in available_sheets if s not in ["plan_trabajo"] and
                         not s.lower().startswith("cierre")]:
         try:
             df_plan = pd.read_excel(xl, sheet_name=sheet_name, header=5)
@@ -3379,7 +3379,7 @@ def load_claro_data():
     if path is None:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {"found": False, "message": "No se encontró el archivo de agentes Claro."}
     try:
-        df_det = pd.read_excel(path, sheet_name="Detalle", header=0)
+        df_det = pd.read_excel(path, sheet_name="plan_trabajo", header=0)
         df_det.columns = [str(c).strip() for c in df_det.columns]
         # Numeric coercion
         num_cols = [
@@ -4708,7 +4708,8 @@ _has_claro_file = (
 )
 _has_rsrp_file = find_existing_file(DATA_FILE_CANDIDATES) is not None if 'DATA_FILE_CANDIDATES' in dir() else False
 
-if not _has_claro_file and not _has_rsrp_file:
+_show_welcome = not _has_claro_file and not _has_rsrp_file
+if _show_welcome:
     st.markdown(f"""
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px;">
         <div style="width:52px;height:52px;background:#E10600;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -4761,7 +4762,7 @@ if not _has_claro_file and not _has_rsrp_file:
                 </div>
                 <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
                     <span style="background:#E10600;color:white;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;margin-top:1px;">2</span>
-                    <span style="font-size:.76rem;color:#CBD5E1;">El archivo debe tener la hoja <b style="color:#F8FAFC;">"Detalle"</b> con las columnas estándar del plan.</span>
+                    <span style="font-size:.76rem;color:#CBD5E1;">El archivo debe tener la hoja <b style="color:#F8FAFC;">"plan_trabajo"</b> con las columnas estándar del plan.</span>
                 </div>
                 <div style="display:flex;align-items:flex-start;gap:8px;">
                     <span style="background:#E10600;color:white;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;margin-top:1px;">3</span>
@@ -4800,7 +4801,6 @@ if not _has_claro_file and not _has_rsrp_file:
     """, unsafe_allow_html=True)
 
     st.markdown('<div style="font-size:.70rem;color:#475569;text-align:center;margin-top:20px;">Los datos procesados en este dashboard no se almacenan en ningún servidor. Todo se procesa localmente en tu sesión.</div>', unsafe_allow_html=True)
-    st.stop()
 
 # =========================================================
 # SIDEBAR
@@ -4816,7 +4816,7 @@ _uploaded = st.sidebar.file_uploader(
     type=["xlsx"],
     key="claro_file_upload",
     label_visibility="collapsed",
-    help="Archivo Excel con hoja 'Detalle'. Nombre sugerido: Plan_actualizado_CORTE_XX_FINAL.xlsx"
+    help="Archivo Excel con hoja 'plan_trabajo'. Nombre sugerido: Plan_actualizado_CORTE_XX_FINAL.xlsx"
 )
 
 if _uploaded is not None:
@@ -4824,7 +4824,7 @@ if _uploaded is not None:
     st.session_state["claro_uploaded_file"] = _uploaded
     # Quick validation preview
     try:
-        _preview = pd.read_excel(_uploaded, sheet_name="Detalle", header=0, nrows=3)
+        _preview = pd.read_excel(_uploaded, sheet_name="plan_trabajo", header=0, nrows=3)
         _preview.columns = [str(c).strip() for c in _preview.columns]
         _uploaded.seek(0)
         _faltantes = [c for c in COLUMNAS_REQUERIDAS if c not in _preview.columns]
@@ -5518,17 +5518,20 @@ else:
 # =========================================================
 _vista_claro = st.session_state.get("vista_activa", "Red y Mercado · Operadores") == "Agentes Claro · PDVs"
 
-if _vista_claro:
-    render_claro_view()
-    st.stop()
+if not _show_welcome:
+    if _vista_claro:
+        render_claro_view()
+        st.stop()
 
 # =========================================================
 # HEADER (VISTA RED/MERCADO)
 # =========================================================
+if _show_welcome:
+    st.stop()
+
 periodo_txt = f"{pd.to_datetime(fecha_ini).strftime('%d/%m/%Y')} a {pd.to_datetime(fecha_fin).strftime('%d/%m/%Y')}"
 periodo_txt_corto = f"{pd.to_datetime(fecha_ini).strftime('%d/%m/%Y')} - {pd.to_datetime(fecha_fin).strftime('%d/%m/%Y')}"
 obs_validas = int(df_f["RSRP_valido"].count())
-
 if network_records_visible < 100:
     st.markdown(
         f'''
