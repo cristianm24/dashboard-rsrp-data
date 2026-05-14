@@ -3236,9 +3236,16 @@ def _process_claro_df(df_det):
         if c in df_det.columns:
             df_det[c] = df_det[c].astype(str).str.strip().replace("nan", pd.NA)
 
-    # Remove rows where AGENTE is null (header repeats or empty rows)
+    # Remove rows where AGENTE is null, empty, or looks like a header repeat
     if "AGENTE" in df_det.columns:
-        df_det = df_det[df_det["AGENTE"].notna() & (df_det["AGENTE"].astype(str).str.strip() != "")]
+        df_det["AGENTE"] = df_det["AGENTE"].astype(str).str.strip()
+        df_det = df_det[
+            df_det["AGENTE"].notna() &
+            (df_det["AGENTE"] != "") &
+            (df_det["AGENTE"] != "nan") &
+            (df_det["AGENTE"] != "AGENTE") &
+            (df_det["AGENTE"] != "None")
+        ].copy()
 
     return df_det, faltantes, nuevas
 
@@ -4007,7 +4014,7 @@ def render_claro_view():
             cuota_alta=("CUOTA DE ALTA","mean"),
             var_alta=("VR_M-1.1","mean") if "VR_M-1.1" in df.columns else ("EJEC ALTA NAT","count"),
         ).reset_index()
-        by_agente["meta_total"]  = by_agente["meta_nat"] + by_agente.get("meta_indu", 0)
+        by_agente["meta_total"]  = by_agente["meta_nat"] + (by_agente["meta_indu"] if "meta_indu" in by_agente.columns else 0)
         by_agente["cumpl_total"] = (by_agente["ejec_total"] / by_agente["meta_total"].replace(0,np.nan)*100).fillna(0)
         by_agente["cumpl_nat"]   = (by_agente["ejec_nat"]   / by_agente["meta_nat"].replace(0,np.nan)*100).fillna(0)
         by_agente["proy_total"]  = (by_agente["ejec_total"] * _FACTOR / by_agente["meta_total"].replace(0,np.nan)*100).fillna(0)
@@ -4019,8 +4026,10 @@ def render_claro_view():
 
         n_ag = min(len(by_agente), 4)
         ag_cols = st.columns(n_ag, gap="small")
-        for i, row in by_agente.sort_values("valor_principal", ascending=False).reset_index(drop=True).iterrows():
-            ag_c  = AGENTE_COLORS.get(row["AGENTE"], AGENTE_COLORS.get(str(row["AGENTE"]).strip(), "#64748B"))
+        _by_ag_clean = by_agente[by_agente["AGENTE"].apply(lambda x: bool(x and str(x).strip() not in ("", "nan", "None", "AGENTE")))].sort_values("valor_principal", ascending=False).reset_index(drop=True)
+        for i, row in _by_ag_clean.iterrows():
+            _ag_name = str(row["AGENTE"]).strip()
+            ag_c  = AGENTE_COLORS.get(_ag_name, "#64748B")
             p     = row["valor_principal"]; cp = _sc(p)
             badge = "🏆" if p == _max_p else ("⚠️" if p == _min_p else "")
             _var_a = row.get("var_alta", np.nan)
@@ -4103,15 +4112,16 @@ def render_claro_view():
             cuota_alta=("CUOTA DE ALTA","mean"), rsrp=("RSRP","mean"),
         ).reset_index()
         by_ag_full["cumpl_nat"] = (by_ag_full["ejec_nat"]/by_ag_full["meta_nat"].replace(0,np.nan)*100).fillna(0)
-        by_ag_full["meta_total_ag"] = by_ag_full["meta_nat"] + by_ag_full.get("meta_indu",0)
+        by_ag_full["meta_total_ag"] = by_ag_full["meta_nat"] + (by_ag_full["meta_indu"] if "meta_indu" in by_ag_full.columns else 0)
         by_ag_full["proy_nat"]  = (by_ag_full["ejec_total"]/by_ag_full["meta_total_ag"].replace(0,np.nan)*100).fillna(0)
         by_ag_full["part_ejec"] = (by_ag_full["ejec_nat"]/by_ag_full["ejec_nat"].sum()*100).fillna(0)
         by_ag_full["brecha"]    = by_ag_full["meta_total_ag"] - by_ag_full["ejec_total"]
 
         # ── Ranking visual de agentes ─────────────────────────────────────────
         st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Ranking de agentes — de mejor a peor proyección</div>', unsafe_allow_html=True)
-        for _, row in by_ag_full.sort_values("proy_nat", ascending=False).reset_index(drop=True).iterrows():
-            ag_c  = AGENTE_COLORS.get(row["AGENTE"], "#64748B")
+        for _, row in by_ag_full[by_ag_full["AGENTE"].apply(lambda x: bool(x and str(x).strip() not in ("","nan","None","AGENTE")))].sort_values("proy_nat", ascending=False).reset_index(drop=True).iterrows():
+            _ag_name2 = str(row["AGENTE"]).strip()
+            ag_c  = AGENTE_COLORS.get(_ag_name2, "#64748B")
             p     = row["proy_nat"]; cp = _sc(p)
             w     = min(max(p, 0), 100)
             _brch = fmt_int(row["brecha"])
@@ -4955,7 +4965,8 @@ _has_rsrp_file = (
     find_existing_file(DATA_FILE_CANDIDATES) is not None
 )
 _rsrp_available = _has_rsrp_file
-_show_welcome   = not _has_claro_file and not _has_rsrp_file
+_vista_sel = st.session_state.get("vista_activa", "Instructivo · Guía de uso")
+_show_welcome   = not _has_claro_file and not _has_rsrp_file and _vista_sel != "Instructivo · Guía de uso"
 
 # If only claro file loaded, go straight to agentes view
 _vista_claro_direct = _has_claro_file and not _has_rsrp_file
@@ -5056,6 +5067,7 @@ st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{ic
 vista_activa = st.sidebar.radio(
     "Vista del dashboard",
     options=["Red y Mercado · Operadores", "Agentes Claro · PDVs", "Instructivo · Guía de uso"],
+    index=2,
     key="vista_activa",
     horizontal=False,
 )
