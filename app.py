@@ -4981,6 +4981,8 @@ except Exception as e:
     st.info("Recarga la página o contacta al administrador si el problema persiste.")
     st.stop()
 
+
+if _show_welcome:
     st.markdown(f"""
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;">
         <div style="width:52px;height:52px;background:#E10600;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -5116,136 +5118,8 @@ except Exception as e:
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div style="font-size:.68rem;color:#475569;text-align:center;margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05);">Los archivos se procesan localmente en tu sesión y no se almacenan en ningún servidor · Dashboard desarrollado para Claro Colombia</div>', unsafe_allow_html=True)
-    st.markdown(f"""
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px;">
-        <div style="width:52px;height:52px;background:#E10600;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-        </div>
-        <div>
-            <div style="font-size:1.6rem;font-weight:950;color:#F8FAFC;line-height:1.1;">Dashboard de Inteligencia Comercial</div>
-            <div style="font-size:.84rem;color:#64748B;margin-top:3px;">Claro Colombia · Red y Mercado · Gestión de Agentes</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.stop()
 
-    col_w1, col_w2 = st.columns(2, gap="large")
-
-    with col_w1:
-        st.markdown(
-            "<div style='background:linear-gradient(135deg,rgba(17,24,39,0.95),rgba(10,18,34,0.98));"
-            "border:1px solid rgba(56,189,248,0.25);border-radius:20px;padding:24px 26px;'>"
-            "<div style='display:flex;align-items:center;gap:10px;margin-bottom:14px;'>"
-            "<div style='width:36px;height:36px;background:rgba(56,189,248,0.15);border-radius:10px;"
-            "display:flex;align-items:center;justify-content:center;flex-shrink:0;'>"
-            "<svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='#38BDF8' stroke-width='2'"
-            " stroke-linecap='round' stroke-linejoin='round'><path d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z'/>"
-            "<circle cx='12' cy='12' r='3'/></svg></div>"
-            "<div style='font-size:.95rem;font-weight:900;color:#38BDF8;'>Vista Red y Mercado</div></div>"
-            "<div style='font-size:.80rem;color:#94A3B8;line-height:1.7;margin-bottom:16px;'>"
-            "Analiza la calidad de se&#241;al RSRP de todos los operadores por c&#243;digo postal, "
-            "con comparativo de cuota de mercado y captaci&#243;n de altas.</div>"
-            "<div style='font-size:.72rem;font-weight:900;color:#64748B;text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px;'>Archivos necesarios</div>"
-            "<div style='background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.15);border-radius:12px;padding:12px 14px;margin-bottom:8px;'>"
-            "<div style='font-size:.76rem;font-weight:900;color:#38BDF8;margin-bottom:3px;'>&#128196; RSRP_COMPLETO.csv "
-            "<span style='background:#38BDF8;color:#0F172A;font-size:.60rem;padding:1px 6px;border-radius:99px;margin-left:4px;'>REQUERIDO</span></div>"
-            "<div style='font-size:.72rem;color:#94A3B8;line-height:1.6;'>Se&#241;al RSRP por c&#243;digo postal, operador y fecha.<br>"
-            "Columnas esperadas: Codigo_postal &middot; Fecha de inicio &middot; Claro &middot; Tigo &middot; Movistar...</div></div>"
-            "<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px 14px;margin-bottom:8px;'>"
-            "<div style='font-size:.76rem;font-weight:900;color:#E2E8F0;margin-bottom:3px;'>&#128202; Cuota_mercado_completo.xlsx "
-            "<span style='background:rgba(255,255,255,0.1);color:#94A3B8;font-size:.60rem;padding:1px 6px;border-radius:99px;margin-left:4px;'>OPCIONAL</span></div>"
-            "<div style='font-size:.72rem;color:#94A3B8;'>Cuota de mercado por CP y operador. Habilita el tab de Mercado.</div></div>"
-            "<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px 14px;margin-bottom:14px;'>"
-            "<div style='font-size:.76rem;font-weight:900;color:#E2E8F0;margin-bottom:3px;'>&#128202; Cuota_alta_completo.xlsx "
-            "<span style='background:rgba(255,255,255,0.1);color:#94A3B8;font-size:.60rem;padding:1px 6px;border-radius:99px;margin-left:4px;'>OPCIONAL</span></div>"
-            "<div style='font-size:.72rem;color:#94A3B8;'>Captaci&#243;n de altas por CP y operador. Complementa el an&#225;lisis de mercado.</div></div>"
-            "<div style='padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);'>"
-            "<div style='font-size:.72rem;font-weight:900;color:#64748B;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;'>C&#243;mo activar</div>"
-            "<div style='display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;'>"
-            "<span style='background:#38BDF8;color:#0F172A;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;'>1</span>"
-            "<span style='font-size:.74rem;color:#CBD5E1;'>Sube el CSV de se&#241;al RSRP usando el cargador del sidebar.</span></div>"
-            "<div style='display:flex;align-items:flex-start;gap:8px;'>"
-            "<span style='background:#38BDF8;color:#0F172A;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;'>2</span>"
-            "<span style='font-size:.74rem;color:#CBD5E1;'>Los archivos de cuota van en la carpeta del proyecto en el servidor.</span></div>"
-            "</div></div>",
-            unsafe_allow_html=True
-        )
-
-    with col_w2:
-        st.markdown(
-            "<div style='background:linear-gradient(135deg,rgba(17,24,39,0.95),rgba(10,18,34,0.98));"
-            "border:1px solid rgba(225,6,0,0.25);border-radius:20px;padding:24px 26px;'>"
-            "<div style='display:flex;align-items:center;gap:10px;margin-bottom:14px;'>"
-            "<div style='width:36px;height:36px;background:rgba(225,6,0,0.15);border-radius:10px;"
-            "display:flex;align-items:center;justify-content:center;flex-shrink:0;'>"
-            "<svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='#E10600' stroke-width='2'"
-            " stroke-linecap='round' stroke-linejoin='round'><path d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/>"
-            "<circle cx='9' cy='7' r='4'/><path d='M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'/></svg></div>"
-            "<div style='font-size:.95rem;font-weight:900;color:#E10600;'>Vista Agentes Claro</div></div>"
-            "<div style='font-size:.80rem;color:#94A3B8;line-height:1.7;margin-bottom:16px;'>"
-            "Seguimiento comercial del plan de trabajo mensual: metas, ejecuci&#243;n semanal, "
-            "PDVs, asesores, cuota de altas y se&#241;al RSRP por agente.</div>"
-            "<div style='font-size:.72rem;font-weight:900;color:#64748B;text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px;'>Archivo necesario</div>"
-            "<div style='background:rgba(225,6,0,0.06);border:1px solid rgba(225,6,0,0.20);border-radius:12px;padding:12px 14px;margin-bottom:8px;'>"
-            "<div style='font-size:.76rem;font-weight:900;color:#FCA5A5;margin-bottom:3px;'>&#128203; Plan de trabajo mensual .xlsx "
-            "<span style='background:#E10600;color:white;font-size:.60rem;padding:1px 6px;border-radius:99px;margin-left:4px;'>REQUERIDO</span></div>"
-            "<div style='font-size:.72rem;color:#94A3B8;line-height:1.6;'>"
-            "El <b style='color:#E2E8F0;'>nombre del archivo y de la hoja pueden ser cualquiera</b> "
-            "&mdash; el sistema detecta autom&#225;ticamente la hoja correcta por su contenido.<br><br>"
-            "La hoja debe tener columnas como:<br>"
-            "<span style='color:#E2E8F0;'>AGENTE &middot; META ALTA NAT &middot; EJEC ALTA NAT &middot; EJE ALTA TOTAL &middot; ASESOR</span>"
-            "</div></div>"
-            "<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px 14px;margin-bottom:14px;'>"
-            "<div style='font-size:.74rem;color:#94A3B8;line-height:1.6;'>"
-            "Si el archivo tiene <b style='color:#E2E8F0;'>m&#250;ltiples hojas de datos</b> (una por mes), "
-            "el sistema las detecta todas y muestra un selector de periodo en el sidebar.</div></div>"
-            "<div style='padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);'>"
-            "<div style='font-size:.72rem;font-weight:900;color:#64748B;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;'>C&#243;mo activar</div>"
-            "<div style='display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;'>"
-            "<span style='background:#E10600;color:white;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;'>1</span>"
-            "<span style='font-size:.74rem;color:#CBD5E1;'>Sube el Excel usando el cargador <b>Plan de trabajo</b> del sidebar.</span></div>"
-            "<div style='display:flex;align-items:flex-start;gap:8px;margin-bottom:5px;'>"
-            "<span style='background:#E10600;color:white;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;'>2</span>"
-            "<span style='font-size:.74rem;color:#CBD5E1;'>Selecciona <b>Agentes Claro &middot; PDVs</b> en el selector de vista.</span></div>"
-            "<div style='display:flex;align-items:flex-start;gap:8px;'>"
-            "<span style='background:#E10600;color:white;font-size:.64rem;font-weight:900;padding:2px 7px;border-radius:99px;flex-shrink:0;'>3</span>"
-            "<span style='font-size:.74rem;color:#CBD5E1;'>Si hay varios meses, aparece un selector de periodo en el sidebar.</span></div>"
-            "</div></div>",
-            unsafe_allow_html=True
-        )
-
-    st.markdown(
-        "<div style='background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);"
-        "border-radius:16px;padding:18px 22px;margin-top:14px;'>"
-        "<div style='font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;"
-        "letter-spacing:.4px;margin-bottom:12px;'>&#191;Qu&#233; puedes analizar en cada vista?</div>"
-        "<div style='display:grid;grid-template-columns:1fr 1fr;gap:20px;'>"
-        "<div><div style='font-size:.74rem;font-weight:900;color:#38BDF8;margin-bottom:6px;'>Red y Mercado &mdash; 5 tabs</div>"
-        "<div style='font-size:.72rem;color:#94A3B8;line-height:1.9;'>"
-        "<b style='color:#E2E8F0;'>Resumen</b> &mdash; Estado global de se&#241;al y posici&#243;n comercial<br>"
-        "<b style='color:#E2E8F0;'>Operadores</b> &mdash; Ranking de se&#241;al por operador<br>"
-        "<b style='color:#E2E8F0;'>Territorio</b> &mdash; CP cr&#237;ticos y zonas prioritarias<br>"
-        "<b style='color:#E2E8F0;'>Variaci&#243;n</b> &mdash; Cambio de se&#241;al en el tiempo<br>"
-        "<b style='color:#E2E8F0;'>Mercado</b> &mdash; Cuota, captaci&#243;n y an&#225;lisis competitivo</div></div>"
-        "<div><div style='font-size:.74rem;font-weight:900;color:#E10600;margin-bottom:6px;'>Agentes Claro &mdash; 5 tabs</div>"
-        "<div style='font-size:.72rem;color:#94A3B8;line-height:1.9;'>"
-        "<b style='color:#E2E8F0;'>&#8599; &#191;C&#243;mo vamos?</b> &mdash; Resultado del mes<br>"
-        "<b style='color:#E2E8F0;'>&#9830; &#191;Qui&#233;n cumple?</b> &mdash; Ranking por agente<br>"
-        "<b style='color:#E2E8F0;'>&#9678; La brecha</b> &mdash; PDVs cr&#237;ticos y mejora<br>"
-        "<b style='color:#E2E8F0;'>&#8767; El ritmo</b> &mdash; Curva semanal de ventas<br>"
-        "<b style='color:#E2E8F0;'>&#9677; Oportunidades</b> &mdash; Cuota de altas y se&#241;al</div></div>"
-        "</div></div>",
-        unsafe_allow_html=True
-    )
-    st.markdown(
-        "<div style='font-size:.68rem;color:#475569;text-align:center;margin-top:16px;"
-        "padding-top:12px;border-top:1px solid rgba(255,255,255,0.05);'>"
-        "Los archivos se procesan localmente en tu sesi&#243;n y no se almacenan en ning&#250;n servidor "
-        "&middot; Dashboard desarrollado para Claro Colombia</div>",
-        unsafe_allow_html=True
-    )
-
-# =========================================================
 # SIDEBAR
 # =========================================================
 st.sidebar.markdown("## Centro de control")
@@ -6067,8 +5941,6 @@ if not _show_welcome:
 # =========================================================
 # HEADER (VISTA RED/MERCADO)
 # =========================================================
-if _show_welcome:
-    st.stop()
 
 # Guard: if no RSRP data, show friendly message instead of crashing operators view
 if not _rsrp_available:
