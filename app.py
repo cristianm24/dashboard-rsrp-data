@@ -3146,16 +3146,145 @@ def build_excel(summary_operator_df, zone_exec_df, variation_operator_df, variat
 
 # =========================================================
 # MÓDULO: VISTA CLARO — PLAN Y EJECUCIÓN DE AGENTES
-# Archivo de datos: Plan_actualizado_CORTE_30_FINAL.xlsx
-# Hojas: Detalle (principal), LIKE SUR (resumen agente), Cierre marzo
 # =========================================================
-
-CLARO_FILE_CANDIDATES = [
-    os.path.join(BASE_DIR, "Plan_actualizado_CORTE_30_FINAL.xlsx"),
-    os.path.join(BASE_DIR, "Plan_actualizado_CORTE_28_FINAL.xlsx"),
-    os.path.join(BASE_DIR, "Plan_actualizado_CORTE_28_FINAL(1).xlsx"),
-    os.path.join(BASE_DIR, "Plan_actualizado_CORTE_28_FINAL(2).xlsx"),
+# Columnas críticas y opcionales para validación
+# =========================================================
+COLUMNAS_REQUERIDAS = [
+    "AGENTE", "ID", "META ALTA NAT (>$2000)", "EJEC ALTA NAT",
+    "EJE ALTA TOTAL", "CATEGORIA", "ASESOR",
 ]
+COLUMNAS_OPCIONALES = {
+    "META ALTA INDU (=< $2.000)": 0,
+    "EJEC ALTA INDU": 0,
+    "CUOTA DE ALTA": np.nan,
+    "CUOTA DE MERCADO": np.nan,
+    "RSRP": np.nan,
+    "S1": 0, "S2": 0, "S3": 0, "S4": 0,
+    "S1.1": 0, "S2.1": 0, "S3.1": 0, "S4.1": 0,
+    "VR_M-1": np.nan, "VR_M-1.1": np.nan, "VR_M-12": np.nan, "VR_M-12.1": np.nan,
+    "BARRIO": None, "ZONA": None, "RUTA": None, "CIRCUITO": None,
+    "TIPOLOGIA": None, "CLASIFICACION": None,
+    "META INGRESOS M0": np.nan, "EJEC INGRESOS M0": np.nan,
+}
+
+def _process_claro_df(df_det):
+    """Limpia y coerciona tipos. Retorna (df_limpio, columnas_faltantes, columnas_nuevas)."""
+    df_det.columns = [str(c).strip() for c in df_det.columns]
+    cols_excel = set(df_det.columns)
+
+    # Columnas requeridas faltantes
+    faltantes = [c for c in COLUMNAS_REQUERIDAS if c not in cols_excel]
+
+    # Columnas opcionales faltantes → rellenar con valor por defecto
+    for c, default in COLUMNAS_OPCIONALES.items():
+        if c not in df_det.columns:
+            df_det[c] = default
+
+    # Columnas nuevas no reconocidas
+    conocidas = set(COLUMNAS_REQUERIDAS) | set(COLUMNAS_OPCIONALES.keys()) | {
+        "TOTAL META ALTA", "% CUMPLI", "META ARPU", "EJEC ARPU",
+        "VR_M-1.2", "VR_M-12.2", "TIPO", "CODIGO POSTAL",
+    }
+    nuevas = sorted(cols_excel - conocidas - {"AGENTE","ID","ASESOR","CATEGORIA",
+                     "TIPOLOGIA","CLASIFICACION","BARRIO","ZONA","RUTA","CIRCUITO"})
+
+    # Coerción numérica
+    num_cols = list(COLUMNAS_OPCIONALES.keys()) + [
+        "TOTAL META ALTA", "EJE ALTA TOTAL", "META ALTA NAT (>$2000)", "EJEC ALTA NAT",
+        "% CUMPLI", "META ARPU", "EJEC ARPU", "META INGRESOS M0", "EJEC INGRESOS M0",
+    ]
+    for c in num_cols:
+        if c in df_det.columns:
+            df_det[c] = pd.to_numeric(df_det[c], errors="coerce")
+
+    # Coerción string
+    for c in ["AGENTE","CATEGORIA","TIPOLOGIA","CLASIFICACION","ZONA","TIPO","ASESOR","RUTA","CIRCUITO","BARRIO"]:
+        if c in df_det.columns:
+            df_det[c] = df_det[c].astype(str).str.strip().replace("nan", pd.NA)
+
+    return df_det, faltantes, nuevas
+
+
+@st.cache_data(ttl=300)
+def load_claro_data_from_path(path):
+    """Carga desde ruta en disco (fallback para desarrollo/servidor)."""
+    try:
+        df_det   = pd.read_excel(path, sheet_name="Detalle", header=0)
+        df_det, faltantes, nuevas = _process_claro_df(df_det)
+        if faltantes:
+            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
+                "found": False,
+                "message": f"El archivo no tiene las columnas requeridas: {', '.join(faltantes)}"
+            }
+        try:
+            df_cierre = pd.read_excel(path, sheet_name="Cierre marzo", header=0)
+            df_cierre.columns = [str(c).strip() for c in df_cierre.columns]
+            df_cierre.columns = ["ID_POS", "MAR_ALTAS", "MAR_INGRESOS"]
+            df_cierre["MAR_ALTAS"]    = pd.to_numeric(df_cierre["MAR_ALTAS"],    errors="coerce")
+            df_cierre["MAR_INGRESOS"] = pd.to_numeric(df_cierre["MAR_INGRESOS"], errors="coerce")
+        except Exception:
+            df_cierre = pd.DataFrame()
+        try:
+            df_plan = pd.read_excel(path, sheet_name="LIKE SUR", header=5)
+            df_plan.columns = [str(c).strip() for c in df_plan.columns]
+        except Exception:
+            df_plan = pd.DataFrame()
+        return df_det, df_cierre, df_plan, {
+            "found": True, "message": None, "path": path, "columnas_nuevas": nuevas
+        }
+    except Exception as e:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {"found": False, "message": str(e)}
+
+
+def load_claro_data_from_upload(uploaded_file):
+    """Carga desde archivo subido por el usuario via st.file_uploader."""
+    try:
+        df_det = pd.read_excel(uploaded_file, sheet_name="Detalle", header=0)
+        df_det, faltantes, nuevas = _process_claro_df(df_det)
+        if faltantes:
+            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
+                "found": False,
+                "message": f"El archivo no tiene las columnas requeridas: {', '.join(faltantes)}"
+            }
+        uploaded_file.seek(0)
+        try:
+            df_cierre = pd.read_excel(uploaded_file, sheet_name="Cierre marzo", header=0)
+            df_cierre.columns = [str(c).strip() for c in df_cierre.columns]
+            df_cierre.columns = ["ID_POS", "MAR_ALTAS", "MAR_INGRESOS"]
+            df_cierre["MAR_ALTAS"]    = pd.to_numeric(df_cierre["MAR_ALTAS"],    errors="coerce")
+            df_cierre["MAR_INGRESOS"] = pd.to_numeric(df_cierre["MAR_INGRESOS"], errors="coerce")
+        except Exception:
+            df_cierre = pd.DataFrame()
+        uploaded_file.seek(0)
+        try:
+            df_plan = pd.read_excel(uploaded_file, sheet_name="LIKE SUR", header=5)
+            df_plan.columns = [str(c).strip() for c in df_plan.columns]
+        except Exception:
+            df_plan = pd.DataFrame()
+        return df_det, df_cierre, df_plan, {
+            "found": True, "message": None, "path": uploaded_file.name, "columnas_nuevas": nuevas
+        }
+    except Exception as e:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {"found": False, "message": str(e)}
+
+
+def load_claro_data():
+    """
+    Punto de entrada principal.
+    Prioridad: 1) archivo subido por usuario  2) archivo en disco (desarrollo)
+    """
+    uploaded = st.session_state.get("claro_uploaded_file")
+    if uploaded is not None:
+        return load_claro_data_from_upload(uploaded)
+    # Fallback disco
+    path = find_existing_file(CLARO_FILE_CANDIDATES)
+    if path:
+        return load_claro_data_from_path(path)
+    return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
+        "found": False,
+        "message": "No se encontró archivo. Usa el cargador del sidebar para subir el Excel del mes."
+    }
+
 
 AGENTE_COLORS = {
     "LIKE USME":       "#E10600",
@@ -4018,7 +4147,7 @@ def render_claro_view():
         # ── Headline: semana a semana ─────────────────────────────────────────
         st.markdown(f"""
         <div style="background:linear-gradient(135deg,rgba(17,24,39,0.96),rgba(10,18,34,0.98));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:20px 28px;margin-bottom:16px;">
-            <div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:14px;">Evolución semanal · 1–30 Abril 2026</div>
+            <div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:14px;">Evolución semanal · 1–27 Abril 2026</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;">
                 <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
                     <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 1</div>
@@ -4488,6 +4617,49 @@ for key, default in {
 # =========================================================
 st.sidebar.markdown("## Centro de control")
 st.sidebar.markdown(f"""<div class="sidebar-guide-row"><span class="sidebar-guide-pill">{icon_svg("filter",12)} Ajusta universo</span><span class="sidebar-guide-pill">{icon_svg("users",12)} Define operadores</span><span class="sidebar-guide-pill">{icon_svg("target",12)} Enfoca lectura</span></div>""", unsafe_allow_html=True)
+
+# ---- CARGADOR DE ARCHIVO ----
+st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("spark",12)} Datos del mes</div><div class="sidebar-title">Cargar archivo Excel</div><div class="sidebar-sub">Sube el archivo del mes para actualizar el dashboard. El archivo no se guarda en ningún servidor — se procesa solo en tu sesión.</div>', unsafe_allow_html=True)
+
+_uploaded = st.sidebar.file_uploader(
+    "Seleccionar archivo (.xlsx)",
+    type=["xlsx"],
+    key="claro_file_upload",
+    label_visibility="collapsed",
+    help="Archivo Excel con hoja 'Detalle'. Nombre sugerido: Plan_actualizado_CORTE_XX_FINAL.xlsx"
+)
+
+if _uploaded is not None:
+    # Store in session state so load_claro_data() picks it up
+    st.session_state["claro_uploaded_file"] = _uploaded
+    # Quick validation preview
+    try:
+        _preview = pd.read_excel(_uploaded, sheet_name="Detalle", header=0, nrows=3)
+        _preview.columns = [str(c).strip() for c in _preview.columns]
+        _uploaded.seek(0)
+        _faltantes = [c for c in COLUMNAS_REQUERIDAS if c not in _preview.columns]
+        _nuevas    = [c for c in _preview.columns
+                      if c not in set(COLUMNAS_REQUERIDAS) | set(COLUMNAS_OPCIONALES.keys())
+                      | {"TOTAL META ALTA","% CUMPLI","META ARPU","EJEC ARPU","TIPO","CODIGO POSTAL",
+                         "VR_M-1.2","VR_M-12.2","AGENTE","ID","ASESOR","CATEGORIA","TIPOLOGIA",
+                         "CLASIFICACION","BARRIO","ZONA","RUTA","CIRCUITO"}]
+        if _faltantes:
+            st.sidebar.error(f"⚠️ Faltan columnas requeridas:\n{', '.join(_faltantes)}")
+        else:
+            st.sidebar.success(f"✅ {_uploaded.name}")
+            if _nuevas:
+                st.sidebar.info(f"ℹ️ Columnas nuevas detectadas (no usadas aún):\n{', '.join(_nuevas)}")
+    except Exception as _e:
+        st.sidebar.error(f"Error leyendo el archivo: {_e}")
+else:
+    # Check if there's a file on disk as fallback
+    _disk_path = find_existing_file(CLARO_FILE_CANDIDATES)
+    if _disk_path:
+        st.sidebar.info(f"Usando archivo del servidor: {os.path.basename(_disk_path)}")
+    else:
+        st.sidebar.warning("Sin archivo cargado. Sube el Excel del mes para ver la vista de Agentes.")
+
+st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
 # ---- SWITCH DE VISTA ----
 st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("spark",12)} Modo de visualización</div><div class="sidebar-title">Selecciona la vista</div><div class="sidebar-sub">Alterna entre el panel de red y mercado por operador, y la vista focalizada en el desempeño comercial de agentes Claro.</div>', unsafe_allow_html=True)
