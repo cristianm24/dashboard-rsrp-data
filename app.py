@@ -5154,11 +5154,15 @@ st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
 _vista_claro_sidebar = st.session_state.get("vista_activa", "Red y Mercado · Operadores") == "Agentes Claro · PDVs"
 
-fecha_min = df["Fecha de inicio"].min()
-fecha_max = df["Fecha de inicio"].max()
-if pd.isna(fecha_min) or pd.isna(fecha_max):
+if not _rsrp_available or df.empty or "Fecha de inicio" not in df.columns:
     fecha_min = pd.Timestamp("2024-01-01")
     fecha_max = pd.Timestamp.now()
+else:
+    fecha_min = df["Fecha de inicio"].min()
+    fecha_max = df["Fecha de inicio"].max()
+    if pd.isna(fecha_min) or pd.isna(fecha_max):
+        fecha_min = pd.Timestamp("2024-01-01")
+        fecha_max = pd.Timestamp.now()
 
 if not _vista_claro_sidebar:
     st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("trend",12)} Paso 1 · Define el horizonte</div><div class="sidebar-title">Contexto temporal</div><div class="sidebar-sub">Define una ventana personalizada o una ventana móvil por mes, semana o día, y el nivel al que se calcula la variación.</div><div class="filter-stage"><div class="filter-stage-card"><div class="filter-stage-title">Ventana</div><div class="filter-stage-text">Rango o ventana móvil</div></div><div class="filter-stage-card"><div class="filter-stage-title">Unidad</div><div class="filter-stage-text">Mes, semana o día</div></div><div class="filter-stage-card"><div class="filter-stage-title">Lectura</div><div class="filter-stage-text">Cómo comparar periodos</div></div></div>', unsafe_allow_html=True)
@@ -5391,11 +5395,14 @@ else:
 # FILTROS
 # =========================================================
 # fecha_ini y fecha_fin se definen desde el centro de control temporal
-mask = (
-    (df_long["Fecha de inicio"].dt.date >= fecha_ini)
-    & (df_long["Fecha de inicio"].dt.date <= fecha_fin)
-    & (df_long["Operador"].isin(operadores_sel))
-)
+if _rsrp_available and not df_long.empty:
+    mask = (
+        (df_long["Fecha de inicio"].dt.date >= fecha_ini)
+        & (df_long["Fecha de inicio"].dt.date <= fecha_fin)
+        & (df_long["Operador"].isin(operadores_sel))
+    )
+else:
+    mask = pd.Series(False, index=df_long.index if not df_long.empty else range(0))
 
 codigos_por_territorio = set(codigos_disponibles_por_territorio) if (territorial_filters_enabled and (localidad_sel or barrio_sel or ruta_sel or circuito_sel)) else set()
 codigos_manuales = set([str(x) for x in codigos_sel]) if codigos_sel else set()
@@ -5413,8 +5420,8 @@ if codigos_filtrados_finales is not None:
 df_f = df_long.loc[mask].copy()
 if solo_validos:
     df_f = df_f[df_f["Con_medicion"]].copy()
-if df_f.empty:
-    st.error("No hay registros para la combinación de filtros seleccionada.")
+if df_f.empty and _rsrp_available:
+    st.warning("No hay registros para la combinación de filtros seleccionada. Ajusta los filtros.")
     st.stop()
 
 network_records_visible = int(df_f["RSRP_valido"].count()) if "RSRP_valido" in df_f.columns else int(len(df_f))
@@ -5504,9 +5511,17 @@ summary_operator["Score_operador"] = summary_operator.apply(compute_operator_sco
 summary_operator["Clasificacion_score"] = summary_operator["Score_operador"].apply(lambda x: score_label(x)[0])
 summary_operator["Semaforo_operador"] = summary_operator["Buena_o_mejor"].apply(lambda x: quality_status(x)[0])
 
-best_operator = summary_operator.sort_values("RSRP_mediana", ascending=False).iloc[0]
-worst_operator = summary_operator.sort_values("RSRP_mediana", ascending=True).iloc[0]
-worst_operator_crit = summary_operator.sort_values("Critica", ascending=False).iloc[0]
+if not summary_operator.empty:
+    best_operator = summary_operator.sort_values("RSRP_mediana", ascending=False).iloc[0]
+    worst_operator = summary_operator.sort_values("RSRP_mediana", ascending=True).iloc[0]
+    worst_operator_crit = summary_operator.sort_values("Critica", ascending=False).iloc[0]
+else:
+    _empty_op = pd.Series({"Operador":"N/D","RSRP_mediana":np.nan,"Buena_o_mejor":0.0,
+                            "Critica":0.0,"Observaciones":0,"Codigos":0,"Score_operador":0.0,
+                            "Aceptable":0.0,"Excelente":0.0,"Buena":0.0,"RSRP_promedio":np.nan})
+    best_operator = _empty_op.copy()
+    worst_operator = _empty_op.copy()
+    worst_operator_crit = _empty_op.copy()
 
 global_median = df_f["RSRP_valido"].median()
 global_mean = df_f["RSRP_valido"].mean()
@@ -5834,9 +5849,14 @@ if not _rsrp_available:
     """, unsafe_allow_html=True)
     st.stop()
 
-periodo_txt = f"{pd.to_datetime(fecha_ini).strftime('%d/%m/%Y')} a {pd.to_datetime(fecha_fin).strftime('%d/%m/%Y')}"
-periodo_txt_corto = f"{pd.to_datetime(fecha_ini).strftime('%d/%m/%Y')} - {pd.to_datetime(fecha_fin).strftime('%d/%m/%Y')}"
-obs_validas = int(df_f["RSRP_valido"].count())
+if _rsrp_available and not df_f.empty:
+    periodo_txt = f"{pd.to_datetime(fecha_ini).strftime('%d/%m/%Y')} a {pd.to_datetime(fecha_fin).strftime('%d/%m/%Y')}"
+    periodo_txt_corto = f"{pd.to_datetime(fecha_ini).strftime('%d/%m/%Y')} - {pd.to_datetime(fecha_fin).strftime('%d/%m/%Y')}"
+    obs_validas = int(df_f["RSRP_valido"].count()) if "RSRP_valido" in df_f.columns else int(len(df_f))
+else:
+    periodo_txt = "Sin datos"
+    periodo_txt_corto = "Sin datos"
+    obs_validas = 0
 if network_records_visible < 100:
     st.markdown(
         f'''
