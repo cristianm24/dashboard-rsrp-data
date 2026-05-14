@@ -4769,24 +4769,30 @@ def render_claro_view():
 
 
 # =========================================================
-# CARGA DATOS RED Y MERCADO
 # =========================================================
-_rsrp_available = (
+# DISPONIBILIDAD DE ARCHIVOS
+# =========================================================
+_has_claro_file = (
+    st.session_state.get("claro_uploaded_file") is not None or
+    find_existing_file(CLARO_FILE_CANDIDATES) is not None
+)
+_has_rsrp_file = (
     st.session_state.get("rsrp_uploaded_file") is not None or
     find_existing_file(DATA_FILE_CANDIDATES) is not None
 )
+_rsrp_available = _has_rsrp_file
+_show_welcome   = not _has_claro_file and not _has_rsrp_file
 
-# If only claro file is loaded (no RSRP), go straight to agentes view
-if not _rsrp_available and _has_claro_file:
-    _vista_claro_direct = True
-else:
-    _vista_claro_direct = False
+# If only claro file loaded, go straight to agentes view
+_vista_claro_direct = _has_claro_file and not _has_rsrp_file
 
+# =========================================================
+# CARGA DATOS RED Y MERCADO
+# =========================================================
 try:
     if _rsrp_available:
         df, df_long, operator_cols, territorial_df, territorial_info, business_long, market_info, altas_info, load_info = load_data()
     else:
-        # No RSRP — create empty defaults so the rest of the app can still render agentes view
         df = pd.DataFrame()
         df_long = pd.DataFrame()
         operator_cols = []
@@ -4801,39 +4807,6 @@ except Exception as e:
     st.info("Recarga la página o contacta al administrador si el problema persiste.")
     st.stop()
 
-for op in operator_cols:
-    if f"op_{op}" not in st.session_state:
-        st.session_state[f"op_{op}"] = True
-for key in ["localidad_sel", "barrio_sel", "ruta_sel", "circuito_sel"]:
-    if key not in st.session_state:
-        st.session_state[key] = []
-for key, default in {
-    "metric_focus": "Comparado",
-    "zone_focus": "Todas",
-    "search_territory": "",
-    "share_range": (0, 100),
-    "temporal_mode": "Rango personalizado",
-    "window_unit": "Mes",
-    "window_value": 12,
-}.items():
-    if key not in st.session_state:
-        st.session_state[key] = default
-
-# =========================================================
-# PANTALLA DE BIENVENIDA — se muestra solo si no hay datos cargados aún
-# =========================================================
-_has_claro_file = (
-    st.session_state.get("claro_uploaded_file") is not None or
-    find_existing_file(CLARO_FILE_CANDIDATES) is not None
-)
-_has_rsrp_file = (
-    st.session_state.get("rsrp_uploaded_file") is not None or
-    find_existing_file(DATA_FILE_CANDIDATES) is not None
-)
-
-# Show welcome only when neither file is available
-_show_welcome = not _has_claro_file and not _has_rsrp_file
-if _show_welcome:
     st.markdown(f"""
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;">
         <div style="width:52px;height:52px;background:#E10600;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
