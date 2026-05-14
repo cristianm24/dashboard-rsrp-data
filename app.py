@@ -3205,67 +3205,131 @@ def _process_claro_df(df_det):
     return df_det, faltantes, nuevas
 
 
-@st.cache_data(ttl=300)
 def load_claro_data_from_path(path):
-    """Carga desde ruta en disco (fallback para desarrollo/servidor)."""
+    """Carga desde ruta en disco. Nunca lanza excepciones — siempre retorna estado."""
     try:
-        df_det   = pd.read_excel(path, sheet_name="Detalle", header=0)
+        xl = pd.ExcelFile(path)
+        available_sheets = xl.sheet_names
+    except Exception as e:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
+            "found": False, "message": f"No se pudo abrir el archivo: {e}"
+        }
+
+    # Hoja Detalle — requerida
+    if "Detalle" not in available_sheets:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
+            "found": False,
+            "message": f"El archivo no tiene la hoja 'Detalle'. Hojas encontradas: {', '.join(available_sheets)}"
+        }
+    try:
+        df_det = pd.read_excel(xl, sheet_name="Detalle", header=0)
         df_det, faltantes, nuevas = _process_claro_df(df_det)
         if faltantes:
             return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
                 "found": False,
-                "message": f"El archivo no tiene las columnas requeridas: {', '.join(faltantes)}"
+                "message": f"Faltan columnas requeridas en 'Detalle': {', '.join(faltantes)}"
             }
-        try:
-            df_cierre = pd.read_excel(path, sheet_name="Cierre marzo", header=0)
-            df_cierre.columns = [str(c).strip() for c in df_cierre.columns]
-            df_cierre.columns = ["ID_POS", "MAR_ALTAS", "MAR_INGRESOS"]
-            df_cierre["MAR_ALTAS"]    = pd.to_numeric(df_cierre["MAR_ALTAS"],    errors="coerce")
-            df_cierre["MAR_INGRESOS"] = pd.to_numeric(df_cierre["MAR_INGRESOS"], errors="coerce")
-        except Exception:
-            df_cierre = pd.DataFrame()
-        try:
-            df_plan = pd.read_excel(path, sheet_name="LIKE SUR", header=5)
-            df_plan.columns = [str(c).strip() for c in df_plan.columns]
-        except Exception:
-            df_plan = pd.DataFrame()
-        return df_det, df_cierre, df_plan, {
-            "found": True, "message": None, "path": path, "columnas_nuevas": nuevas
-        }
     except Exception as e:
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {"found": False, "message": str(e)}
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
+            "found": False, "message": f"Error leyendo hoja 'Detalle': {e}"
+        }
+
+    # Hoja Cierre — opcional
+    df_cierre = pd.DataFrame()
+    for sheet_name in ["Cierre marzo", "Cierre abril", "Cierre mayo", "Cierre junio",
+                        "Cierre julio", "Cierre agosto", "Cierre septiembre",
+                        "Cierre octubre", "Cierre noviembre", "Cierre diciembre"]:
+        if sheet_name in available_sheets:
+            try:
+                df_cierre = pd.read_excel(xl, sheet_name=sheet_name, header=0)
+                df_cierre.columns = [str(c).strip() for c in df_cierre.columns]
+                if len(df_cierre.columns) >= 3:
+                    df_cierre = df_cierre.iloc[:, :3]
+                    df_cierre.columns = ["ID_POS", "MAR_ALTAS", "MAR_INGRESOS"]
+                    df_cierre["MAR_ALTAS"]    = pd.to_numeric(df_cierre["MAR_ALTAS"],    errors="coerce")
+                    df_cierre["MAR_INGRESOS"] = pd.to_numeric(df_cierre["MAR_INGRESOS"], errors="coerce")
+            except Exception:
+                df_cierre = pd.DataFrame()
+            break
+
+    # Hoja plan agente — opcional
+    df_plan = pd.DataFrame()
+    for sheet_name in [s for s in available_sheets if s not in ["Detalle"] and
+                        not s.lower().startswith("cierre")]:
+        try:
+            df_plan = pd.read_excel(xl, sheet_name=sheet_name, header=5)
+            df_plan.columns = [str(c).strip() for c in df_plan.columns]
+            break
+        except Exception:
+            continue
+
+    return df_det, df_cierre, df_plan, {
+        "found": True, "message": None, "path": str(path),
+        "columnas_nuevas": nuevas,
+        "hojas_disponibles": available_sheets,
+    }
 
 
 def load_claro_data_from_upload(uploaded_file):
-    """Carga desde archivo subido por el usuario via st.file_uploader."""
+    """Carga desde archivo subido. Nunca lanza excepciones — siempre retorna estado."""
     try:
-        df_det = pd.read_excel(uploaded_file, sheet_name="Detalle", header=0)
+        xl = pd.ExcelFile(uploaded_file)
+        available_sheets = xl.sheet_names
+    except Exception as e:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
+            "found": False, "message": f"No se pudo abrir el archivo: {e}"
+        }
+
+    if "Detalle" not in available_sheets:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
+            "found": False,
+            "message": f"El archivo no tiene la hoja 'Detalle'. Hojas encontradas: {', '.join(available_sheets)}"
+        }
+    try:
+        df_det = pd.read_excel(xl, sheet_name="Detalle", header=0)
         df_det, faltantes, nuevas = _process_claro_df(df_det)
         if faltantes:
             return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
                 "found": False,
-                "message": f"El archivo no tiene las columnas requeridas: {', '.join(faltantes)}"
+                "message": f"Faltan columnas requeridas en 'Detalle': {', '.join(faltantes)}"
             }
-        uploaded_file.seek(0)
-        try:
-            df_cierre = pd.read_excel(uploaded_file, sheet_name="Cierre marzo", header=0)
-            df_cierre.columns = [str(c).strip() for c in df_cierre.columns]
-            df_cierre.columns = ["ID_POS", "MAR_ALTAS", "MAR_INGRESOS"]
-            df_cierre["MAR_ALTAS"]    = pd.to_numeric(df_cierre["MAR_ALTAS"],    errors="coerce")
-            df_cierre["MAR_INGRESOS"] = pd.to_numeric(df_cierre["MAR_INGRESOS"], errors="coerce")
-        except Exception:
-            df_cierre = pd.DataFrame()
-        uploaded_file.seek(0)
-        try:
-            df_plan = pd.read_excel(uploaded_file, sheet_name="LIKE SUR", header=5)
-            df_plan.columns = [str(c).strip() for c in df_plan.columns]
-        except Exception:
-            df_plan = pd.DataFrame()
-        return df_det, df_cierre, df_plan, {
-            "found": True, "message": None, "path": uploaded_file.name, "columnas_nuevas": nuevas
-        }
     except Exception as e:
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {"found": False, "message": str(e)}
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
+            "found": False, "message": f"Error leyendo hoja 'Detalle': {e}"
+        }
+
+    df_cierre = pd.DataFrame()
+    for sheet_name in ["Cierre marzo", "Cierre abril", "Cierre mayo", "Cierre junio",
+                        "Cierre julio", "Cierre agosto", "Cierre septiembre",
+                        "Cierre octubre", "Cierre noviembre", "Cierre diciembre"]:
+        if sheet_name in available_sheets:
+            try:
+                df_cierre = pd.read_excel(xl, sheet_name=sheet_name, header=0)
+                df_cierre.columns = [str(c).strip() for c in df_cierre.columns]
+                if len(df_cierre.columns) >= 3:
+                    df_cierre = df_cierre.iloc[:, :3]
+                    df_cierre.columns = ["ID_POS", "MAR_ALTAS", "MAR_INGRESOS"]
+                    df_cierre["MAR_ALTAS"]    = pd.to_numeric(df_cierre["MAR_ALTAS"],    errors="coerce")
+                    df_cierre["MAR_INGRESOS"] = pd.to_numeric(df_cierre["MAR_INGRESOS"], errors="coerce")
+            except Exception:
+                df_cierre = pd.DataFrame()
+            break
+
+    df_plan = pd.DataFrame()
+    for sheet_name in [s for s in available_sheets if s not in ["Detalle"] and
+                        not s.lower().startswith("cierre")]:
+        try:
+            df_plan = pd.read_excel(xl, sheet_name=sheet_name, header=5)
+            df_plan.columns = [str(c).strip() for c in df_plan.columns]
+            break
+        except Exception:
+            continue
+
+    return df_det, df_cierre, df_plan, {
+        "found": True, "message": None, "path": uploaded_file.name,
+        "columnas_nuevas": nuevas,
+        "hojas_disponibles": available_sheets,
+    }
 
 
 def load_claro_data():
@@ -3284,8 +3348,6 @@ def load_claro_data():
         "found": False,
         "message": "No se encontró archivo. Usa el cargador del sidebar para subir el Excel del mes."
     }
-
-
 AGENTE_COLORS = {
     "LIKE USME":       "#E10600",
     "MI RED MOVIL":    "#38BDF8",
@@ -3349,14 +3411,32 @@ def render_claro_view():
     df_det, df_cierre, df_plan, info = load_claro_data()
 
     if not info.get("found") or df_det.empty:
-        st.error(f"No fue posible cargar los datos de Claro: {info.get('message', 'Archivo no encontrado.')}")
+        st.markdown(f"""
+        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:40px;text-align:center;margin:40px 0;">
+            <div style="font-size:2rem;margin-bottom:12px;">📂</div>
+            <div style="font-size:1.1rem;font-weight:800;color:#F8FAFC;margin-bottom:8px;">Sin datos cargados</div>
+            <div style="font-size:.84rem;color:#94A3B8;">{info.get('message', 'Sube el archivo Excel del mes usando el cargador del sidebar.')}</div>
+        </div>
+        """, unsafe_allow_html=True)
         return
 
     # =========================================================
     # SIDEBAR CLARO: Filtros propios
     # =========================================================
     st.sidebar.markdown("---")
-    st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("spark",12)} Vista Claro · Filtros</div><div class="sidebar-title">Personaliza la vista</div><div class="sidebar-sub">Filtra el universo de PDVs por agente, categoría, zona, circuito, ruta, barrio y más.</div><div style="margin-top:8px;padding:8px 10px;background:rgba(225,6,0,0.10);border:1px solid rgba(225,6,0,0.22);border-radius:12px;font-size:0.73rem;color:#FCA5A5;font-weight:700;">📅 Ventana de datos: 1 al 27 de Abril 2026</div>', unsafe_allow_html=True)
+    # Date range from actual data
+    _fecha_label = ""
+    if "FECHA" in df_det.columns or any("FECHA" in c.upper() for c in df_det.columns):
+        _fc = next((c for c in df_det.columns if "FECHA" in c.upper()), None)
+        if _fc:
+            _fmin = pd.to_datetime(df_det[_fc], errors="coerce").min()
+            _fmax = pd.to_datetime(df_det[_fc], errors="coerce").max()
+            if pd.notna(_fmin):
+                _fecha_label = f'<div style="margin-top:8px;padding:8px 10px;background:rgba(225,6,0,0.10);border:1px solid rgba(225,6,0,0.22);border-radius:12px;font-size:0.73rem;color:#FCA5A5;font-weight:700;">📅 {_fmin.strftime("%d/%m/%Y")} – {_fmax.strftime("%d/%m/%Y")}</div>'
+    _n_pdvs = len(df_det)
+    _n_ags  = df_det["AGENTE"].nunique() if "AGENTE" in df_det.columns else 0
+    _archivo_label = f'<div style="margin-top:6px;font-size:.68rem;color:#64748B;">{os.path.basename(str(info.get("path","")))} · {_n_pdvs:,} PDVs · {_n_ags} agentes</div>'
+    st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("spark",12)} Vista Claro · Filtros</div><div class="sidebar-title">Personaliza la vista</div><div class="sidebar-sub">Filtra el universo de PDVs por agente, categoría, zona, circuito, ruta, barrio y más.</div>{_fecha_label}{_archivo_label}', unsafe_allow_html=True)
 
     def _opts(col): return sorted([x for x in df_det[col].dropna().unique() if str(x).strip() not in ("","nan")]) if col in df_det.columns else []
 
@@ -4592,6 +4672,7 @@ try:
     df, df_long, operator_cols, territorial_df, territorial_info, business_long, market_info, altas_info, load_info = load_data()
 except Exception as e:
     st.error(f"La aplicación no pudo cargarse correctamente: {e}")
+    st.info("Recarga la página o contacta al administrador si el problema persiste.")
     st.stop()
 
 for op in operator_cols:
@@ -4677,9 +4758,8 @@ _vista_claro_sidebar = st.session_state.get("vista_activa", "Red y Mercado · Op
 fecha_min = df["Fecha de inicio"].min()
 fecha_max = df["Fecha de inicio"].max()
 if pd.isna(fecha_min) or pd.isna(fecha_max):
-    if not _vista_claro_sidebar:
-        st.error("No se encontraron fechas válidas en el archivo principal.")
-        st.stop()
+    fecha_min = pd.Timestamp("2024-01-01")
+    fecha_max = pd.Timestamp.now()
 
 if not _vista_claro_sidebar:
     st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("trend",12)} Paso 1 · Define el horizonte</div><div class="sidebar-title">Contexto temporal</div><div class="sidebar-sub">Define una ventana personalizada o una ventana móvil por mes, semana o día, y el nivel al que se calcula la variación.</div><div class="filter-stage"><div class="filter-stage-card"><div class="filter-stage-title">Ventana</div><div class="filter-stage-text">Rango o ventana móvil</div></div><div class="filter-stage-card"><div class="filter-stage-title">Unidad</div><div class="filter-stage-text">Mes, semana o día</div></div><div class="filter-stage-card"><div class="filter-stage-title">Lectura</div><div class="filter-stage-text">Cómo comparar periodos</div></div></div>', unsafe_allow_html=True)
