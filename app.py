@@ -5164,9 +5164,9 @@ else:
         fecha_min = pd.Timestamp("2024-01-01")
         fecha_max = pd.Timestamp.now()
 
-if not _vista_claro_sidebar:
+if not _vista_claro_sidebar and _rsrp_available:
     st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("trend",12)} Paso 1 · Define el horizonte</div><div class="sidebar-title">Contexto temporal</div><div class="sidebar-sub">Define una ventana personalizada o una ventana móvil por mes, semana o día, y el nivel al que se calcula la variación.</div><div class="filter-stage"><div class="filter-stage-card"><div class="filter-stage-title">Ventana</div><div class="filter-stage-text">Rango o ventana móvil</div></div><div class="filter-stage-card"><div class="filter-stage-title">Unidad</div><div class="filter-stage-text">Mes, semana o día</div></div><div class="filter-stage-card"><div class="filter-stage-title">Lectura</div><div class="filter-stage-text">Cómo comparar periodos</div></div></div>', unsafe_allow_html=True)
-if not _vista_claro_sidebar:
+if not _vista_claro_sidebar and _rsrp_available:
     temporal_mode = st.sidebar.radio(
         "Modo de ventana temporal",
         options=["Rango personalizado", "Ventana por periodo"],
@@ -5296,7 +5296,7 @@ if not _vista_claro_sidebar:
         )
         codigos_disponibles_por_territorio = sorted(territorial_scope["Codigo_postal"].dropna().astype(str).unique().tolist()) if not territorial_scope.empty else []
 
-        codigos = sorted(df["Codigo_postal"].dropna().astype(str).unique().tolist())
+        codigos = sorted(df["Codigo_postal"].dropna().astype(str).unique().tolist()) if not df.empty and "Codigo_postal" in df.columns else []
         if territorial_filters_enabled and (localidad_sel or barrio_sel or ruta_sel or circuito_sel):
             codigos_options_sidebar = sorted(set(codigos).intersection(set(codigos_disponibles_por_territorio)))
         else:
@@ -5370,9 +5370,9 @@ if not _vista_claro_sidebar:
         chips.append(f'<span class="operator-chip" style="background:{color};">{op}</span>')
     st.sidebar.markdown("".join(chips), unsafe_allow_html=True)
 else:
-    # Vista Claro: set defaults so downstream code that references these variables does not crash
-    fecha_ini = fecha_min.date() if not pd.isna(fecha_min) else None
-    fecha_fin = fecha_max.date() if not pd.isna(fecha_max) else None
+    # Vista Claro OR no RSRP data: set defaults so downstream code does not crash
+    fecha_ini = fecha_min.date() if hasattr(fecha_min, "date") and not pd.isna(fecha_min) else pd.Timestamp("2024-01-01").date()
+    fecha_fin = fecha_max.date() if hasattr(fecha_max, "date") and not pd.isna(fecha_max) else pd.Timestamp.now().date()
     nivel_temporal_variacion = "Mes"
     operadores_sel = list(operator_cols) if operator_cols else []
     localidad_sel = []
