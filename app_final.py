@@ -2708,16 +2708,27 @@ def map_business_operator(raw_col):
         return "Others"
     return None
 
-def load_business_excel_long(candidates, metric_name):
-    path = find_existing_file(candidates)
-    if path is None:
-        return pd.DataFrame(), {"found": False, "message": f"No se encontró el archivo de {metric_name.lower()}."}
+def load_business_excel_long(candidates, metric_name, uploaded_file=None):
+    if uploaded_file is not None:
+        try:
+            uploaded_file.seek(0)
+            df, sheet_name = robust_read_excel(uploaded_file)
+            if df is None or df.empty:
+                return pd.DataFrame(), {"found": False, "message": f"El archivo de {metric_name.lower()} está vacío."}
+        except Exception as e:
+            return pd.DataFrame(), {"found": False, "message": f"Error leyendo {metric_name.lower()}: {e}"}
+    else:
+        path = find_existing_file(candidates)
+        if path is None:
+            return pd.DataFrame(), {"found": False, "message": f"No se encontró el archivo de {metric_name.lower()}."}
+        try:
+            df, sheet_name = robust_read_excel(path)
+            if df is None or df.empty:
+                return pd.DataFrame(), {"found": False, "message": f"El archivo de {metric_name.lower()} está vacío."}
+        except Exception as e:
+            return pd.DataFrame(), {"found": False, "message": f"Error leyendo {metric_name.lower()}: {e}"}
 
     try:
-        df, sheet_name = robust_read_excel(path)
-        if df is None or df.empty:
-            return pd.DataFrame(), {"found": False, "message": f"El archivo de {metric_name.lower()} está vacío."}
-
         df.columns = make_unique_columns(clean_columns(df.columns))
         cp_col = find_col_by_aliases(df, ["Codigo_postal", "CODIGO POSTAL", "CÓDIGO POSTAL", "COD POSTAL", "COD. POSTAL"])
         fecha_col = find_col_by_aliases(df, ["Fecha", "FECHA", "Fecha de inicio", "FECHA DE INICIO"])
@@ -2754,12 +2765,10 @@ def load_business_excel_long(candidates, metric_name):
         return long_df, {
             "found": True,
             "message": None,
-            "path": path,
-            "sheet_name": sheet_name,
             "operators": sorted(long_df["Operador"].dropna().unique().tolist()),
         }
     except Exception as e:
-        return pd.DataFrame(), {"found": False, "message": f"No fue posible leer el archivo de {metric_name.lower()}: {e}"}
+        return pd.DataFrame(), {"found": False, "message": f"No fue posible procesar el archivo de {metric_name.lower()}: {e}"}
 
 def merge_business_sources(market_long, altas_long, territorial_df):
     join_cols = ["Codigo_postal", "Fecha", "Operador"]
@@ -2969,31 +2978,45 @@ def compute_business_metrics(business_df, rsrp_df):
 # =========================================================
 # CARGA PRINCIPAL
 # =========================================================
-@st.cache_data
+# =========================================================
+# CARGA PRINCIPAL
+# =========================================================
 def load_data():
     # Check uploaded file first, then disk
     uploaded_rsrp = st.session_state.get("rsrp_uploaded_file")
     data_path = find_existing_file(DATA_FILE_CANDIDATES)
 
     if uploaded_rsrp is None and data_path is None:
-        raise FileNotFoundError("Sin archivo RSRP. Sube el CSV de señal usando el cargador del sidebar.")
+        raise FileNotFoundError("Sin archivo RSRP. Sube el archivo usando el cargador del sidebar.")
+
+    csv_encoding = "utf-8"
+    csv_sep = ","
 
     if uploaded_rsrp is not None:
         try:
             uploaded_rsrp.seek(0)
             fname = getattr(uploaded_rsrp, "name", "")
-            if fname.endswith(".xlsx") or fname.endswith(".xls"):
+            if fname.lower().endswith(".xlsx") or fname.lower().endswith(".xls"):
                 df = pd.read_excel(uploaded_rsrp, header=0)
             else:
                 try:
-                    df = pd.read_csv(uploaded_rsrp, sep=None, engine="python", encoding="utf-8", on_bad_lines="skip")
+                    df = pd.read_csv(uploaded_rsrp, sep=None, engine="python",
+                                     encoding="utf-8", on_bad_lines="skip")
+                    csv_encoding = "utf-8"
                 except Exception:
                     uploaded_rsrp.seek(0)
-                    df = pd.read_csv(uploaded_rsrp, sep=";", encoding="latin-1", on_bad_lines="skip")
+                    df = pd.read_csv(uploaded_rsrp, sep=";",
+                                     encoding="latin-1", on_bad_lines="skip")
+                    csv_encoding = "latin-1"
+                    csv_sep = ";"
         except Exception as _e:
             raise FileNotFoundError(f"No se pudo leer el archivo RSRP: {_e}")
     else:
-        df, csv_encoding, csv_sep = robust_read_csv(data_path)
+        fname = str(data_path)
+        if fname.lower().endswith(".xlsx") or fname.lower().endswith(".xls"):
+            df = pd.read_excel(data_path, header=0)
+        else:
+            df, csv_encoding, csv_sep = robust_read_csv(data_path)
     df.columns = make_unique_columns(clean_columns(df.columns))
 
     codigo_col = find_col_by_aliases(df, ["Codigo_postal", "CODIGO POSTAL", "CÓDIGO POSTAL", "COD POSTAL", "COD. POSTAL"])
@@ -3038,8 +3061,20 @@ def load_data():
     territorial_df, territorial_info = load_territorial_data()
     df_long = safe_merge_territorial(df_long, territorial_df)
 
-    market_long, market_info = load_business_excel_long(MARKET_FILE_CANDIDATES, "Mercado")
-    altas_long, altas_info = load_business_excel_long(ALTAS_FILE_CANDIDATES, "Altas")
+    market_uploaded = st.session_state.get("market_uploaded_file")
+    altas_uploaded  = st.session_state.get("altas_uploaded_file")
+
+    if market_uploaded is not None:
+        market_long, market_info = load_business_excel_long(MARKET_FILE_CANDIDATES, "Mercado",
+                                                             uploaded_file=market_uploaded)
+    else:
+        market_long, market_info = load_business_excel_long(MARKET_FILE_CANDIDATES, "Mercado")
+
+    if altas_uploaded is not None:
+        altas_long, altas_info = load_business_excel_long(ALTAS_FILE_CANDIDATES, "Altas",
+                                                           uploaded_file=altas_uploaded)
+    else:
+        altas_long, altas_info = load_business_excel_long(ALTAS_FILE_CANDIDATES, "Altas")
     business_long = merge_business_sources(market_long, altas_long, territorial_df)
 
     return (
