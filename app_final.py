@@ -33,9 +33,7 @@ DASHBOARD_TITLE = "Panel Ejecutivo de Desempeño de Red y Mercado"
 
 DATA_FILE_CANDIDATES = [
     os.path.join(BASE_DIR, "RSRP_COMPLETO.csv"),
-    os.path.join(BASE_DIR, "RSRP_COMPLETO.xlsx"),
     os.path.join(BASE_DIR, "RSRP_COMPLETO(1).csv"),
-    os.path.join(BASE_DIR, "RSRP_COMPLETO(1).xlsx"),
     os.path.join(BASE_DIR, "RSRP_COMPLETO(2).csv"),
 ]
 
@@ -2576,16 +2574,25 @@ def robust_read_csv(file_path):
 
 def robust_read_excel(file_path):
     try:
+        # If it's a file-like object, seek to start before reading
+        if hasattr(file_path, "seek"):
+            file_path.seek(0)
         xls = pd.ExcelFile(file_path)
         for sheet_name in xls.sheet_names:
             try:
+                if hasattr(file_path, "seek"):
+                    file_path.seek(0)
                 df = pd.read_excel(file_path, sheet_name=sheet_name)
                 if df is not None and not df.empty and df.shape[1] >= 1:
                     return df, sheet_name
             except Exception:
                 continue
+        if hasattr(file_path, "seek"):
+            file_path.seek(0)
         return pd.read_excel(file_path), None
     except Exception:
+        if hasattr(file_path, "seek"):
+            file_path.seek(0)
         return pd.read_excel(file_path), None
 
 # =========================================================
@@ -2712,7 +2719,13 @@ def load_business_excel_long(candidates, metric_name, uploaded_file=None):
     if uploaded_file is not None:
         try:
             uploaded_file.seek(0)
-            df, sheet_name = robust_read_excel(uploaded_file)
+            try:
+                df = pd.read_csv(uploaded_file, sep=None, engine="python",
+                                 encoding="utf-8", on_bad_lines="skip")
+            except Exception:
+                uploaded_file.seek(0)
+                df = pd.read_csv(uploaded_file, sep=";",
+                                 encoding="latin-1", on_bad_lines="skip")
             if df is None or df.empty:
                 return pd.DataFrame(), {"found": False, "message": f"El archivo de {metric_name.lower()} está vacío."}
         except Exception as e:
@@ -2995,28 +3008,20 @@ def load_data():
     if uploaded_rsrp is not None:
         try:
             uploaded_rsrp.seek(0)
-            fname = getattr(uploaded_rsrp, "name", "")
-            if fname.lower().endswith(".xlsx") or fname.lower().endswith(".xls"):
-                df = pd.read_excel(uploaded_rsrp, header=0)
-            else:
-                try:
-                    df = pd.read_csv(uploaded_rsrp, sep=None, engine="python",
-                                     encoding="utf-8", on_bad_lines="skip")
-                    csv_encoding = "utf-8"
-                except Exception:
-                    uploaded_rsrp.seek(0)
-                    df = pd.read_csv(uploaded_rsrp, sep=";",
-                                     encoding="latin-1", on_bad_lines="skip")
-                    csv_encoding = "latin-1"
-                    csv_sep = ";"
+            try:
+                df = pd.read_csv(uploaded_rsrp, sep=None, engine="python",
+                                 encoding="utf-8", on_bad_lines="skip")
+                csv_encoding = "utf-8"
+            except Exception:
+                uploaded_rsrp.seek(0)
+                df = pd.read_csv(uploaded_rsrp, sep=";",
+                                 encoding="latin-1", on_bad_lines="skip")
+                csv_encoding = "latin-1"
+                csv_sep = ";"
         except Exception as _e:
             raise FileNotFoundError(f"No se pudo leer el archivo RSRP: {_e}")
     else:
-        fname = str(data_path)
-        if fname.lower().endswith(".xlsx") or fname.lower().endswith(".xls"):
-            df = pd.read_excel(data_path, header=0)
-        else:
-            df, csv_encoding, csv_sep = robust_read_csv(data_path)
+        df, csv_encoding, csv_sep = robust_read_csv(data_path)
     df.columns = make_unique_columns(clean_columns(df.columns))
 
     codigo_col = find_col_by_aliases(df, ["Codigo_postal", "CODIGO POSTAL", "CÓDIGO POSTAL", "COD POSTAL", "COD. POSTAL"])
@@ -5040,16 +5045,27 @@ _has_claro_file = (
     st.session_state.get("claro_uploaded_file") is not None or
     find_existing_file(CLARO_FILE_CANDIDATES) is not None
 )
-_has_rsrp_file = (
-    st.session_state.get("rsrp_uploaded_file") is not None or
-    find_existing_file(DATA_FILE_CANDIDATES) is not None
+# RSRP only available if user explicitly uploaded it in this session
+# Disk files are only used as fallback when NO upload interface exists (dev mode)
+_rsrp_uploaded   = st.session_state.get("rsrp_uploaded_file") is not None
+_rsrp_on_disk    = find_existing_file(DATA_FILE_CANDIDATES) is not None
+_market_uploaded = st.session_state.get("market_uploaded_file") is not None
+_altas_uploaded  = st.session_state.get("altas_uploaded_file") is not None
+
+# rsrp_available = uploaded by user OR on disk but only if claro file is NOT the only thing loaded
+# If user only uploaded claro, operators view must be empty regardless of disk
+_only_claro_uploaded = (
+    st.session_state.get("claro_uploaded_file") is not None and
+    not _rsrp_uploaded
 )
-_rsrp_available = _has_rsrp_file
+_rsrp_available = _rsrp_uploaded or (_rsrp_on_disk and not _only_claro_uploaded)
+_has_rsrp_file  = _rsrp_available
+
 _vista_sel = st.session_state.get("vista_activa", "Instructivo · Guía de uso")
 _show_welcome   = False  # Views always accessible - each view shows its own "no data" message
 
 # If only claro file loaded, go straight to agentes view
-_vista_claro_direct = _has_claro_file and not _has_rsrp_file
+_vista_claro_direct = _has_claro_file and not _rsrp_available
 
 # =========================================================
 # CARGA DATOS RED Y MERCADO
@@ -5069,7 +5085,6 @@ try:
         load_info = {"found": False, "message": "Sin archivo RSRP cargado."}
 except Exception as e:
     st.error(f"Error cargando los datos de red: {e}")
-    st.info("Recarga la página o contacta al administrador si el problema persiste.")
     st.stop()
 
 
@@ -5123,11 +5138,11 @@ st.sidebar.markdown('</div>', unsafe_allow_html=True)
 st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("eye",12)} Vista Red y Mercado</div><div class="sidebar-title">Archivos de señal y mercado</div><div class="sidebar-sub">Sube los archivos de la vista de operadores. El RSRP es requerido; cuota de mercado y altas son opcionales.</div>', unsafe_allow_html=True)
 
 _uploaded_rsrp = st.sidebar.file_uploader(
-    "Señal RSRP · requerido (.csv o .xlsx)",
-    type=["csv","xlsx"],
+    "Señal RSRP · requerido (.csv)",
+    type=["csv"],
     key="rsrp_file_upload",
     label_visibility="visible",
-    help="RSRP_COMPLETO.csv o .xlsx — columnas: Codigo_postal, Fecha de inicio, Claro, Tigo, Movistar..."
+    help="Archivo CSV de señal RSRP. Columnas: Codigo_postal, Fecha de inicio, Claro, Tigo, Movistar..."
 )
 if _uploaded_rsrp is not None:
     st.session_state["rsrp_uploaded_file"] = _uploaded_rsrp
@@ -5140,11 +5155,11 @@ else:
         st.sidebar.caption("Sin archivo RSRP")
 
 _uploaded_market = st.sidebar.file_uploader(
-    "Cuota de mercado · opcional (.xlsx)",
-    type=["xlsx"],
+    "Cuota de mercado · opcional (.csv)",
+    type=["csv"],
     key="market_file_upload",
     label_visibility="visible",
-    help="Cuota_mercado_completo.xlsx — cuota de mercado por CP y operador"
+    help="Archivo CSV de cuota de mercado por CP y operador"
 )
 if _uploaded_market is not None:
     st.session_state["market_uploaded_file"] = _uploaded_market
@@ -5155,11 +5170,11 @@ else:
         st.sidebar.caption(f"Servidor: {os.path.basename(_disk_market)}")
 
 _uploaded_altas = st.sidebar.file_uploader(
-    "Cuota de altas · opcional (.xlsx)",
-    type=["xlsx"],
+    "Cuota de altas · opcional (.csv)",
+    type=["csv"],
     key="altas_file_upload",
     label_visibility="visible",
-    help="Cuota_alta_completo.xlsx — captación de altas por CP y operador"
+    help="Archivo CSV de captación de altas por CP y operador"
 )
 if _uploaded_altas is not None:
     st.session_state["altas_uploaded_file"] = _uploaded_altas
