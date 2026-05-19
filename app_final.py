@@ -3753,50 +3753,94 @@ def render_claro_view():
     # =========================================================
     st.sidebar.markdown("---")
     # Date range / file info
-    _n_pdvs = len(df_det)
-    _n_ags  = df_det["AGENTE"].nunique() if "AGENTE" in df_det.columns else 0
+    _n_pdvs    = len(df_det)
+    _n_ags     = df_det["AGENTE"].nunique() if "AGENTE" in df_det.columns else 0
     _sheet_used = info.get("sheet_name", "")
-    _dia_c  = info.get("dia_corte", 30)
-    _all_plan = info.get("all_plan_sheets", [])
+    _dia_c     = info.get("dia_corte", 30)
+    _all_plan  = info.get("all_plan_sheets", [])
 
-    # Multi-sheet selector — if file has multiple plan sheets, show picker
+    def _compute_cut_day(df_sheet):
+        """Compute cut day from S1-S4 weekly data."""
+        semanas = {"S1": 7, "S2": 14, "S3": 21, "S4": 30}
+        cut = 0
+        for s, day in semanas.items():
+            if s in df_sheet.columns:
+                total = pd.to_numeric(df_sheet[s], errors="coerce").sum()
+                if total > 0:
+                    cut = day
+        return max(cut, 7)  # at least week 1
+
+    def _reload_sheet(sheet_name):
+        """Load a specific sheet from the uploaded or disk file."""
+        src = st.session_state.get("claro_uploaded_file") or find_existing_file(CLARO_FILE_CANDIDATES)
+        if src is None:
+            return df_det, _dia_c
+        if hasattr(src, "seek"):
+            src.seek(0)
+        xl2 = pd.ExcelFile(src)
+        # Find correct header row for this sheet
+        header_row = 0
+        for hr in [0, 1, 4, 5]:
+            try:
+                if hasattr(src, "seek"): src.seek(0)
+                preview = pd.read_excel(xl2, sheet_name=sheet_name, header=hr, nrows=2)
+                preview.columns = [str(c).strip() for c in preview.columns]
+                score = sum(1 for c in COLUMNAS_REQUERIDAS if c in preview.columns)
+                if score >= 3:
+                    header_row = hr
+                    break
+            except Exception:
+                pass
+        if hasattr(src, "seek"): src.seek(0)
+        new_df = pd.read_excel(xl2, sheet_name=sheet_name, header=header_row)
+        new_df.columns = [str(c).strip() for c in new_df.columns]
+        new_df, _, _ = _process_claro_df(new_df)
+        new_cut = _compute_cut_day(new_df)
+        return new_df, new_cut
+
+    # Multi-sheet selector
     _selected_sheet = _sheet_used
     if len(_all_plan) > 1:
-        st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("trend",12)} Periodos disponibles</div><div class="sidebar-title">Selecciona el mes</div><div class="sidebar-sub">El archivo tiene {len(_all_plan)} hojas de datos. Elige el periodo a analizar.</div>', unsafe_allow_html=True)
+        st.sidebar.markdown(
+            f'<div class="sidebar-block">'
+            f'<div class="sidebar-kicker">{icon_svg("trend",12)} Periodos disponibles</div>'
+            f'<div class="sidebar-title">Selecciona el mes</div>'
+            f'<div class="sidebar-sub">El archivo tiene <b>{len(_all_plan)}</b> periodos. '
+            f'Elige cuál analizar.</div>',
+            unsafe_allow_html=True
+        )
         _selected_sheet = st.sidebar.selectbox(
-            "Periodo",
+            "Mes a analizar",
             options=_all_plan,
-            index=_all_plan.index(_sheet_used) if _sheet_used in _all_plan else 0,
+            index=len(_all_plan) - 1,  # default to LAST sheet (most recent month)
             key="claro_sheet_sel",
             label_visibility="collapsed"
         )
-        # If user picked a different sheet, reload
-        if _selected_sheet != _sheet_used:
-            try:
-                _xl_reload = pd.ExcelFile(
-                    st.session_state.get("claro_uploaded_file") or
-                    find_existing_file(CLARO_FILE_CANDIDATES)
-                )
-                _r = _load_from_xl(_xl_reload, info.get("path",""))
-                if _r[3].get("found"):
-                    # Re-run with selected sheet
-                    _df_reload = pd.read_excel(_xl_reload, sheet_name=_selected_sheet,
-                                               header=_r[3].get("header_row",0))
-                    _df_reload.columns = [str(c).strip() for c in _df_reload.columns]
-                    _df_reload, _, _ = _process_claro_df(_df_reload)
-                    df_det = _df_reload
-                    _n_pdvs = len(df_det)
-                    _s_cols2 = [c for c in ["S1","S2","S3","S4"] if c in df_det.columns]
-                    _sem2 = sum(1 for s in _s_cols2 if pd.to_numeric(df_det[s], errors="coerce").sum() > 0)
-                    _dia_c = min(max(_sem2*7,7),30)
-                    if "S4" in df_det.columns and pd.to_numeric(df_det["S4"], errors="coerce").sum() > 0:
-                        _dia_c = 30
-            except Exception:
-                pass
         st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
-    _archivo_label = f'<div style="font-size:.68rem;color:#64748B;margin-top:4px;">{os.path.basename(str(info.get("path","")))} · hoja: <b>{_selected_sheet}</b> · corte día {_dia_c} · {_n_pdvs:,} PDVs · {_n_ags} agentes</div>'
-    st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("spark",12)} Vista Claro · Filtros</div><div class="sidebar-title">Personaliza la vista</div><div class="sidebar-sub">Filtra el universo de PDVs por agente, categoría, zona, circuito, ruta, barrio y más.</div>{_archivo_label}', unsafe_allow_html=True)
+        # Reload if different from initial load
+        if _selected_sheet != _sheet_used:
+            df_det, _dia_c = _reload_sheet(_selected_sheet)
+            _n_pdvs = len(df_det)
+            _n_ags  = df_det["AGENTE"].nunique() if "AGENTE" in df_det.columns else 0
+        else:
+            _dia_c = _compute_cut_day(df_det)
+
+    _mes_cerrado_label = "Mes cerrado ✓" if _dia_c >= 30 else f"Corte día {_dia_c} (en curso)"
+    _archivo_label = (
+        f'<div style="font-size:.68rem;color:#64748B;margin-top:4px;">'
+        f'{os.path.basename(str(info.get("path","")))} · '
+        f'<b style="color:#E2E8F0;">{_selected_sheet}</b> · '
+        f'{_mes_cerrado_label} · {_n_pdvs:,} PDVs · {_n_ags} agentes</div>'
+    )
+    st.sidebar.markdown(
+        f'<div class="sidebar-block">'
+        f'<div class="sidebar-kicker">{icon_svg("spark",12)} Vista Claro · Filtros</div>'
+        f'<div class="sidebar-title">Personaliza la vista</div>'
+        f'<div class="sidebar-sub">Filtra el universo de PDVs por agente, categoría, zona, circuito, ruta, barrio y más.</div>'
+        f'{_archivo_label}',
+        unsafe_allow_html=True
+    )
 
     def _opts(col): return sorted([x for x in df_det[col].dropna().unique() if str(x).strip() not in ("","nan")]) if col in df_det.columns else []
 
@@ -5188,10 +5232,16 @@ st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
 # ---- SWITCH DE VISTA ----
 st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("spark",12)} Modo de visualización</div><div class="sidebar-title">Selecciona la vista</div><div class="sidebar-sub">Alterna entre el panel de red y mercado por operador, y la vista focalizada en el desempeño comercial de agentes Claro.</div>', unsafe_allow_html=True)
+_default_vista = (
+    "Agentes Claro · PDVs" if _has_claro_file and not _rsrp_available
+    else "Instructivo · Guía de uso"
+)
 vista_activa = st.sidebar.radio(
     "Vista del dashboard",
     options=["Red y Mercado · Operadores", "Agentes Claro · PDVs", "Instructivo · Guía de uso"],
-    index=2,
+    index=["Red y Mercado · Operadores", "Agentes Claro · PDVs", "Instructivo · Guía de uso"].index(
+        st.session_state.get("vista_activa", _default_vista)
+    ),
     key="vista_activa",
     horizontal=False,
 )
@@ -6042,10 +6092,10 @@ else:
 # SWITCH PRINCIPAL
 # =========================================================
 _vista_claro = (
-    st.session_state.get("vista_activa", "Red y Mercado · Operadores") == "Agentes Claro · PDVs"
-    or _vista_claro_direct
+    st.session_state.get("vista_activa", "Instructivo · Guía de uso") == "Agentes Claro · PDVs"
 )
-_vista_instructivo = st.session_state.get("vista_activa", "") == "Instructivo · Guía de uso"
+_vista_instructivo = st.session_state.get("vista_activa", "Instructivo · Guía de uso") == "Instructivo · Guía de uso"
+_vista_operadores  = st.session_state.get("vista_activa", "Instructivo · Guía de uso") == "Red y Mercado · Operadores"
 
 if _vista_instructivo:
     render_instructivo()
@@ -6054,6 +6104,8 @@ if _vista_instructivo:
 if _vista_claro:
     render_claro_view()
     st.stop()
+
+# Vista operadores — show no-data message if no RSRP, otherwise continue to pipeline
 
 # =========================================================
 # HEADER (VISTA RED/MERCADO)
