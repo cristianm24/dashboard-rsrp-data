@@ -3987,18 +3987,22 @@ def render_claro_view():
     top_asesor = top_asesor_s.idxmax() if not top_asesor_s.empty and top_asesor_s.sum() > 0 else "N/D"
     top_asesor_val = int(top_asesor_s.max()) if not top_asesor_s.empty else 0
 
+    # Dynamic period label from selected sheet + cut day
+    _periodo_label = _selected_sheet if _selected_sheet else "Periodo actual"
+    _estado_mes    = "· Mes cerrado ✓" if _dia_c >= 30 else f"· Día {_dia_c} (en curso)"
     st.markdown(f"""
     <div class="header-shell">
         <div style="position:relative;z-index:2;">
             <div class="hero-badge">{icon_svg("spark",13)} Panel Claro · Agentes y PDVs</div>
             <div style="font-size:0.84rem;color:#94A3B8;font-weight:800;letter-spacing:0.55px;">GERENCIA R4 PREPAGO — SEGUIMIENTO COMERCIAL</div>
-            <div class="hero-title">Agentes Claro · Abril 2026</div>
+            <div class="hero-title">Agentes Claro · {_periodo_label}</div>
+            <div style="font-size:0.78rem;color:#64748B;margin-top:4px;font-weight:600;">{_estado_mes}</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
     # ── Cálculos previos necesarios para el nav guide ─────────────────────────
-    _DIA_CORTE_NAV = 30; _DIAS_MES_NAV = 30; _FACTOR_NAV = 1.0  # mes completo
+    _DIA_CORTE_NAV = _dia_c; _DIAS_MES_NAV = 30; _FACTOR_NAV = 1.0 if _dia_c >= 30 else 30 / max(_dia_c, 1)
     _proy_global   = ((ejec_nat_total + ejec_indu_total) / (meta_nat_total + meta_indu_total) * 100) if (meta_nat_total + meta_indu_total) > 0 else 0
     _cumpl_nav     = (ejec_nat_total / meta_nat_total * 100) if meta_nat_total > 0 else 0
     _pdvs_riesgo   = int(((df["META ALTA NAT (>$2000)"] > 0) &
@@ -4062,13 +4066,7 @@ def render_claro_view():
     # =========================================================
     # TABS
     # =========================================================
-    tc1, tc2, tc3, tc4, tc5 = st.tabs([
-        "↗  ¿Cómo vamos?",
-        "◈  ¿Quién cumple?",
-        "◎  La brecha",
-        "∿  El ritmo",
-        "◉  Oportunidades",
-    ])
+    tc1, tc2, tc3, tc4, tc5 = st.tabs(["↗ ¿Cómo vamos?", "◈ ¿Quién cumple?", "◎ La brecha", "∿ El ritmo", "◉ Oportunidades"])
 
     # -------------------------------------------------------
     # TAB C1 — ¿CÓMO VAMOS?
@@ -4100,16 +4098,16 @@ def render_claro_view():
             return f'<div style="width:100%;height:6px;background:rgba(255,255,255,0.08);border-radius:99px;margin-top:6px;overflow:hidden;"><div style="width:{w}%;height:100%;background:{color};border-radius:99px;"></div></div>'
 
         _c_banner  = _sc(_valor_banner)
-        _titulo_banner = "Resultado final · Mes completo" if _MES_CERRADO_BANNER else f"Proyección al cierre · Día {_DIA_CORTE} de {_DIAS_MES}"
+        _titulo_banner = f"Resultado final · {_periodo_label}" if _MES_CERRADO_BANNER else f"Proyección al cierre · {_periodo_label} · Día {_DIA_CORTE} de {_DIAS_MES}"
         _lbl_nat   = "Orgánicas (final)" if _MES_CERRADO_BANNER else f"Orgánicas (proy.)"
         _lbl_indu  = "Inducidas (final)" if _MES_CERRADO_BANNER else f"Inducidas (proy.)"
         _val_nat   = _cumpl_nat_tc1 if _MES_CERRADO_BANNER else _proy_nat_tc1
         _val_indu  = _cumpl_indu_tc1 if _MES_CERRADO_BANNER else _proy_indu_tc1
 
         if _MES_CERRADO_BANNER:
-            _estado_txt = "✅ Meta total cumplida — cierre exitoso" if _valor_banner >= 100 else ("🟡 Cierre por encima del 70%" if _valor_banner >= 70 else "🔴 Meta total no alcanzada al cierre del mes")
+            _estado_txt = f"✅ Meta total cumplida — {_periodo_label}" if _valor_banner >= 100 else (f"🟡 Por encima del 70% — {_periodo_label}" if _valor_banner >= 70 else f"🔴 Meta no alcanzada — {_periodo_label}")
         else:
-            _estado_txt = "✅ En camino a cumplir la meta" if _valor_banner >= 100 else ("⚠️ Recuperable con esfuerzo" if _valor_banner >= 85 else "🔴 Meta en riesgo — se necesita acción")
+            _estado_txt = f"✅ En camino a cumplir la meta — {_periodo_label}" if _valor_banner >= 100 else (f"⚠️ Recuperable con esfuerzo — {_periodo_label}" if _valor_banner >= 85 else f"🔴 Meta en riesgo — {_periodo_label}")
 
         # ── Protagonista ──────────────────────────────────────────────────────
         st.markdown(f"""
@@ -4194,7 +4192,7 @@ def render_claro_view():
                 _var_a = row.get("var_alta", np.nan)
                 _vt   = (f"{'↓' if pd.notna(_var_a) and _var_a < 0 else '↑'}{abs(_var_a):.1f}pp" if pd.notna(_var_a) and "VR_M-1.1" in df.columns else "")
                 _vc   = "#EF4444" if pd.notna(_var_a) and _var_a < 0 else "#22C55E"
-                _sub  = "cumplimiento total del mes" if _MES_CERRADO else f"proyección al día {_DIAS_MES}"
+                _sub  = f"resultado final · {_periodo_label}" if _MES_CERRADO else f"proyección · {_periodo_label} · día {_DIA_CORTE}"
                 # Segunda línea: si mes cerrado muestra cumpl orgánicas; si en curso muestra cumpl al corte
                 _linea2_lbl = "Orgánicas:" if _MES_CERRADO else f"Al corte (d{_DIA_CORTE}):"
                 _linea2_val = f"{row['cumpl_nat']:.1f}%"
@@ -4233,7 +4231,7 @@ def render_claro_view():
 
         c1a, c1b = st.columns(2, gap="large")
         with c1a:
-            st.markdown('<div class="section-card"><div class="section-title">Cumplimiento final por categoría</div><div class="section-subtitle">Resultado final del mes por categoría · línea verde = 100% de meta</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-card"><div class="section-title">Cumplimiento final por categoría</div><div class="section-subtitle">Resultado final · {_periodo_label} · línea verde = 100% de meta</div>', unsafe_allow_html=True)
             if not by_cat.empty:
                 _mc = by_cat[["CATEGORIA","cumpl"]].copy()
                 ch = alt.Chart(_mc).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
