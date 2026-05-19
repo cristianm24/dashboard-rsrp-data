@@ -3249,9 +3249,10 @@ CLARO_FILE_CANDIDATES = [
 
 COLUMNAS_REQUERIDAS = [
     "AGENTE", "ID", "META ALTA NAT (>$2000)", "EJEC ALTA NAT",
-    "EJE ALTA TOTAL", "CATEGORIA", "ASESOR",
+    "CATEGORIA", "ASESOR",
 ]
 COLUMNAS_OPCIONALES = {
+    "EJE ALTA TOTAL": 0,        # may be named EJEC ALTA TOTAL — normalized in _process_claro_df
     "META ALTA INDU (=< $2.000)": 0,
     "EJEC ALTA INDU": 0,
     "CUOTA DE ALTA": np.nan,
@@ -3278,6 +3279,18 @@ def _process_claro_df(df_det):
     Retorna (df_limpio, columnas_faltantes, columnas_nuevas).
     """
     df_det.columns = [str(c).strip() for c in df_det.columns]
+
+    # Normalize column name aliases across different monthly versions
+    _col_aliases = {
+        "EJEC ALTA TOTAL":   "EJE ALTA TOTAL",   # MAYO uses EJEC, ABRIL uses EJE
+        "ID ":               "ID",
+        "TIPOLOGIA ":        "TIPOLOGIA",
+        "CLASIFICACION ":    "CLASIFICACION",
+        "VENTA/ RECARGA":    "VENTA/RECARGA",
+        "ASESOR ":           "ASESOR",
+    }
+    df_det = df_det.rename(columns=_col_aliases)
+
     cols_excel = set(df_det.columns)
 
     # Columnas requeridas faltantes
@@ -3870,6 +3883,21 @@ def render_claro_view():
     # FILTRADO
     # =========================================================
     df = df_det.copy()
+    # Normalize column aliases that may differ between months
+    _rename_aliases = {
+        "EJEC ALTA TOTAL": "EJE ALTA TOTAL",
+        "VENTA/ RECARGA": "VENTA/RECARGA",
+    }
+    df = df.rename(columns=_rename_aliases)
+    df_det = df_det.rename(columns=_rename_aliases)
+    # Ensure EJE ALTA TOTAL exists even if missing
+    if "EJE ALTA TOTAL" not in df.columns:
+        if "EJEC ALTA NAT" in df.columns and "EJEC ALTA INDU" in df.columns:
+            df["EJE ALTA TOTAL"] = pd.to_numeric(df["EJEC ALTA NAT"], errors="coerce").fillna(0) + pd.to_numeric(df["EJEC ALTA INDU"], errors="coerce").fillna(0)
+            df_det["EJE ALTA TOTAL"] = df["EJE ALTA TOTAL"]
+        else:
+            df["EJE ALTA TOTAL"] = 0
+            df_det["EJE ALTA TOTAL"] = 0
     if agente_sel:     df = df[df["AGENTE"].isin(agente_sel)]
     if cat_sel:        df = df[df["CATEGORIA"].isin(cat_sel)]
     if zona_sel:       df = df[df["ZONA"].isin(zona_sel)]
@@ -3894,27 +3922,29 @@ def render_claro_view():
     # MÉTRICAS GLOBALES
     # =========================================================
     total_pdvs        = int(df["ID"].nunique()) if "ID" in df.columns else int(len(df))
-    meta_nat_total    = df["META ALTA NAT (>$2000)"].sum()
-    ejec_nat_total    = df["EJEC ALTA NAT"].sum()
-    meta_indu_total   = df["META ALTA INDU (=< $2.000)"].sum() if "META ALTA INDU (=< $2.000)" in df.columns else 0
-    ejec_indu_total   = df["EJEC ALTA INDU"].sum() if "EJEC ALTA INDU" in df.columns else 0
-    # Meta total real = orgánicas + inducidas (TOTAL META ALTA en el archivo es otra métrica)
+    meta_nat_total    = pd.to_numeric(df["META ALTA NAT (>$2000)"], errors="coerce").sum() if "META ALTA NAT (>$2000)" in df.columns else 0
+    ejec_nat_total    = pd.to_numeric(df["EJEC ALTA NAT"], errors="coerce").sum() if "EJEC ALTA NAT" in df.columns else 0
+    meta_indu_total   = pd.to_numeric(df["META ALTA INDU (=< $2.000)"], errors="coerce").sum() if "META ALTA INDU (=< $2.000)" in df.columns else 0
+    ejec_indu_total   = pd.to_numeric(df["EJEC ALTA INDU"], errors="coerce").sum() if "EJEC ALTA INDU" in df.columns else 0
+    # Meta total real = orgánicas + inducidas
     meta_total_real   = meta_nat_total + meta_indu_total
-    ejec_total_alta   = df["EJE ALTA TOTAL"].sum()
-    meta_total_alta   = meta_total_real   # alias para compatibilidad
-    meta_ingresos     = df["META INGRESOS M0"].sum()
-    ejec_ingresos     = df["EJEC INGRESOS M0"].sum()
-    cuota_mkt_media   = df["CUOTA DE MERCADO"].mean()
-    cuota_alta_media  = df["CUOTA DE ALTA"].mean()
-    rsrp_media        = df["RSRP"].mean()
+    # EJE ALTA TOTAL — tolerante a variantes de nombre
+    _col_eje = next((c for c in ["EJE ALTA TOTAL","EJEC ALTA TOTAL"] if c in df.columns), None)
+    ejec_total_alta   = pd.to_numeric(df[_col_eje], errors="coerce").sum() if _col_eje else (ejec_nat_total + ejec_indu_total)
+    meta_total_alta   = meta_total_real
+    meta_ingresos     = pd.to_numeric(df["META INGRESOS M0"], errors="coerce").sum() if "META INGRESOS M0" in df.columns else 0
+    ejec_ingresos     = pd.to_numeric(df["EJEC INGRESOS M0"], errors="coerce").sum() if "EJEC INGRESOS M0" in df.columns else 0
+    cuota_mkt_media   = pd.to_numeric(df["CUOTA DE MERCADO"], errors="coerce").mean() if "CUOTA DE MERCADO" in df.columns else np.nan
+    cuota_alta_media  = pd.to_numeric(df["CUOTA DE ALTA"], errors="coerce").mean() if "CUOTA DE ALTA" in df.columns else np.nan
+    rsrp_media        = pd.to_numeric(df["RSRP"], errors="coerce").mean() if "RSRP" in df.columns else np.nan
 
     cumplimiento_nat  = (ejec_nat_total  / meta_nat_total  * 100) if meta_nat_total  > 0 else np.nan
     cumplimiento_tot  = (ejec_total_alta / meta_total_real * 100) if meta_total_real > 0 else np.nan
 
-    s1_total = df["S1"].sum()
-    s2_total = df["S2"].sum()
-    s3_total = df["S3"].sum()
-    s4_total = df["S4"].sum()
+    s1_total = pd.to_numeric(df["S1"], errors="coerce").sum() if "S1" in df.columns else 0
+    s2_total = pd.to_numeric(df["S2"], errors="coerce").sum() if "S2" in df.columns else 0
+    s3_total = pd.to_numeric(df["S3"], errors="coerce").sum() if "S3" in df.columns else 0
+    s4_total = pd.to_numeric(df["S4"], errors="coerce").sum() if "S4" in df.columns else 0
 
     cierre_altas    = df_cierre["MAR_ALTAS"].sum()
     cierre_ingresos = df_cierre["MAR_INGRESOS"].sum()
@@ -3953,7 +3983,7 @@ def render_claro_view():
     filtros_str = " · ".join(filtros_txt) if filtros_txt else "Sin filtros adicionales — universo completo"
 
     top_agente = df.groupby("AGENTE")["EJEC ALTA NAT"].sum().idxmax() if df["EJEC ALTA NAT"].sum() > 0 else "N/D"
-    top_asesor_s = df.groupby("ASESOR")["EJE ALTA TOTAL"].sum()
+    top_asesor_s = df.groupby("ASESOR")[("EJE ALTA TOTAL" if "EJE ALTA TOTAL" in df.columns else "EJEC ALTA NAT")].sum()
     top_asesor = top_asesor_s.idxmax() if not top_asesor_s.empty and top_asesor_s.sum() > 0 else "N/D"
     top_asesor_val = int(top_asesor_s.max()) if not top_asesor_s.empty else 0
 
@@ -4130,7 +4160,7 @@ def render_claro_view():
             ejec_nat=("EJEC ALTA NAT","sum"),
             meta_indu=("META ALTA INDU (=< $2.000)","sum") if "META ALTA INDU (=< $2.000)" in df.columns else ("EJEC ALTA NAT","count"),
             ejec_indu=("EJEC ALTA INDU","sum") if "EJEC ALTA INDU" in df.columns else ("EJEC ALTA NAT","count"),
-            ejec_total=("EJE ALTA TOTAL","sum"),
+            ejec_total=("EJE ALTA TOTAL","sum") if "EJE ALTA TOTAL" in df.columns else ("EJEC ALTA NAT","sum"),
             cuota_alta=("CUOTA DE ALTA","mean"),
             var_alta=("VR_M-1.1","mean") if "VR_M-1.1" in df.columns else ("EJEC ALTA NAT","count"),
         ).reset_index()
@@ -4237,7 +4267,7 @@ def render_claro_view():
         by_ag_full = df.groupby("AGENTE").agg(
             pdvs=("ID","count"), meta_nat=("META ALTA NAT (>$2000)","sum"),
             ejec_nat=("EJEC ALTA NAT","sum"), meta_indu=("META ALTA INDU (=< $2.000)","sum"),
-            ejec_indu=("EJEC ALTA INDU","sum"), ejec_total=("EJE ALTA TOTAL","sum"),
+            ejec_indu=("EJEC ALTA INDU","sum"), ejec_total=("EJE ALTA TOTAL","sum") if "EJE ALTA TOTAL" in df.columns else ("EJEC ALTA NAT","sum"),
             cuota_alta=("CUOTA DE ALTA","mean"), rsrp=("RSRP","mean"),
         ).reset_index()
         by_ag_full["cumpl_nat"] = (by_ag_full["ejec_nat"]/by_ag_full["meta_nat"].replace(0,np.nan)*100).fillna(0)
@@ -4337,7 +4367,7 @@ def render_claro_view():
         _brecha_altas_c3 = int((df_opp_c3["META ALTA NAT (>$2000)"] - df_opp_c3["EJEC ALTA NAT"]).clip(lower=0).sum())
         _df_bajo70       = df_opp_c3[df_opp_c3["cumpl_pdv"] < 70]
         _agente_mas_brecha = (_df_bajo70.groupby("AGENTE").size().idxmax() if not _df_bajo70.empty else "N/D")
-        _top_asesor_c3s  = df.groupby("ASESOR")["EJE ALTA TOTAL"].sum()
+        _top_asesor_c3s  = df.groupby("ASESOR")[("EJE ALTA TOTAL" if "EJE ALTA TOTAL" in df.columns else "EJEC ALTA NAT")].sum()
         _top_asesor_c3   = _top_asesor_c3s.idxmax() if not _top_asesor_c3s.empty else "N/D"
         _top_asesor_c3v  = int(_top_asesor_c3s.max()) if not _top_asesor_c3s.empty else 0
 
@@ -4385,7 +4415,7 @@ def render_claro_view():
 
         by_asesor = df.groupby(["ASESOR","AGENTE"]).agg(
             pdvs=("ID","count"), meta_nat=("META ALTA NAT (>$2000)","sum"),
-            ejec_nat=("EJEC ALTA NAT","sum"), ejec_total=("EJE ALTA TOTAL","sum"),
+            ejec_nat=("EJEC ALTA NAT","sum"), ejec_total=("EJE ALTA TOTAL","sum") if "EJE ALTA TOTAL" in df.columns else ("EJEC ALTA NAT","sum"),
         ).reset_index()
         by_asesor["cumpl"] = (by_asesor["ejec_nat"]/by_asesor["meta_nat"].replace(0,np.nan)*100).fillna(0)
         by_asesor = by_asesor.sort_values("ejec_total", ascending=False).head(20)
@@ -4407,7 +4437,7 @@ def render_claro_view():
             group_cols_circ = [c for c in ["BARRIO","CIRCUITO"] if c in df.columns] or ["AGENTE"]
             by_barrio = df.groupby(group_cols_circ).agg(
                 pdvs=("ID","count"), meta_nat=("META ALTA NAT (>$2000)","sum"),
-                ejec_nat=("EJEC ALTA NAT","sum"), ejec_total=("EJE ALTA TOTAL","sum"),
+                ejec_nat=("EJEC ALTA NAT","sum"), ejec_total=("EJE ALTA TOTAL","sum") if "EJE ALTA TOTAL" in df.columns else ("EJEC ALTA NAT","sum"),
                 cuota_alta=("CUOTA DE ALTA","mean"),
             ).reset_index()
             by_barrio["cumpl"] = (by_barrio["ejec_nat"]/by_barrio["meta_nat"].replace(0,np.nan)*100).fillna(0)
@@ -4454,7 +4484,7 @@ def render_claro_view():
         # Asesores con menor cumplimiento (meta > umbral mínimo para que sea relevante)
         by_as_c3 = df.groupby(["ASESOR","AGENTE"]).agg(
             pdvs=("ID","count"), meta_nat=("META ALTA NAT (>$2000)","sum"),
-            ejec_nat=("EJEC ALTA NAT","sum"), ejec_total=("EJE ALTA TOTAL","sum"),
+            ejec_nat=("EJEC ALTA NAT","sum"), ejec_total=("EJE ALTA TOTAL","sum") if "EJE ALTA TOTAL" in df.columns else ("EJEC ALTA NAT","sum"),
             cuota_alta=("CUOTA DE ALTA","mean"),
         ).reset_index()
         by_as_c3["cumpl"]  = (by_as_c3["ejec_nat"]/by_as_c3["meta_nat"].replace(0,np.nan)*100).fillna(0)
