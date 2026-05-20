@@ -98,2026 +98,593 @@ CATEGORIA_COLORS = {
 
 # =========================================================
 # ESTILOS
+# ESTILOS
 # =========================================================
 st.markdown("""
 <style>
-html, body, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
-    background: radial-gradient(circle at 12% 18%, rgba(225,6,0,0.10), transparent 22%), radial-gradient(circle at 88% 82%, rgba(56,189,248,0.10), transparent 24%), linear-gradient(135deg, #020817 0%, #041225 44%, #03111d 100%) !important;
-    color: #F8FAFC !important;
+/* ══════════════════════════════════════════════════════
+   LIGHT THEME — PREMIUM MINIMALIST
+   Claro Colombia · Dashboard de Inteligencia Comercial
+══════════════════════════════════════════════════════ */
+
+/* ── Variables ──────────────────────────────────────── */
+:root {
+    --bg:           #F8F9FC;
+    --bg-card:      #FFFFFF;
+    --bg-sidebar:   #F1F3F8;
+    --border:       #E4E8F0;
+    --border-hover: #CBD2E0;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted:   #94A3B8;
+    --accent:       #E10600;
+    --accent-soft:  rgba(225,6,0,0.08);
+    --accent-mid:   rgba(225,6,0,0.15);
+    --blue:         #2563EB;
+    --blue-soft:    rgba(37,99,235,0.08);
+    --green:        #16A34A;
+    --amber:        #D97706;
+    --red:          #DC2626;
+    --shadow-sm:    0 1px 3px rgba(15,23,42,0.08), 0 1px 2px rgba(15,23,42,0.06);
+    --shadow-md:    0 4px 12px rgba(15,23,42,0.10), 0 2px 4px rgba(15,23,42,0.06);
+    --shadow-lg:    0 12px 32px rgba(15,23,42,0.12), 0 4px 8px rgba(15,23,42,0.06);
+    --radius-sm:    10px;
+    --radius-md:    16px;
+    --radius-lg:    22px;
+    --transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* ── Base ────────────────────────────────────────────── */
 * { box-sizing: border-box; }
-p, span, label, div, h1, h2, h3, h4, h5, h6 { color: #F8FAFC; }
-body::before {
-    content: "";
-    position: fixed;
-    width: 760px;
-    height: 760px;
-    top: -180px;
-    left: -120px;
-    background: radial-gradient(circle, rgba(225,6,0,0.20) 0%, transparent 68%);
-    filter: blur(135px);
-    z-index: 0;
-    pointer-events: none;
+
+html, body,
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"] {
+    background: var(--bg) !important;
+    color: var(--text-primary) !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif !important;
 }
-body::after {
-    content: "";
-    position: fixed;
-    width: 680px;
-    height: 680px;
-    bottom: -170px;
-    right: -120px;
-    background: radial-gradient(circle, rgba(56,189,248,0.12) 0%, transparent 70%);
-    filter: blur(150px);
-    z-index: 0;
-    pointer-events: none;
-}
-.block-container {
-    position: relative;
-    z-index: 2;
-    max-width: 1620px;
-    padding-top: 1.0rem !important;
-    padding-bottom: 3rem !important;
-}
-div[data-testid="stHorizontalBlock"] {
-    gap: 1rem !important;
-    align-items: stretch !important;
-    margin-bottom: 0.35rem !important;
-}
-div[data-testid="column"] {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 0.9rem !important;
-}
-div[data-testid="column"] > div {
-    height: auto !important;
-    width: 100% !important;
-}
-div[data-testid="stVerticalBlock"] > div:has(> div[data-testid="column"]) {
-    gap: 0.9rem !important;
-}
+
+p, span, label, div, li { color: var(--text-primary); }
+h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-weight: 800; }
+
+/* ── Scrollbar ───────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+/* ── Sidebar ─────────────────────────────────────────── */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, rgba(11,19,35,0.98) 0%, rgba(8,16,29,0.98) 100%) !important;
-    border-right: 1px solid rgba(255,255,255,0.08);
+    background: var(--bg-sidebar) !important;
+    border-right: 1px solid var(--border) !important;
+    box-shadow: 2px 0 12px rgba(15,23,42,0.06) !important;
 }
-[data-testid="stSidebar"] * { color: #E5E7EB !important; }
-.header-shell, .kpi-strip, .section-card, .card, .mini-card, .insight-card, .territory-card, .alert-card, .rule-card, .business-hero, .business-kpi {
-    border-radius: 20px;
-    padding: 16px 16px 14px 16px;
-    min-height: 132px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    background: linear-gradient(180deg, rgba(17,24,39,0.96) 0%, rgba(15,23,42,0.96) 100%) !important;
-    border: 1px solid rgba(255,255,255,0.08);
-    box-shadow: 0 12px 28px rgba(0,0,0,0.18);
-    transition: transform .20s ease, box-shadow .20s ease, border-color .20s ease;
+[data-testid="stSidebar"] > div:first-child {
+    padding: 1.2rem 1rem 1.5rem !important;
 }
-.card:hover, .mini-card:hover, .section-card:hover, .insight-card:hover, .territory-card:hover, .alert-card:hover, .rule-card:hover {
+[data-testid="stSidebar"] * { color: var(--text-primary) !important; }
+
+/* Sidebar section blocks */
+.sidebar-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    transition: var(--transition);
+}
+.sidebar-section:hover {
+    border-color: var(--border-hover);
+    box-shadow: var(--shadow-sm);
+}
+.sidebar-section-title {
+    font-size: .70rem;
+    font-weight: 900;
+    color: var(--text-muted) !important;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 6px;
+}
+.sidebar-section-label {
+    font-size: .88rem;
+    font-weight: 700;
+    color: var(--text-primary) !important;
+    margin-bottom: 3px;
+}
+.sidebar-section-sub {
+    font-size: .73rem;
+    color: var(--text-secondary) !important;
+    line-height: 1.5;
+}
+
+/* Legacy sidebar-block compat */
+.sidebar-block { margin-bottom: 10px; }
+.sidebar-kicker { font-size:.68rem; font-weight:900; color:var(--text-muted)!important; text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; }
+.sidebar-title  { font-size:.88rem; font-weight:700; color:var(--text-primary)!important; margin-bottom:3px; }
+.sidebar-sub    { font-size:.73rem; color:var(--text-secondary)!important; line-height:1.5; margin-bottom:6px; }
+
+/* Radio buttons */
+[data-testid="stRadio"] label {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px !important;
+    margin-bottom: 5px !important;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: .82rem !important;
+    font-weight: 600 !important;
+    color: var(--text-secondary) !important;
+    display: block !important;
+}
+[data-testid="stRadio"] label:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent) !important;
+    transform: translateX(2px);
+}
+[data-testid="stRadio"] [aria-checked="true"] + div label,
+[data-testid="stRadio"] input:checked ~ label {
+    border-color: var(--accent) !important;
+    background: var(--accent-soft) !important;
+    color: var(--accent) !important;
+}
+[data-testid="stRadio"] [data-baseweb="radio"] > div:first-child {
+    border-color: var(--accent) !important;
+}
+
+/* File uploaders */
+[data-testid="stFileUploader"] {
+    background: var(--bg);
+    border: 1.5px dashed var(--border) !important;
+    border-radius: var(--radius-sm) !important;
+    transition: var(--transition) !important;
+}
+[data-testid="stFileUploader"]:hover {
+    border-color: var(--accent) !important;
+    background: var(--accent-soft) !important;
+}
+[data-testid="stFileUploader"] label { font-size: .80rem !important; color: var(--text-secondary) !important; }
+[data-testid="stFileUploader"] button {
+    background: var(--accent) !important;
+    color: white !important;
+    border-radius: 8px !important;
+    font-size: .78rem !important;
+    font-weight: 700 !important;
+    border: none !important;
+    transition: var(--transition) !important;
+}
+[data-testid="stFileUploader"] button:hover {
+    background: #C00500 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(225,6,0,0.30) !important;
+}
+
+/* Selectbox */
+[data-testid="stSelectbox"] > div > div {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-sm) !important;
+    color: var(--text-primary) !important;
+    transition: var(--transition) !important;
+}
+[data-testid="stSelectbox"] > div > div:hover {
+    border-color: var(--accent) !important;
+}
+
+/* Tabs */
+[data-testid="stTabs"] [data-baseweb="tab-list"] {
+    background: var(--bg) !important;
+    border-bottom: 2px solid var(--border) !important;
+    gap: 2px !important;
+    padding: 0 !important;
+}
+[data-testid="stTabs"] [data-baseweb="tab"] {
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-muted) !important;
+    font-weight: 700 !important;
+    font-size: .82rem !important;
+    padding: 10px 16px !important;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important;
+    transition: var(--transition) !important;
+    position: relative;
+}
+[data-testid="stTabs"] [data-baseweb="tab"]:hover {
+    color: var(--text-primary) !important;
+    background: var(--border) !important;
+}
+[data-testid="stTabs"] [aria-selected="true"] {
+    color: var(--accent) !important;
+    background: var(--bg-card) !important;
+    border-bottom: 2.5px solid var(--accent) !important;
+}
+[data-testid="stTabs"] [data-baseweb="tab-panel"] {
+    background: var(--bg) !important;
+    padding-top: 16px !important;
+}
+
+/* Dataframe */
+[data-testid="stDataFrame"] {
+    border-radius: var(--radius-sm) !important;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+[data-testid="stDataFrame"] table { font-size: .78rem !important; }
+[data-testid="stDataFrame"] th {
+    background: var(--bg-sidebar) !important;
+    color: var(--text-secondary) !important;
+    font-weight: 700 !important;
+    font-size: .72rem !important;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    border-bottom: 1px solid var(--border) !important;
+}
+[data-testid="stDataFrame"] td {
+    border-bottom: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+}
+[data-testid="stDataFrame"] tr:hover td {
+    background: var(--accent-soft) !important;
+}
+
+/* Expander */
+[data-testid="stExpander"] {
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-md) !important;
+    background: var(--bg-card) !important;
+    overflow: hidden;
+    transition: var(--transition);
+}
+[data-testid="stExpander"]:hover { border-color: var(--border-hover) !important; }
+[data-testid="stExpander"] summary {
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    font-size: .84rem !important;
+    padding: 12px 16px !important;
+    background: var(--bg-card) !important;
+}
+
+/* Alerts / info / success / warning */
+[data-testid="stAlert"] {
+    border-radius: var(--radius-sm) !important;
+    border: 1px solid var(--border) !important;
+    font-size: .82rem !important;
+}
+.stSuccess { background: rgba(22,163,74,0.06) !important; border-color: rgba(22,163,74,0.25) !important; }
+.stWarning { background: rgba(217,119,6,0.06) !important; border-color: rgba(217,119,6,0.25) !important; }
+.stError   { background: rgba(220,38,38,0.06) !important; border-color: rgba(220,38,38,0.25) !important; }
+.stInfo    { background: var(--blue-soft) !important; border-color: rgba(37,99,235,0.20) !important; }
+
+/* Download button */
+[data-testid="stDownloadButton"] button {
+    background: var(--text-primary) !important;
+    color: white !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    font-size: .82rem !important;
+    transition: var(--transition) !important;
+    border: none !important;
+    padding: 8px 18px !important;
+}
+[data-testid="stDownloadButton"] button:hover {
+    background: var(--accent) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(225,6,0,0.25) !important;
+}
+
+/* ── Cards & Components ───────────────────────────────── */
+.card, .mini-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 18px 20px;
+    min-height: 120px;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+    animation: fadeUp 0.35s ease both;
+}
+.card:hover, .mini-card:hover {
+    border-color: var(--border-hover);
+    box-shadow: var(--shadow-md);
     transform: translateY(-2px);
-    box-shadow: 0 18px 40px rgba(0,0,0,0.24);
-    border-color: rgba(255,255,255,0.14);
 }
+
+.section-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    animation: fadeUp 0.35s ease both;
+}
+.section-card:hover {
+    border-color: var(--border-hover);
+    box-shadow: var(--shadow-md);
+}
+
+.insight-card, .territory-card, .alert-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px 18px;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+.insight-card:hover, .territory-card:hover, .alert-card:hover {
+    border-color: var(--border-hover);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+/* KPI components */
+.kpi-strip {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 24px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    animation: fadeDown 0.30s ease both;
+}
+.kpi-label  { font-size:.75rem; color:var(--text-muted)!important; font-weight:700; text-transform:uppercase; letter-spacing:.35px; margin-bottom:3px; }
+.kpi-value  { font-size:1.72rem; font-weight:900; color:var(--text-primary)!important; line-height:1.05; }
+.kpi-sub    { font-size:.73rem; color:var(--text-secondary)!important; margin-top:3px; line-height:1.45; }
+
+/* Hero header */
 .header-shell {
+    background: linear-gradient(135deg, #FFFFFF 0%, #F8F9FC 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px 28px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-md);
     position: relative;
     overflow: hidden;
-    border-radius: 30px;
-    padding: 26px 28px 22px 28px;
-    margin-bottom: 14px;
-    background:
-        radial-gradient(circle at top left, rgba(225,6,0,0.18), transparent 34%),
-        radial-gradient(circle at bottom right, rgba(56,189,248,0.14), transparent 34%),
-        linear-gradient(135deg, rgba(17,24,39,0.99) 0%, rgba(10,17,31,0.99) 55%, rgba(18,32,58,0.99) 100%) !important;
+    animation: fadeDown 0.28s ease both;
 }
 .header-shell::before {
     content: "";
     position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, rgba(255,255,255,0.05), transparent 28%, transparent 72%, rgba(255,255,255,0.03));
-    pointer-events: none;
+    top: 0; left: 0;
+    width: 4px; height: 100%;
+    background: var(--accent);
+    border-radius: 2px 0 0 2px;
 }
-.header-shell::after {
-    content: "";
-    position: absolute;
-    left: 28px;
-    right: 28px;
-    bottom: 0;
-    height: 3px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, #E10600 0%, #38BDF8 100%);
-    opacity: 0.95;
-}
-.kpi-strip {
-    position: relative;
-    overflow: hidden;
-    border-radius: 22px;
-    padding: 12px 14px 10px 14px;
-    margin-bottom: 16px;
-    background:
-        linear-gradient(180deg, rgba(14,22,40,0.98) 0%, rgba(10,18,34,0.98) 100%) !important;
-}
-.kpi-strip::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.035), transparent 36%, transparent 68%, rgba(255,255,255,0.02));
-    pointer-events: none;
-}
-.section-card {
-    border-radius: 24px;
-    padding: 20px 20px 16px 20px;
-    margin-bottom: 14px;
-    position: relative;
-    overflow: hidden;
-}
-.card {
-    border-radius: 18px;
-    padding: 16px 16px 14px 16px;
-    min-height: 138px;
-    margin-bottom: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    position: relative;
-    overflow: hidden;
-}
-.mini-card {
-    border-radius: 18px;
-    padding: 14px 15px 12px 15px;
-    min-height: 116px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    position: relative;
-    overflow: hidden;
-}
-.insight-card, .territory-card, .alert-card, .rule-card {
-    border-radius: 18px;
-    padding: 16px;
-    margin-bottom: 14px;
-    min-height: 130px;
-}
-.insight-card {
-    background: linear-gradient(135deg, rgba(225,6,0,0.08), rgba(56,189,248,0.08), rgba(17,24,39,0.98));
-    border: 1px solid rgba(255,255,255,0.10);
-}
-.insight-title {
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-}
-.insight-title::before {
-    content: "";
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: linear-gradient(180deg, #E10600, #38BDF8);
-    box-shadow: 0 0 12px rgba(56,189,248,0.28);
-}
-.section-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 0.32rem; letter-spacing: 0.1px; }
-.section-subtitle { font-size: 0.84rem; color: #CBD5E1 !important; margin-bottom: 1rem; line-height: 1.55; max-width: 95%; }
-.kpi-label { font-size: 0.79rem; color: #CBD5E1 !important; margin-bottom: 0.3rem; font-weight: 700; }
-.kpi-value { font-size: 1.72rem; font-weight: 800; line-height: 1.08; }
-.kpi-sub { font-size: 0.79rem; color: #94A3B8 !important; margin-top: 0.45rem; line-height: 1.45; }
-.metric-operator { font-size: 1.16rem; font-weight: 800; line-height: 1.2; }
-.note { font-size: 0.82rem; color: #CBD5E1 !important; line-height: 1.6; }
-.insight-title { font-size: 0.80rem; font-weight: 800; color: #94A3B8 !important; margin-bottom: 0.45rem; text-transform: uppercase; }
-.insight-body { font-size: 0.91rem; color: #F8FAFC !important; line-height: 1.56; }
-.territory-label { font-size: 0.79rem; text-transform: uppercase; color: #94A3B8; font-weight: 700; margin-bottom: 6px; }
-.territory-value { font-size: 1.42rem; font-weight: 800; line-height: 1.12; margin-top: 4px; margin-bottom: 8px; }
-.territory-sub { font-size: 0.86rem; line-height: 1.52; color: #CBD5E1; }
-.operator-box { background: rgba(17,24,39,0.90); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; }
-.operator-chip { display: inline-block; padding: 6px 10px; border-radius: 999px; margin-right: 6px; margin-bottom: 6px; font-size: 0.76rem; font-weight: 700; color: white; }
-.badge-good, .badge-warn, .badge-bad, .badge-info {
-    display: inline-block; border-radius: 999px; padding: 6px 11px; font-size: 0.78rem; font-weight: 800; margin-bottom: 12px;
-}
-.badge-good { background: rgba(34,197,94,0.16); color: #86EFAC; border: 1px solid rgba(34,197,94,0.35); }
-.badge-warn { background: rgba(245,158,11,0.16); color: #FCD34D; border: 1px solid rgba(245,158,11,0.35); }
-.badge-bad { background: rgba(239,68,68,0.16); color: #FCA5A5; border: 1px solid rgba(239,68,68,0.35); }
-.badge-info { background: rgba(56,189,248,0.16); color: #7DD3FC; border: 1px solid rgba(56,189,248,0.35); }
-button[data-baseweb="tab"] {
-    background: rgba(17,24,39,0.96) !important;
-    border-radius: 12px !important;
-    color: #E5E7EB !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
-    padding: 10px 16px !important;
-}
-button[aria-selected="true"][data-baseweb="tab"] {
-    background: rgba(30,41,59,0.96) !important;
-    border: 1px solid rgba(255,255,255,0.14) !important;
-    color: #FFFFFF !important;
-    box-shadow: inset 0 -2px 0 #E10600;
-}
-div[data-testid="stHorizontalBlock"] {
-    align-items: stretch !important;
-}
-div[data-testid="column"] > div {
-    height: 100%;
-}
-div[data-testid="stDataFrame"] {
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.08);
-    margin-top: 8px;
-}
-.small-caption { font-size: 0.76rem; color: #94A3B8 !important; }
-
-.dashboard-divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.16) 50%, transparent 100%);
-    margin: 8px 0 14px 0;
-}
-.executive-note {
-    border-radius: 20px;
-    padding: 18px 18px 16px 18px;
-    background: linear-gradient(135deg, rgba(17,24,39,0.98) 0%, rgba(15,23,42,0.96) 50%, rgba(9,18,35,0.96) 100%);
-    border: 1px solid rgba(255,255,255,0.08);
-    box-shadow: 0 12px 28px rgba(0,0,0,0.18);
-    margin-bottom: 14px;
-}
-.executive-highlight {
-    display: inline-block;
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: rgba(56,189,248,0.12);
-    border: 1px solid rgba(56,189,248,0.22);
-    color: #BAE6FD;
-    font-size: 0.76rem;
-    font-weight: 700;
-    margin-bottom: 10px;
-}
-
-.alert-card { min-height: 132px; }
-.section-card { height: auto; }
-.business-hero {
-    border-radius: 24px;
-    padding: 20px 22px;
-    margin-bottom: 10px;
-    border-radius: 24px;
-    padding: 18px 20px;
-    margin-bottom: 18px;
-    position: relative;
-    overflow: hidden;
-}
-.business-hero::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, rgba(225,6,0,0.10), rgba(56,189,248,0.08), rgba(168,85,247,0.10));
-    pointer-events: none;
-}
-.business-kpi {
-    border-radius: 18px;
-    padding: 18px 18px 16px 18px;
-    min-height: 154px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    border-radius: 20px;
-    padding: 20px;
-    min-height: 160px;
-    position: relative;
-    overflow: hidden;
-}
-.business-kpi::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: linear-gradient(180deg, #E10600, #38BDF8);
-    opacity: 0.9;
-}
-.panel-divider {
-    height: 1px;
-    width: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.14), transparent);
-    margin: 6px 0 18px 0;
-}
-
-[data-testid="stVegaLiteChart"] canvas,
-[data-testid="stVegaLiteChart"] svg {
-    background: transparent !important;
-}
-
-
-.section-card::before, .card::before, .mini-card::before, .business-hero::before, .business-kpi::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 18px;
-    right: 18px;
-    height: 1px;
-    background: linear-gradient(90deg, rgba(225,6,0,0), rgba(225,6,0,0.50), rgba(56,189,248,0));
-}
-.section-card::after, .card::after, .mini-card::after {
-    content: "";
-    position: absolute;
-    width: 220px;
-    height: 220px;
-    right: -100px;
-    top: -100px;
-    background: radial-gradient(circle, rgba(56,189,248,0.08) 0%, transparent 72%);
-    pointer-events: none;
-}
-
-
-.sidebar-block {
-    background: linear-gradient(180deg, rgba(17,24,39,0.80) 0%, rgba(15,23,42,0.88) 100%);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 18px;
-    padding: 14px 14px 12px 14px;
-    margin-bottom: 12px;
-    box-shadow: 0 8px 22px rgba(0,0,0,0.16);
-}
-.sidebar-title {
-    font-size: 0.83rem;
-    font-weight: 800;
-    letter-spacing: 0.3px;
-    color: #F8FAFC;
-    margin-bottom: 4px;
-}
-.sidebar-sub {
-    font-size: 0.74rem;
-    color: #94A3B8;
-    line-height: 1.45;
-    margin-bottom: 10px;
-}
-.executive-ribbon {
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-    margin: 2px 0 16px 0;
-}
-.executive-ribbon .pill {
-    background: rgba(255,255,255,0.05);
-    border:1px solid rgba(255,255,255,0.08);
-    border-radius:999px;
-    padding:6px 11px;
-    font-size:0.77rem;
-    color:#CBD5E1;
-}
-[data-testid="stSidebar"] .stMultiSelect div[data-baseweb="select"],
-[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"],
-[data-testid="stSidebar"] .stTextInput input,
-[data-testid="stSidebar"] .stDateInput input {
-    background: rgba(255,255,255,0.04) !important;
-    border-radius: 10px !important;
-}
-
-
-.story-grid {
-    display:grid;
-    grid-template-columns: repeat(3, minmax(0,1fr));
-    gap:12px;
-    margin: 0 0 16px 0;
-}
-.story-mini {
-    background: linear-gradient(180deg, rgba(19,29,47,0.98) 0%, rgba(15,23,42,0.98) 100%);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    padding: 14px 15px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.14);
-}
-.story-label {
-    font-size: 0.73rem;
-    color: #94A3B8;
-    font-weight: 800;
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--accent-soft);
+    color: var(--accent) !important;
+    border: 1px solid var(--accent-mid);
+    border-radius: 99px;
+    font-size: .65rem;
+    font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: .35px;
-    margin-bottom: 5px;
-}
-.story-value {
-    font-size: 1.08rem;
-    color: #F8FAFC;
-    font-weight: 800;
-    line-height: 1.2;
-}
-.story-sub {
-    font-size: 0.80rem;
-    color: #CBD5E1;
-    line-height: 1.45;
-    margin-top: 6px;
-}
-.visual-note {
-    background: linear-gradient(135deg, rgba(225,6,0,0.10), rgba(56,189,248,0.08));
-    border: 1px solid rgba(255,255,255,0.09);
-    border-radius: 18px;
-    padding: 16px 18px;
-    margin-bottom: 16px;
-}
-.visual-note-title {
-    font-size: .80rem;
-    text-transform: uppercase;
-    letter-spacing: .35px;
-    font-weight: 800;
-    color: #E2E8F0;
+    letter-spacing: .5px;
+    padding: 3px 10px;
     margin-bottom: 8px;
 }
-.visual-note-body {
-    font-size: .90rem;
-    color: #F8FAFC;
-    line-height: 1.58;
-}
-.legend-strip {
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-    margin: 0 0 14px 0;
-}
-.legend-pill {
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    background: rgba(255,255,255,0.04);
-    border:1px solid rgba(255,255,255,0.08);
-    border-radius:999px;
-    padding:6px 10px;
-    color:#CBD5E1;
-    font-size:.75rem;
-}
-.legend-dot {
-    width:10px;
-    height:10px;
-    border-radius:50%;
-    display:inline-block;
-}
-
-
-.hero-badge {
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    background: rgba(255,255,255,0.06);
-    border:1px solid rgba(255,255,255,0.10);
-    border-radius:999px;
-    padding:7px 12px;
-    font-size:.75rem;
-    color:#E2E8F0;
-    font-weight:800;
-    margin-bottom:12px;
-}
 .hero-title {
-    font-size:2.28rem;
-    color:#FFFFFF;
-    font-weight:950;
-    line-height:1.02;
-    letter-spacing:-0.03em;
-    margin-top:8px;
+    font-size: 1.65rem;
+    font-weight: 950;
+    color: var(--text-primary) !important;
+    line-height: 1.15;
+    letter-spacing: -.3px;
 }
 .hero-subtitle {
-    font-size:0.88rem;
-    color:#CBD5E1;
-    line-height:1.58;
-    margin-top:10px;
-    max-width:980px;
-}
-.hero-meta {
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-    margin-top:14px;
+    font-size: .82rem;
+    color: var(--text-secondary) !important;
+    font-weight: 600;
+    margin-top: 4px;
 }
 .hero-meta-pill {
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    background: rgba(255,255,255,0.04);
-    border:1px solid rgba(255,255,255,0.08);
-    border-radius:999px;
-    padding:7px 11px;
-    font-size:.76rem;
-    color:#CBD5E1;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    font-size: .68rem;
+    font-weight: 700;
+    color: var(--text-secondary) !important;
+    padding: 3px 10px;
+    margin: 4px 4px 0 0;
 }
-.header-status-card {
-    border-radius:18px;
-    padding:14px 14px 12px 14px;
-    background: linear-gradient(180deg, rgba(17,24,39,0.94), rgba(15,23,42,0.94));
-    border:1px solid rgba(255,255,255,0.08);
-    box-shadow: 0 10px 24px rgba(0,0,0,0.16);
-    margin-bottom:10px;
-}
-.header-status-label {
-    font-size:.72rem;
-    text-transform:uppercase;
-    letter-spacing:.4px;
-    color:#94A3B8;
-    font-weight:800;
-    margin-bottom:6px;
-}
-.header-status-value {
-    font-size:1.18rem;
-    font-weight:900;
-    color:#F8FAFC;
-    line-height:1.15;
-}
-.header-status-sub {
-    font-size:.78rem;
-    color:#A8B3C7;
-    margin-top:6px;
-}
+
+/* KPI strip */
 .kpi-strip-title {
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    font-size:.72rem;
-    font-weight:800;
-    color:#E2E8F0;
-    margin-bottom:10px;
-    text-transform:uppercase;
-    letter-spacing:.45px;
-    background: rgba(255,255,255,0.045);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 999px;
-    padding: 6px 10px;
-}
-.kpi-strip-title::before {
-    content: "";
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: linear-gradient(180deg, #E10600, #38BDF8);
-    box-shadow: 0 0 10px rgba(56,189,248,0.35);
-}
-.card {
-    position: relative;
-    border-radius: 20px;
-}
-.card::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 18px;
-    right: 18px;
-    height: 3px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, rgba(225,6,0,0.95), rgba(56,189,248,0.75));
-}
-.mini-card {
-    position: relative;
-    border-radius: 20px;
-}
-.mini-card::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 16px;
-    right: 16px;
-    height: 2px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, rgba(225,6,0,0.85), rgba(56,189,248,0.65));
-}
-.kpi-label { font-size: 0.72rem; color: #94A3B8 !important; margin-bottom: 0.36rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.42px; }
-.kpi-value { font-size: 1.82rem; font-weight: 900; line-height: 1.03; letter-spacing: -0.02em; }
-.metric-operator { font-size: 1.24rem; font-weight: 900; line-height: 1.12; letter-spacing: -0.01em; }
-.kpi-sub { font-size: 0.78rem; color: #A8B3C7 !important; margin-top: 0.5rem; line-height: 1.48; }
-
-
-.icon-inline { display:inline-flex; align-items:center; justify-content:center; color:#E2E8F0; vertical-align:middle; flex:0 0 auto; }
-.icon-inline svg { width:100%; height:100%; }
-.user-guide-band { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin: 0 0 14px 0; }
-.guide-pill { display:inline-flex; align-items:center; gap:8px; padding:7px 11px; border-radius:999px; background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); color:#CBD5E1; font-size:.76rem; font-weight:700; }
-.flow-guide { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:10px; margin: 0 0 14px 0; }
-.flow-step { background: linear-gradient(180deg, rgba(18,27,46,0.92) 0%, rgba(15,23,42,0.92) 100%); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:12px 13px; box-shadow: 0 8px 18px rgba(0,0,0,0.12); }
-.flow-step-head { display:flex; align-items:center; gap:8px; font-size:.73rem; color:#E2E8F0; font-weight:800; text-transform:uppercase; letter-spacing:.35px; margin-bottom:6px; }
-.flow-step-text { font-size:.80rem; color:#CBD5E1; line-height:1.46; }
-.anchor-note { display:flex; align-items:flex-start; gap:10px; background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:12px 14px; margin-bottom: 12px; }
-.anchor-note-body { font-size:.82rem; color:#CBD5E1; line-height:1.52; }
-.mini-legend-grid { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:8px; margin: 0 0 12px 0; }
-.mini-legend-card { background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:10px 11px; }
-.mini-legend-title { font-size:.70rem; color:#94A3B8; font-weight:800; text-transform:uppercase; letter-spacing:.35px; margin-bottom:4px; }
-.mini-legend-text { font-size:.78rem; color:#E2E8F0; line-height:1.42; }
-.nav-chip-row { display:flex; flex-wrap:wrap; gap:8px; margin: 0 0 10px 0; }
-.nav-chip { display:inline-flex; align-items:center; gap:8px; border-radius:999px; padding:6px 10px; font-size:.73rem; font-weight:700; color:#E2E8F0; background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); }
-
-.sidebar-guide-row {
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-    margin: 0 0 12px 0;
-}
-.sidebar-guide-pill {
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    padding:6px 10px;
-    border-radius:999px;
-    background: rgba(255,255,255,0.045);
-    border:1px solid rgba(255,255,255,0.08);
-    color:#CBD5E1;
-    font-size:.73rem;
-    font-weight:700;
-}
-.sidebar-kicker {
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    padding:6px 10px;
-    border-radius:999px;
-    background: linear-gradient(90deg, rgba(225,6,0,0.14), rgba(56,189,248,0.10));
-    border:1px solid rgba(255,255,255,0.10);
-    color:#F8FAFC;
-    font-size:.73rem;
-    font-weight:800;
-    margin-bottom:10px;
-}
-.sidebar-operator-card {
-    background: linear-gradient(180deg, rgba(17,24,39,0.86) 0%, rgba(15,23,42,0.92) 100%);
-    border:1px solid rgba(255,255,255,0.08);
-    border-radius:16px;
-    padding:10px 12px 9px 12px;
-    min-height:74px;
-    box-shadow: 0 8px 18px rgba(0,0,0,0.12);
-    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
-    margin-bottom: 6px;
-}
-.sidebar-operator-card:hover {
-    transform: translateY(-1px);
-    border-color: rgba(255,255,255,0.14);
-    box-shadow: 0 12px 24px rgba(0,0,0,0.16);
-}
-.sidebar-operator-chip {
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    padding:5px 9px;
-    border-radius:999px;
-    font-size:.70rem;
-    font-weight:800;
-    color:#F8FAFC;
-    margin-bottom:8px;
-    width: fit-content;
-}
-.sidebar-operator-label {
-    font-size:.88rem;
-    color:#F8FAFC;
-    font-weight:800;
-    line-height:1.28;
-}
-.sidebar-operator-sub {
-    font-size:.72rem;
-    color:#94A3B8;
-    line-height:1.4;
-    margin-top:4px;
-}
-.sidebar-soft-note {
-    font-size:.73rem;
-    color:#A8B3C7;
-    line-height:1.48;
-    margin: 8px 0 10px 0;
-}
-.filter-stage {
-    display:grid;
-    grid-template-columns: repeat(3, minmax(0,1fr));
-    gap:8px;
-    margin: 0 0 12px 0;
-}
-.filter-stage-card {
-    background: rgba(255,255,255,0.04);
-    border:1px solid rgba(255,255,255,0.08);
-    border-radius:14px;
-    padding:9px 10px;
-}
-.filter-stage-title {
-    font-size:.68rem;
-    color:#94A3B8;
-    font-weight:800;
-    text-transform:uppercase;
-    letter-spacing:.35px;
-    margin-bottom:4px;
-}
-.filter-stage-text {
-    font-size:.76rem;
-    color:#E2E8F0;
-    line-height:1.4;
-}
-.filter-divider {
-    height:1px;
-    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.14) 50%, transparent 100%);
-    margin: 8px 0 12px 0;
+    font-size: .68rem;
+    font-weight: 900;
+    color: var(--text-muted) !important;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 12px;
 }
 
-.context-badge-row {
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-    margin:8px 0 12px 0;
+/* Section titles */
+.section-title    { font-size:.90rem; font-weight:800; color:var(--text-primary)!important; margin-bottom:4px; }
+.section-subtitle { font-size:.74rem; color:var(--text-secondary)!important; margin-bottom:12px; line-height:1.5; }
+
+/* Operator box */
+.operator-box {
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    transition: var(--transition);
 }
-.context-badge {
-    display:inline-flex;
-    align-items:center;
-    gap:6px;
-    padding:6px 10px;
-    border-radius:999px;
-    background:rgba(255,255,255,0.055);
-    border:1px solid rgba(255,255,255,0.09);
-    color:#CBD5E1;
-    font-size:.74rem;
-    font-weight:700;
+.operator-box:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-card);
+    box-shadow: var(--shadow-sm);
 }
-.context-badge b { color:#F8FAFC; }
+
+/* Sync warning */
 .sync-warning {
-    display:flex;
-    gap:10px;
-    align-items:flex-start;
-    background:linear-gradient(135deg, rgba(245,158,11,0.13), rgba(225,6,0,0.08));
-    border:1px solid rgba(245,158,11,0.22);
-    border-radius:18px;
-    padding:13px 15px;
-    margin:0 0 14px 0;
-}
-.sync-warning-title {
-    font-size:.78rem;
-    color:#FCD34D;
-    font-weight:900;
-    text-transform:uppercase;
-    letter-spacing:.35px;
-    margin-bottom:4px;
-}
-.sync-warning-body {
-    color:#E2E8F0;
-    font-size:.82rem;
-    line-height:1.48;
-}
-
-/* ===== ORGANIZACION EJECUTIVA GLOBAL ===== */
-[data-baseweb="tab-list"] {
-    gap: 10px !important;
-    background: linear-gradient(180deg, rgba(15,23,42,0.82), rgba(8,16,29,0.86)) !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
-    border-radius: 24px !important;
-    padding: 10px !important;
-    margin: 18px 0 18px 0 !important;
-    box-shadow: 0 14px 32px rgba(0,0,0,0.20);
-    justify-content: center !important;
-}
-button[data-baseweb="tab"] {
-    min-height: 44px !important;
-    border-radius: 16px !important;
-    transition: all .20s ease !important;
-}
-button[data-baseweb="tab"]:hover {
-    transform: translateY(-1px);
-    border-color: rgba(255,255,255,0.18) !important;
-}
-button[aria-selected="true"][data-baseweb="tab"] {
-    background: linear-gradient(135deg, rgba(225,6,0,0.18), rgba(56,189,248,0.12)) !important;
-    box-shadow: inset 0 -2px 0 #38BDF8, 0 8px 18px rgba(0,0,0,0.18) !important;
-}
-.exec-map {
-    display:grid;
-    grid-template-columns: repeat(5, minmax(0,1fr));
-    gap:10px;
-    margin: 10px 0 16px 0;
-}
-.exec-map-card {
-    position:relative;
-    overflow:hidden;
-    border-radius:18px;
-    padding:13px 13px 12px 13px;
-    background: linear-gradient(180deg, rgba(17,24,39,0.88), rgba(15,23,42,0.94));
-    border:1px solid rgba(255,255,255,0.08);
-    min-height:92px;
-    box-shadow: 0 10px 22px rgba(0,0,0,0.14);
-}
-.exec-map-card::before {
-    content:"";
-    position:absolute;
-    left:12px;
-    right:12px;
-    top:0;
-    height:2px;
-    border-radius:999px;
-    background: linear-gradient(90deg, rgba(225,6,0,0.9), rgba(56,189,248,0.7));
-}
-.exec-map-title {
-    display:flex;
-    align-items:center;
-    gap:8px;
-    font-size:.76rem;
-    color:#F8FAFC;
-    font-weight:900;
-    text-transform:uppercase;
-    letter-spacing:.28px;
-    margin-bottom:6px;
-}
-.exec-map-text {
-    font-size:.76rem;
-    color:#A8B3C7;
-    line-height:1.45;
-}
-.stage-header {
-    position:relative;
-    overflow:hidden;
-    border-radius:22px;
-    padding:16px 18px;
-    margin: 0 0 14px 0;
-    background:
-        radial-gradient(circle at top left, rgba(225,6,0,0.12), transparent 34%),
-        linear-gradient(135deg, rgba(17,24,39,0.96), rgba(12,22,40,0.96));
-    border:1px solid rgba(255,255,255,0.09);
-    box-shadow: 0 12px 26px rgba(0,0,0,0.16);
-}
-.stage-kicker {
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    color:#BAE6FD;
-    background: rgba(56,189,248,0.10);
-    border:1px solid rgba(56,189,248,0.18);
-    border-radius:999px;
-    padding:5px 10px;
-    font-size:.72rem;
-    font-weight:900;
-    text-transform:uppercase;
-    letter-spacing:.35px;
-    margin-bottom:8px;
-}
-.stage-title {
-    font-size:1.16rem;
-    color:#F8FAFC;
-    font-weight:950;
-    letter-spacing:-.01em;
-    line-height:1.18;
-}
-.stage-subtitle {
-    margin-top:6px;
-    font-size:.86rem;
-    color:#CBD5E1;
-    line-height:1.52;
-    max-width:1050px;
-}
-.content-lane {
-    border-radius:24px;
-    padding:12px 12px 4px 12px;
-    margin: 0 0 14px 0;
-    background: rgba(255,255,255,0.018);
-    border:1px solid rgba(255,255,255,0.045);
-}
-.lane-label {
-    display:flex;
-    align-items:center;
-    gap:8px;
-    color:#94A3B8;
-    font-size:.72rem;
-    font-weight:900;
-    text-transform:uppercase;
-    letter-spacing:.35px;
-    margin: 0 0 10px 4px;
-}
-.decision-strip {
-    display:grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap:10px;
-    margin: 0 0 14px 0;
-}
-.decision-card {
-    border-radius:16px;
-    padding:12px 13px;
-    background: linear-gradient(180deg, rgba(15,23,42,0.90), rgba(15,23,42,0.74));
-    border:1px solid rgba(255,255,255,0.08);
-}
-.decision-label {
-    font-size:.70rem;
-    font-weight:900;
-    color:#94A3B8;
-    text-transform:uppercase;
-    letter-spacing:.35px;
-    margin-bottom:5px;
-}
-.decision-text {
-    color:#F8FAFC;
-    font-size:.82rem;
-    line-height:1.45;
-}
-[data-testid="stExpander"] {
-    border: 1px solid rgba(255,255,255,0.08) !important;
-    border-radius: 18px !important;
-    background: rgba(15,23,42,0.55) !important;
-    overflow:hidden;
-}
-[data-testid="stExpander"] summary {
-    color:#E2E8F0 !important;
-    font-weight:800 !important;
-}
-@media (max-width: 1200px) {
-    .exec-map { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    .decision-strip { grid-template-columns: 1fr; }
-}
-
-
-/* =========================================================
-   REDISEÑO VISUAL V31 - LENGUAJE EJECUTIVO MAS EVIDENTE
-   ========================================================= */
-
-:root {
-    --glass: rgba(15,23,42,0.78);
-    --glass-strong: rgba(15,23,42,0.94);
-    --line: rgba(255,255,255,0.09);
-    --muted: #94A3B8;
-    --text: #F8FAFC;
-    --cyan: #38BDF8;
-    --red: #E10600;
-}
-
-.block-container {
-    padding-top: 0.65rem !important;
-}
-
-.header-shell {
-    min-height: auto !important;
-    padding: 24px 28px !important;
-    border-radius: 32px !important;
-    background:
-        radial-gradient(circle at 6% 10%, rgba(225,6,0,0.26), transparent 34%),
-        radial-gradient(circle at 92% 75%, rgba(56,189,248,0.22), transparent 36%),
-        linear-gradient(135deg, rgba(5,12,28,0.98), rgba(9,20,41,0.98) 52%, rgba(5,31,48,0.98)) !important;
-    border: 1px solid rgba(255,255,255,0.12) !important;
-    box-shadow: 0 24px 70px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.06) !important;
-}
-
-.hero-title {
-    font-size: 2.55rem !important;
-    max-width: 980px;
-}
-
-.hero-badge {
-    background: linear-gradient(90deg, rgba(225,6,0,0.22), rgba(56,189,248,0.12)) !important;
-    border-color: rgba(255,255,255,0.14) !important;
-}
-
-.header-status-card {
-    border-radius: 22px !important;
-    min-height: 116px !important;
-    background:
-        radial-gradient(circle at top right, rgba(56,189,248,0.12), transparent 46%),
-        linear-gradient(180deg, rgba(17,24,39,0.92), rgba(8,16,29,0.92)) !important;
-}
-
-.executive-ribbon {
-    padding: 10px !important;
-    border-radius: 22px !important;
-    background: rgba(255,255,255,0.025);
-    border: 1px solid rgba(255,255,255,0.06);
-}
-
-.executive-ribbon .pill {
-    padding: 8px 12px !important;
-    background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.035)) !important;
-}
-
-.kpi-strip {
-    padding: 16px !important;
-    border-radius: 30px !important;
-    background:
-        radial-gradient(circle at 3% 0%, rgba(225,6,0,0.14), transparent 34%),
-        radial-gradient(circle at 90% 100%, rgba(56,189,248,0.14), transparent 34%),
-        linear-gradient(180deg, rgba(15,23,42,0.92), rgba(8,16,29,0.94)) !important;
-    border: 1px solid rgba(255,255,255,0.10) !important;
-    box-shadow: 0 18px 48px rgba(0,0,0,0.30) !important;
-}
-
-.kpi-strip-title {
-    margin-bottom: 14px !important;
-}
-
-.mini-card, .card {
-    border-radius: 24px !important;
-    background:
-        radial-gradient(circle at top right, rgba(56,189,248,0.10), transparent 38%),
-        linear-gradient(180deg, rgba(17,24,39,0.95), rgba(11,20,36,0.95)) !important;
-    border: 1px solid rgba(255,255,255,0.10) !important;
-    box-shadow: 0 14px 34px rgba(0,0,0,0.22) !important;
-}
-
-.mini-card:hover, .card:hover, .section-card:hover {
-    transform: translateY(-3px) !important;
-    border-color: rgba(56,189,248,0.22) !important;
-    box-shadow: 0 22px 54px rgba(0,0,0,0.32) !important;
-}
-
-.kpi-value {
-    font-size: 1.95rem !important;
-}
-
-.metric-operator {
-    font-size: 1.32rem !important;
-}
-
-.section-card, .business-hero, .executive-note, .visual-note {
-    border-radius: 28px !important;
-    background:
-        radial-gradient(circle at top left, rgba(225,6,0,0.07), transparent 32%),
-        radial-gradient(circle at bottom right, rgba(56,189,248,0.08), transparent 30%),
-        linear-gradient(180deg, rgba(17,24,39,0.92), rgba(10,18,34,0.96)) !important;
-    border: 1px solid rgba(255,255,255,0.10) !important;
-    box-shadow: 0 16px 42px rgba(0,0,0,0.24) !important;
-}
-
-.section-title {
-    font-size: 1.15rem !important;
-}
-
-.section-subtitle {
-    max-width: 100% !important;
-}
-
-.story-grid {
-    gap: 14px !important;
-}
-
-.story-mini {
-    border-radius: 22px !important;
-    min-height: 130px;
-    padding: 16px !important;
-    background:
-        linear-gradient(180deg, rgba(18,29,51,0.95), rgba(10,18,34,0.95)) !important;
-    border: 1px solid rgba(255,255,255,0.10) !important;
-}
-
-.story-value {
-    font-size: 1.26rem !important;
-}
-
-.visual-note {
-    padding: 18px 20px !important;
-    border-left: 4px solid rgba(56,189,248,0.65) !important;
-}
-
-[data-baseweb="tab-list"] {
-    position: sticky !important;
-    top: 0.45rem !important;
-    z-index: 50 !important;
-    display: grid !important;
-    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-    gap: 10px !important;
-    background:
-        linear-gradient(180deg, rgba(3,10,24,0.90), rgba(8,16,29,0.92)) !important;
-    backdrop-filter: blur(14px);
-    border: 1px solid rgba(255,255,255,0.12) !important;
-    border-radius: 28px !important;
-    padding: 12px !important;
-    margin: 18px 0 22px 0 !important;
-    box-shadow: 0 18px 55px rgba(0,0,0,0.34) !important;
-}
-
-button[data-baseweb="tab"] {
-    width: 100% !important;
-    min-height: 58px !important;
-    border-radius: 20px !important;
-    background:
-        radial-gradient(circle at top left, rgba(255,255,255,0.045), transparent 42%),
-        linear-gradient(180deg, rgba(17,24,39,0.92), rgba(15,23,42,0.88)) !important;
-    font-weight: 850 !important;
-}
-
-button[aria-selected="true"][data-baseweb="tab"] {
-    background:
-        radial-gradient(circle at top left, rgba(225,6,0,0.22), transparent 40%),
-        radial-gradient(circle at bottom right, rgba(56,189,248,0.18), transparent 40%),
-        linear-gradient(180deg, rgba(30,41,59,0.98), rgba(15,23,42,0.98)) !important;
-    border-color: rgba(56,189,248,0.32) !important;
-    box-shadow: inset 0 -3px 0 #38BDF8, 0 12px 26px rgba(0,0,0,0.25) !important;
-}
-
-.exec-map {
-    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-    margin: 14px 0 20px 0 !important;
-}
-
-.exec-map-card {
-    min-height: 118px !important;
-    border-radius: 24px !important;
-    padding: 16px !important;
-    background:
-        radial-gradient(circle at top right, rgba(56,189,248,0.12), transparent 40%),
-        linear-gradient(180deg, rgba(17,24,39,0.94), rgba(10,18,34,0.96)) !important;
-    border: 1px solid rgba(255,255,255,0.10) !important;
-    transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
-}
-
-.exec-map-card:hover {
-    transform: translateY(-4px);
-    border-color: rgba(56,189,248,0.22);
-    box-shadow: 0 20px 44px rgba(0,0,0,0.28);
-}
-
-.exec-map-title {
-    font-size: .82rem !important;
-}
-
-.exec-map-text {
-    font-size: .80rem !important;
-}
-
-.stage-header {
-    padding: 22px 24px !important;
-    border-radius: 30px !important;
-    background:
-        radial-gradient(circle at 0% 0%, rgba(225,6,0,0.18), transparent 36%),
-        radial-gradient(circle at 100% 100%, rgba(56,189,248,0.15), transparent 36%),
-        linear-gradient(135deg, rgba(15,23,42,0.95), rgba(8,22,39,0.96)) !important;
-    border: 1px solid rgba(255,255,255,0.12) !important;
-    box-shadow: 0 18px 46px rgba(0,0,0,0.26) !important;
-}
-
-.stage-title {
-    font-size: 1.45rem !important;
-}
-
-.stage-subtitle {
-    font-size: .93rem !important;
-}
-
-.decision-strip {
-    grid-template-columns: 1.15fr 1fr 1fr !important;
-    gap: 14px !important;
-    margin: 0 0 18px 0 !important;
-}
-
-.decision-card {
-    min-height: 112px;
-    border-radius: 22px !important;
-    padding: 16px !important;
-    background:
-        linear-gradient(180deg, rgba(17,24,39,0.88), rgba(10,18,34,0.92)) !important;
-    border: 1px solid rgba(255,255,255,0.10) !important;
-    box-shadow: 0 12px 28px rgba(0,0,0,0.18);
-}
-
-.decision-card:first-child {
-    background:
-        radial-gradient(circle at top right, rgba(56,189,248,0.14), transparent 42%),
-        linear-gradient(180deg, rgba(20,34,57,0.92), rgba(10,18,34,0.95)) !important;
-    border-color: rgba(56,189,248,0.18) !important;
-}
-
-.content-lane {
-    border-radius: 28px !important;
-    padding: 16px 16px 6px 16px !important;
-    background:
-        linear-gradient(180deg, rgba(255,255,255,0.028), rgba(255,255,255,0.012)) !important;
-    border: 1px solid rgba(255,255,255,0.065) !important;
-}
-
-.user-guide-band {
-    margin: 2px 0 16px 0 !important;
-}
-
-.guide-pill {
-    padding: 9px 13px !important;
-    border-radius: 999px !important;
-    background:
-        linear-gradient(180deg, rgba(255,255,255,0.075), rgba(255,255,255,0.035)) !important;
-}
-
-.anchor-note {
-    border-radius: 20px !important;
-    background:
-        linear-gradient(135deg, rgba(56,189,248,0.08), rgba(255,255,255,0.035)) !important;
-}
-
-.context-badge {
-    padding: 7px 11px !important;
-    background:
-        linear-gradient(180deg, rgba(255,255,255,0.070), rgba(255,255,255,0.035)) !important;
-}
-
-.sidebar-block {
-    border-radius: 24px !important;
-    box-shadow: 0 16px 36px rgba(0,0,0,0.24) !important;
-}
-
-.sidebar-operator-card {
-    border-radius: 20px !important;
-    min-height: 86px !important;
-    background:
-        radial-gradient(circle at top right, rgba(56,189,248,0.10), transparent 36%),
-        linear-gradient(180deg, rgba(17,24,39,0.92), rgba(10,18,34,0.96)) !important;
-}
-
-@keyframes breatheGlow {
-    0%, 100% { box-shadow: 0 0 0 rgba(56,189,248,0); }
-    50% { box-shadow: 0 0 24px rgba(56,189,248,0.12); }
-}
-.stage-header, .kpi-strip, .header-shell {
-    animation: breatheGlow 6s ease-in-out infinite;
-}
-
-
-.reading-band {
-    display:grid;
-    grid-template-columns: 1.2fr 1fr 1fr;
-    gap:12px;
-    margin: 0 0 16px 0;
-}
-.reading-card {
-    position:relative;
-    overflow:hidden;
-    border-radius:24px;
-    padding:16px 17px;
-    min-height:108px;
-    background:
-        radial-gradient(circle at top right, rgba(56,189,248,0.12), transparent 42%),
-        linear-gradient(180deg, rgba(17,24,39,0.90), rgba(10,18,34,0.94));
-    border:1px solid rgba(255,255,255,0.10);
-    box-shadow: 0 12px 34px rgba(0,0,0,0.20);
-}
-.reading-card:first-child {
-    background:
-        radial-gradient(circle at top left, rgba(225,6,0,0.16), transparent 38%),
-        radial-gradient(circle at bottom right, rgba(56,189,248,0.13), transparent 38%),
-        linear-gradient(180deg, rgba(20,34,57,0.92), rgba(10,18,34,0.96));
-}
-.reading-title {
-    display:flex;
-    align-items:center;
-    gap:8px;
-    font-size:.80rem;
-    color:#F8FAFC;
-    font-weight:950;
-    text-transform:uppercase;
-    letter-spacing:.35px;
-    margin-bottom:7px;
-}
-.reading-text {
-    color:#CBD5E1;
-    font-size:.84rem;
-    line-height:1.50;
-}
-@media (max-width: 1200px) {
-    .reading-band { grid-template-columns: 1fr; }
-}
-
-
-/* =========================================================
-   V32 - ORGANIZACION PROFESIONAL Y LECTURA PROGRESIVA
-   ========================================================= */
-
-.compact-context-bar {
-    display:grid;
-    grid-template-columns: 1.25fr repeat(4, minmax(0, 1fr));
-    gap:10px;
-    margin: 0 0 16px 0;
-}
-.compact-context-main,
-.compact-context-item {
-    position:relative;
-    overflow:hidden;
-    border-radius:18px;
-    padding:12px 13px;
-    background:
-        radial-gradient(circle at top right, rgba(56,189,248,0.10), transparent 42%),
-        linear-gradient(180deg, rgba(17,24,39,0.86), rgba(10,18,34,0.92));
-    border:1px solid rgba(255,255,255,0.09);
-    box-shadow: 0 10px 24px rgba(0,0,0,0.16);
-    min-height:74px;
-}
-.compact-context-main {
-    background:
-        radial-gradient(circle at top left, rgba(225,6,0,0.14), transparent 38%),
-        radial-gradient(circle at bottom right, rgba(56,189,248,0.12), transparent 38%),
-        linear-gradient(180deg, rgba(20,34,57,0.92), rgba(10,18,34,0.96));
-}
-.compact-context-label {
-    display:flex;
-    align-items:center;
-    gap:7px;
-    font-size:.68rem;
-    color:#94A3B8;
-    font-weight:900;
-    text-transform:uppercase;
-    letter-spacing:.35px;
-    margin-bottom:5px;
-}
-.compact-context-value {
-    color:#F8FAFC;
-    font-size:1.02rem;
-    font-weight:950;
-    line-height:1.16;
-}
-.compact-context-sub {
-    color:#A8B3C7;
-    font-size:.72rem;
-    line-height:1.35;
-    margin-top:4px;
-}
-
-.page-flow-note {
-    border-radius:22px;
-    padding:14px 16px;
-    margin: 0 0 16px 0;
-    background:
-        linear-gradient(135deg, rgba(56,189,248,0.08), rgba(255,255,255,0.025));
-    border:1px solid rgba(255,255,255,0.08);
-}
-.page-flow-title {
-    display:flex;
-    align-items:center;
-    gap:8px;
-    font-size:.78rem;
-    font-weight:950;
-    color:#E2E8F0;
-    text-transform:uppercase;
-    letter-spacing:.35px;
-    margin-bottom:5px;
-}
-.page-flow-text {
-    font-size:.82rem;
-    color:#CBD5E1;
-    line-height:1.5;
-}
-
-.tab-layout {
-    display:grid;
-    grid-template-columns: 1fr;
-    gap:14px;
-}
-.tab-section {
-    border-radius:28px;
-    padding:14px 14px 4px 14px;
-    background: rgba(255,255,255,0.018);
-    border:1px solid rgba(255,255,255,0.055);
-    margin-bottom:14px;
-}
-.tab-section-header {
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    margin:0 0 12px 4px;
-}
-.tab-section-title {
-    display:flex;
-    align-items:center;
-    gap:8px;
-    color:#E2E8F0;
-    font-size:.78rem;
-    font-weight:950;
-    text-transform:uppercase;
-    letter-spacing:.38px;
-}
-.tab-section-hint {
-    color:#94A3B8;
-    font-size:.74rem;
-    line-height:1.35;
-    text-align:right;
-}
-.decision-strip {
-    margin-bottom: 16px !important;
-}
-.stage-header {
-    margin-top: 2px !important;
-}
-.exec-map {
-    margin-top: 0 !important;
-}
-.kpi-strip {
-    display:none !important;
-}
-.reading-band {
-    display:none !important;
-}
-@media (max-width: 1200px) {
-    .compact-context-bar {
-        grid-template-columns: repeat(2, minmax(0,1fr));
-    }
-    .compact-context-main {
-        grid-column: span 2;
-    }
-    .tab-section-header {
-        align-items:flex-start;
-        flex-direction:column;
-    }
-    .tab-section-hint {
-        text-align:left;
-    }
-}
-
-
-/* =========================================================
-   V33 - RESUMEN KPI SUPERIOR COMPACTO
-   ========================================================= */
-
-.compact-context-bar {
-    display:flex !important;
-    align-items:stretch !important;
-    gap:8px !important;
-    margin: 0 0 12px 0 !important;
-    padding: 8px !important;
-    border-radius: 18px !important;
-    background: rgba(255,255,255,0.025) !important;
-    border: 1px solid rgba(255,255,255,0.06) !important;
-    box-shadow: 0 10px 26px rgba(0,0,0,0.16) !important;
-}
-.compact-context-main,
-.compact-context-item {
-    min-height: 54px !important;
-    padding: 8px 10px !important;
-    border-radius: 14px !important;
-    flex: 1 1 0 !important;
-    background:
-        linear-gradient(180deg, rgba(17,24,39,0.74), rgba(10,18,34,0.78)) !important;
-    box-shadow: none !important;
-}
-.compact-context-main {
-    flex: 1.35 1 0 !important;
-    background:
-        linear-gradient(135deg, rgba(225,6,0,0.10), rgba(56,189,248,0.07), rgba(10,18,34,0.78)) !important;
-}
-.compact-context-label {
-    font-size: .61rem !important;
-    margin-bottom: 3px !important;
-    letter-spacing: .3px !important;
-}
-.compact-context-label .icon-inline {
-    width: 10px !important;
-    height: 10px !important;
-}
-.compact-context-value {
-    font-size: .88rem !important;
-    line-height: 1.05 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-}
-.compact-context-sub {
-    font-size: .64rem !important;
-    margin-top: 3px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-}
-.page-flow-note {
-    padding: 10px 12px !important;
-    border-radius: 16px !important;
-    margin: 0 0 12px 0 !important;
-}
-.page-flow-title {
-    font-size: .68rem !important;
-    margin-bottom: 3px !important;
-}
-.page-flow-text {
-    font-size: .74rem !important;
-    line-height: 1.38 !important;
-}
-@media (max-width: 1200px) {
-    .compact-context-bar {
-        display:grid !important;
-        grid-template-columns: repeat(2, minmax(0,1fr)) !important;
-    }
-    .compact-context-main {
-        grid-column: span 2 !important;
-    }
-}
-
-
-/* =========================================================
-   V34 - DIAGNOSTICO INICIAL COMPACTO
-   ========================================================= */
-
-.tab-section:first-of-type {
-    padding: 10px 12px !important;
-    border-radius: 18px !important;
-    margin-bottom: 10px !important;
-    background: rgba(255,255,255,0.025) !important;
-    border: 1px solid rgba(255,255,255,0.06) !important;
-}
-
-.tab-section:first-of-type .section-card {
-    padding: 10px !important;
-    border-radius: 16px !important;
-    box-shadow: none !important;
-}
-
-.tab-section:first-of-type .anchor-note {
-    padding: 10px !important;
-    border-radius: 14px !important;
-}
-
-.tab-section:first-of-type .section-title {
-    font-size: 0.9rem !important;
-}
-
-.tab-section:first-of-type .section-subtitle {
-    font-size: 0.75rem !important;
-    line-height: 1.35 !important;
-}
-
-
-/* =========================================================
-   V35 - REFINAMIENTO EJECUTIVO SIN DOBLE VISTA
-   ========================================================= */
-
-/* Barra superior como estado compacto, no como seccion */
-.compact-context-bar {
-    min-height: 42px !important;
-    padding: 5px 6px !important;
-    gap: 6px !important;
-    border-radius: 14px !important;
-    margin-bottom: 10px !important;
-}
-.compact-context-main,
-.compact-context-item {
-    min-height: 34px !important;
-    padding: 5px 8px !important;
-    border-radius: 10px !important;
-}
-.compact-context-label {
-    font-size: .54rem !important;
-    margin-bottom: 1px !important;
-    letter-spacing: .25px !important;
-}
-.compact-context-label .icon-inline {
-    width: 9px !important;
-    height: 9px !important;
-}
-.compact-context-value {
-    font-size: .76rem !important;
-    line-height: 1.02 !important;
-}
-.compact-context-sub {
-    display: none !important;
-}
-.page-flow-note {
-    padding: 7px 9px !important;
-    border-radius: 12px !important;
-    margin-bottom: 10px !important;
-}
-.page-flow-title {
-    font-size: .62rem !important;
-    margin-bottom: 2px !important;
-}
-.page-flow-text {
-    font-size: .68rem !important;
-    line-height: 1.28 !important;
-}
-
-/* Diagnostico inicial como micro estado */
-.tab-section:first-of-type {
-    padding: 6px 8px !important;
-    margin-bottom: 8px !important;
-    border-radius: 12px !important;
-}
-.tab-section:first-of-type .tab-section-header {
-    margin-bottom: 6px !important;
-}
-.tab-section:first-of-type .tab-section-title {
-    font-size: .68rem !important;
-}
-.tab-section:first-of-type .tab-section-hint {
-    font-size: .66rem !important;
-}
-.tab-section:first-of-type .section-card {
-    padding: 8px !important;
-    border-radius: 12px !important;
-    min-height: auto !important;
-}
-.tab-section:first-of-type .section-title {
-    font-size: .78rem !important;
-}
-.tab-section:first-of-type .section-subtitle {
-    font-size: .68rem !important;
-    line-height: 1.22 !important;
-}
-.tab-section:first-of-type .anchor-note {
-    display: none !important;
-}
-
-/* KPI contextual de tab */
-.tab-kpi-context {
-    display: grid;
-    grid-template-columns: 1.15fr 1fr 1fr;
+    background: rgba(217,119,6,0.06);
+    border: 1px solid rgba(217,119,6,0.20);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: .78rem;
+    color: #92400E !important;
+    display: flex;
+    align-items: center;
     gap: 10px;
-    margin: 0 0 14px 0;
-}
-.tab-kpi-card {
-    position: relative;
-    overflow: hidden;
-    border-radius: 18px;
-    padding: 13px 14px;
-    min-height: 92px;
-    background:
-        radial-gradient(circle at top right, rgba(56,189,248,0.12), transparent 42%),
-        linear-gradient(180deg, rgba(17,24,39,0.88), rgba(10,18,34,0.94));
-    border: 1px solid rgba(255,255,255,0.09);
-    box-shadow: 0 10px 24px rgba(0,0,0,0.16);
-}
-.tab-kpi-card:first-child {
-    background:
-        radial-gradient(circle at top left, rgba(225,6,0,0.14), transparent 40%),
-        radial-gradient(circle at bottom right, rgba(56,189,248,0.12), transparent 40%),
-        linear-gradient(180deg, rgba(20,34,57,0.92), rgba(10,18,34,0.96));
-    border-color: rgba(56,189,248,0.18);
-}
-.tab-kpi-label {
-    display:flex;
-    align-items:center;
-    gap:7px;
-    font-size:.68rem;
-    color:#94A3B8;
-    font-weight:900;
-    text-transform:uppercase;
-    letter-spacing:.35px;
-    margin-bottom:5px;
-}
-.tab-kpi-value {
-    color:#F8FAFC;
-    font-size:1.22rem;
-    font-weight:950;
-    line-height:1.1;
-}
-.tab-kpi-sub {
-    color:#A8B3C7;
-    font-size:.74rem;
-    line-height:1.38;
-    margin-top:5px;
 }
 
-/* Insights por tab */
-.tab-insight {
-    position: relative;
-    overflow: hidden;
-    border-radius: 18px;
-    padding: 14px 15px;
-    margin: 0 0 14px 0;
-    background:
-        linear-gradient(135deg, rgba(56,189,248,0.09), rgba(225,6,0,0.06), rgba(255,255,255,0.025));
-    border: 1px solid rgba(255,255,255,0.09);
+/* Business hero */
+.business-hero, .business-kpi {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px 18px;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
 }
-.tab-insight-title {
-    display:flex;
-    align-items:center;
-    gap:8px;
-    color:#F8FAFC;
-    font-size:.78rem;
-    font-weight:950;
-    text-transform:uppercase;
-    letter-spacing:.35px;
-    margin-bottom:6px;
-}
-.tab-insight-body {
-    color:#CBD5E1;
-    font-size:.84rem;
-    line-height:1.48;
+.business-hero:hover, .business-kpi:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-hover);
 }
 
-/* Etiquetas de riesgo mas claras */
-.risk-badge-row {
-    display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-    margin: 0 0 12px 0;
+/* Compact context strip */
+.compact-context {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: .74rem;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-sm);
+    overflow-x: auto;
+    animation: fadeDown 0.28s ease both;
 }
-.risk-badge {
+.compact-context-item { flex-shrink: 0; }
+.compact-context-label { font-size:.64rem; color:var(--text-muted)!important; font-weight:700; text-transform:uppercase; letter-spacing:.3px; }
+.compact-context-value { font-size:.82rem; font-weight:800; color:var(--text-primary)!important; }
+.compact-context-sub   { font-size:.68rem; color:var(--text-secondary)!important; }
+.compact-context-sep   { width:1px; height:28px; background:var(--border); flex-shrink:0; }
+
+/* Page flow note */
+.page-flow-note {
+    background: var(--blue-soft);
+    border: 1px solid rgba(37,99,235,0.15);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    font-size: .78rem;
+    color: var(--text-secondary) !important;
+}
+.page-flow-title { font-weight: 800; color: var(--blue) !important; margin-bottom: 4px; font-size: .74rem; }
+.page-flow-text  { line-height: 1.55; }
+
+/* Alert card */
+.rule-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    transition: var(--transition);
+}
+.rule-card:hover { box-shadow: var(--shadow-sm); transform: translateX(2px); }
+
+/* Sidebar guide row */
+.sidebar-guide-row { display:flex; flex-wrap:wrap; gap:5px; margin:6px 0; }
+.sidebar-guide-pill {
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    font-size:.64rem;
+    font-weight:700;
+    color:var(--text-secondary)!important;
+    padding:3px 9px;
     display:inline-flex;
     align-items:center;
-    gap:7px;
-    border-radius:999px;
-    padding:7px 10px;
-    font-size:.72rem;
-    font-weight:850;
-    border:1px solid rgba(255,255,255,0.10);
+    gap:3px;
+    transition: var(--transition);
 }
-.risk-high { background:rgba(239,68,68,0.13); color:#FCA5A5; }
-.risk-watch { background:rgba(245,158,11,0.13); color:#FCD34D; }
-.risk-stable { background:rgba(34,197,94,0.13); color:#86EFAC; }
-.risk-opportunity { background:rgba(56,189,248,0.13); color:#7DD3FC; }
-
-/* Tablas mas premium */
-.table-shell {
-    position: relative;
-    border-radius: 20px;
-    padding: 12px;
-    background:
-        radial-gradient(circle at top right, rgba(56,189,248,0.10), transparent 36%),
-        linear-gradient(180deg, rgba(17,24,39,0.70), rgba(10,18,34,0.78));
-    border: 1px solid rgba(255,255,255,0.09);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.18);
-    margin-top: 8px;
-}
-.table-shell::before {
-    content: "";
-    position: absolute;
-    left: 14px;
-    right: 14px;
-    top: 0;
-    height: 2px;
-    border-radius: 999px;
-    background: linear-gradient(90deg, rgba(225,6,0,0.85), rgba(56,189,248,0.75));
-}
-.table-toolbar {
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    margin-bottom:10px;
-}
-.table-title-mini {
-    display:flex;
-    align-items:center;
-    gap:8px;
-    color:#E2E8F0;
-    font-size:.74rem;
-    font-weight:950;
-    text-transform:uppercase;
-    letter-spacing:.35px;
-}
-.table-hint-mini {
-    color:#94A3B8;
-    font-size:.70rem;
-    text-align:right;
-}
-div[data-testid="stDataFrame"] {
-    border-radius: 16px !important;
-    overflow: hidden !important;
-    border: 1px solid rgba(255,255,255,0.10) !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
-}
-div[data-testid="stDataFrame"] div[role="grid"] {
-    background: rgba(15,23,42,0.70) !important;
+.sidebar-guide-pill:hover {
+    border-color: var(--accent);
+    color: var(--accent) !important;
+    background: var(--accent-soft);
 }
 
-/* Mejor ritmo */
-.tab-section {
-    margin-bottom: 12px !important;
+/* ── Animations ───────────────────────────────────────── */
+@keyframes fadeUp {
+    from { opacity:0; transform:translateY(12px); }
+    to   { opacity:1; transform:translateY(0); }
 }
-.decision-strip {
-    margin-bottom: 12px !important;
+@keyframes fadeDown {
+    from { opacity:0; transform:translateY(-8px); }
+    to   { opacity:1; transform:translateY(0); }
 }
-.section-card {
-    margin-bottom: 10px !important;
+@keyframes fadeIn {
+    from { opacity:0; }
+    to   { opacity:1; }
 }
-
-@media (max-width: 1200px) {
-    .tab-kpi-context {
-        grid-template-columns: 1fr;
-    }
+@keyframes slideRight {
+    from { opacity:0; transform:translateX(-8px); }
+    to   { opacity:1; transform:translateX(0); }
 }
-
-
-/* =========================================================
-   V37 - DIAGNOSTICO INICIAL BALANCEADO
-   ========================================================= */
-
-/* Insight ejecutivo + Contexto territorial: resumen compacto, no bloque grande */
-.tab-section:first-of-type .section-card {
-    min-height: 190px !important;
-    max-height: 230px !important;
-    padding: 18px 20px !important;
-    border-radius: 22px !important;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
+@keyframes pulse-accent {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(225,6,0,0); }
+    50%       { box-shadow: 0 0 0 4px rgba(225,6,0,0.12); }
 }
 
-.tab-section:first-of-type .section-card .section-title {
-    font-size: 1.05rem !important;
-    margin-bottom: 6px !important;
+/* Staggered card animations */
+.card:nth-child(1) { animation-delay:.04s; }
+.card:nth-child(2) { animation-delay:.08s; }
+.card:nth-child(3) { animation-delay:.12s; }
+.card:nth-child(4) { animation-delay:.16s; }
+
+/* Progress bars */
+.progress-bar-track {
+    width: 100%;
+    height: 5px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+}
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.tab-section:first-of-type .section-card .section-subtitle {
-    font-size: .80rem !important;
-    line-height: 1.35 !important;
-    margin-bottom: 10px !important;
+/* Pill badges */
+.pill {
+    display:inline-flex; align-items:center; gap:3px;
+    background:var(--bg-sidebar); border:1px solid var(--border);
+    border-radius:99px; font-size:.66rem; font-weight:700;
+    color:var(--text-secondary)!important; padding:2px 8px;
 }
 
-.tab-section:first-of-type .insight-card {
-    min-height: 104px !important;
-    max-height: 132px !important;
-    padding: 13px 15px !important;
-    border-radius: 18px !important;
-    overflow: hidden !important;
-}
+/* Main content padding */
+[data-testid="stMain"] > div { padding-top: 1rem !important; }
+[data-testid="block-container"] { padding: 1.2rem 2rem 2rem !important; max-width: 1400px !important; }
 
-.tab-section:first-of-type .insight-title {
-    font-size: .76rem !important;
-    margin-bottom: 6px !important;
-}
+/* Hide Streamlit branding */
+#MainMenu, footer, header { visibility: hidden; }
+[data-testid="stToolbar"] { display: none; }
 
-.tab-section:first-of-type .insight-body {
-    font-size: .78rem !important;
-    line-height: 1.38 !important;
-}
-
-.tab-section:first-of-type .insight-card .dashboard-divider {
-    margin: 7px 0 !important;
-}
-
-.tab-section:first-of-type .territory-card {
-    min-height: 104px !important;
-    max-height: 132px !important;
-    padding: 14px 16px !important;
-    border-radius: 18px !important;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.tab-section:first-of-type .territory-value {
-    font-size: 1.35rem !important;
-    line-height: 1.05 !important;
-}
-
-.tab-section:first-of-type .territory-sub {
-    font-size: .78rem !important;
-    line-height: 1.35 !important;
-    margin-top: 8px !important;
-}
-
-.tab-section:first-of-type .tab-section-header {
-    margin-bottom: 8px !important;
-}
-
-.tab-section:first-of-type {
-    padding: 10px 12px 8px 12px !important;
-    border-radius: 18px !important;
-}
-
-
-/* ===== V38 FINAL AJUSTES ===== */
-.insight-card{min-height:60px!important;max-height:75px!important;padding:6px 8px!important;}
-.insight-title{font-size:.72rem!important;}
-.insight-body{font-size:.72rem!important;line-height:1.2!important;}
-.territory-card{min-height:60px!important;max-height:75px!important;padding:8px 10px!important;}
-.territory-value{font-size:1rem!important;}
-.territory-sub{font-size:.68rem!important;}
-.compact-context-bar{height:52px!important;padding:6px 8px!important;}
-
-
-/* =========================================================
-   V39 - FIX TARJETAS TERRITORIALES SIN TEXTO ENCIMADO
-   ========================================================= */
-
-/* Ajuste global para las tarjetas de territorio */
-.territory-card {
-    min-height: 132px !important;
-    max-height: none !important;
-    height: auto !important;
-    padding: 16px 18px !important;
-    border-radius: 20px !important;
-    overflow: visible !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: flex-start !important;
-    gap: 6px !important;
-}
-
-.territory-label {
-    font-size: .72rem !important;
-    line-height: 1.2 !important;
-    margin-bottom: 2px !important;
-    white-space: normal !important;
-}
-
-.territory-value {
-    font-size: 1.35rem !important;
-    line-height: 1.1 !important;
-    margin-bottom: 2px !important;
-    white-space: normal !important;
-}
-
-.territory-sub {
-    font-size: .78rem !important;
-    line-height: 1.42 !important;
-    margin-top: 4px !important;
-    white-space: normal !important;
-    overflow-wrap: anywhere !important;
-}
-
-/* El bloque inicial compacto no debe forzar recorte en tarjetas de territorio */
-.tab-section:first-of-type .territory-card {
-    min-height: 118px !important;
-    max-height: none !important;
-    height: auto !important;
-    padding: 14px 16px !important;
-    overflow: visible !important;
-}
-
-.tab-section:first-of-type .territory-value {
-    font-size: 1.18rem !important;
-    line-height: 1.12 !important;
-}
-
-.tab-section:first-of-type .territory-sub {
-    font-size: .74rem !important;
-    line-height: 1.38 !important;
-}
-
-/* En la pestaña de zonas prioritarias, deja más aire entre tarjetas */
-
-
-/* =========================================================
-   V40 - DIAGNOSTICO INICIAL REALMENTE COMPACTO
-   ========================================================= */
-
-/* El bloque diagnóstico inicial debe funcionar como resumen, no como sección grande */
-.tab-section:first-of-type {
-    padding: 8px 10px !important;
-    border-radius: 16px !important;
-    margin-bottom: 10px !important;
-}
-
-.tab-section:first-of-type .tab-section-header {
-    margin-bottom: 6px !important;
-}
-
-.tab-section:first-of-type .tab-section-title {
-    font-size: .66rem !important;
-}
-
-.tab-section:first-of-type .tab-section-hint {
-    font-size: .64rem !important;
-}
-
-/* Tarjetas Insight + Contexto territorial: más bajas y proporcionales */
-.tab-section:first-of-type .section-card {
-    min-height: 128px !important;
-    max-height: 148px !important;
-    height: 138px !important;
-    padding: 12px 14px !important;
-    border-radius: 20px !important;
-    overflow: hidden !important;
-}
-
-.tab-section:first-of-type .section-card .section-title {
-    font-size: .95rem !important;
-    line-height: 1.1 !important;
-    margin-bottom: 5px !important;
-}
-
-.tab-section:first-of-type .section-card .section-subtitle {
-    font-size: .72rem !important;
-    line-height: 1.25 !important;
-    margin-bottom: 8px !important;
-}
-
-/* Insight interno: solo resumen corto */
-.tab-section:first-of-type .insight-card {
-    min-height: 62px !important;
-    max-height: 72px !important;
-    height: 68px !important;
-    padding: 8px 10px !important;
-    border-radius: 14px !important;
-    overflow: hidden !important;
-}
-
-.tab-section:first-of-type .insight-title {
-    font-size: .66rem !important;
-    line-height: 1.05 !important;
-    margin-bottom: 4px !important;
-}
-
-.tab-section:first-of-type .insight-body {
-    font-size: .67rem !important;
-    line-height: 1.18 !important;
-    margin: 0 !important;
-    display: -webkit-box !important;
-    -webkit-line-clamp: 2 !important;
-    -webkit-box-orient: vertical !important;
-    overflow: hidden !important;
-}
-
-.tab-section:first-of-type .insight-card .dashboard-divider {
-    display: none !important;
-}
-
-/* Oculta el segundo texto largo del insight inicial si existe */
-.tab-section:first-of-type .insight-card .insight-body:nth-of-type(n+2) {
-    display: none !important;
-}
-
-/* Contexto territorial compacto */
-.tab-section:first-of-type .territory-card {
-    min-height: 68px !important;
-    max-height: 78px !important;
-    height: 74px !important;
-    padding: 10px 12px !important;
-    border-radius: 14px !important;
-    overflow: hidden !important;
-    justify-content: center !important;
-}
-
-.tab-section:first-of-type .territory-value {
-    font-size: 1.05rem !important;
-    line-height: 1.05 !important;
-    margin-bottom: 6px !important;
-}
-
-.tab-section:first-of-type .territory-sub {
-    font-size: .66rem !important;
-    line-height: 1.18 !important;
-    margin-top: 0 !important;
-}
-
-/* Reduce columnas del diagnóstico inicial para que no parezcan paneles enormes */
-.tab-section:first-of-type + div,
-.tab-section:first-of-type ~ div {
-    --compact-diagnostic: 1;
-}
-
+/* Separator */
+hr { border: none; border-top: 1px solid var(--border) !important; margin: 16px 0 !important; }
 </style>
 """, unsafe_allow_html=True)
+
 
 # =========================================================
 # FUNCIONES UTILITARIAS
@@ -3587,8 +2154,8 @@ def render_instructivo():
             </svg>
         </div>
         <div>
-            <div style="font-size:1.4rem;font-weight:950;color:#F8FAFC;">Guía de uso del dashboard</div>
-            <div style="font-size:.82rem;color:#64748B;margin-top:2px;">Claro Colombia · Inteligencia Comercial y de Red</div>
+            <div style="font-size:1.4rem;font-weight:950;color:var(--text-primary);">Guía de uso del dashboard</div>
+            <div style="font-size:.82rem;color:var(--text-muted);margin-top:2px;">Claro Colombia · Inteligencia Comercial y de Red</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -3598,7 +2165,7 @@ def render_instructivo():
     with col_i1:
         # Vista Red y Mercado
         st.markdown(
-            "<div style='background:linear-gradient(135deg,rgba(17,24,39,0.95),rgba(10,18,34,0.98));"
+            "<div style='background:var(--bg-card);"
             "border:1px solid rgba(56,189,248,0.25);border-radius:20px;padding:22px 24px;margin-bottom:14px;'>"
             "<div style='display:flex;align-items:center;gap:10px;margin-bottom:12px;'>"
             "<div style='width:34px;height:34px;background:rgba(56,189,248,0.15);border-radius:9px;"
@@ -3607,10 +2174,10 @@ def render_instructivo():
             " stroke-linecap='round' stroke-linejoin='round'><path d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z'/>"
             "<circle cx='12' cy='12' r='3'/></svg></div>"
             "<div style='font-size:.92rem;font-weight:900;color:#38BDF8;'>Vista Red y Mercado</div></div>"
-            "<div style='font-size:.78rem;color:#94A3B8;line-height:1.7;margin-bottom:14px;'>"
+            "<div style='font-size:.78rem;color:var(--text-muted);line-height:1.7;margin-bottom:14px;'>"
             "Analiza la calidad de se&#241;al RSRP de todos los operadores (Claro, Tigo, Movistar...) "
             "por c&#243;digo postal. Incluye comparativo de cuota de mercado y captaci&#243;n de altas.</div>"
-            "<div style='font-size:.68rem;font-weight:900;color:#64748B;text-transform:uppercase;"
+            "<div style='font-size:.68rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;"
             "letter-spacing:.3px;margin-bottom:8px;'>Archivos necesarios</div>"
             "<div style='background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.18);"
             "border-radius:11px;padding:11px 13px;margin-bottom:7px;'>"
@@ -3618,35 +2185,35 @@ def render_instructivo():
             "&#128196; RSRP_COMPLETO.csv &nbsp;"
             "<span style='background:#38BDF8;color:#0F172A;font-size:.58rem;padding:1px 5px;"
             "border-radius:99px;'>REQUERIDO</span></div>"
-            "<div style='font-size:.70rem;color:#94A3B8;line-height:1.5;'>"
+            "<div style='font-size:.70rem;color:var(--text-muted);line-height:1.5;'>"
             "Se&#241;al RSRP por CP, operador y fecha.<br>"
             "Columnas: Codigo_postal &middot; Fecha de inicio &middot; Claro &middot; Tigo &middot; Movistar...</div></div>"
-            "<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);"
+            "<div style='background:var(--bg);border:1px solid var(--border);"
             "border-radius:11px;padding:11px 13px;margin-bottom:7px;'>"
-            "<div style='font-size:.74rem;font-weight:900;color:#E2E8F0;margin-bottom:2px;'>"
+            "<div style='font-size:.74rem;font-weight:900;color:var(--text-primary);margin-bottom:2px;'>"
             "&#128202; Cuota_mercado_completo.xlsx &nbsp;"
-            "<span style='background:rgba(255,255,255,0.10);color:#94A3B8;font-size:.58rem;"
+            "<span style='background:rgba(255,255,255,0.10);color:var(--text-muted);font-size:.58rem;"
             "padding:1px 5px;border-radius:99px;'>OPCIONAL</span></div>"
-            "<div style='font-size:.70rem;color:#94A3B8;'>Cuota de mercado por CP y operador. Habilita el tab Mercado.</div></div>"
-            "<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);"
+            "<div style='font-size:.70rem;color:var(--text-muted);'>Cuota de mercado por CP y operador. Habilita el tab Mercado.</div></div>"
+            "<div style='background:var(--bg);border:1px solid var(--border);"
             "border-radius:11px;padding:11px 13px;margin-bottom:14px;'>"
-            "<div style='font-size:.74rem;font-weight:900;color:#E2E8F0;margin-bottom:2px;'>"
+            "<div style='font-size:.74rem;font-weight:900;color:var(--text-primary);margin-bottom:2px;'>"
             "&#128202; Cuota_alta_completo.xlsx &nbsp;"
-            "<span style='background:rgba(255,255,255,0.10);color:#94A3B8;font-size:.58rem;"
+            "<span style='background:rgba(255,255,255,0.10);color:var(--text-muted);font-size:.58rem;"
             "padding:1px 5px;border-radius:99px;'>OPCIONAL</span></div>"
-            "<div style='font-size:.70rem;color:#94A3B8;'>Captaci&#243;n de altas por CP y operador. "
+            "<div style='font-size:.70rem;color:var(--text-muted);'>Captaci&#243;n de altas por CP y operador. "
             "Complementa el an&#225;lisis competitivo.</div></div>"
-            "<div style='font-size:.68rem;font-weight:900;color:#64748B;text-transform:uppercase;"
+            "<div style='font-size:.68rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;"
             "letter-spacing:.3px;margin-bottom:7px;'>C&#243;mo cargar</div>"
             "<div style='display:flex;gap:7px;margin-bottom:5px;align-items:flex-start;'>"
             "<span style='background:#38BDF8;color:#0F172A;font-size:.60rem;font-weight:900;"
             "padding:2px 6px;border-radius:99px;flex-shrink:0;'>1</span>"
-            "<span style='font-size:.72rem;color:#CBD5E1;'>Sube el CSV usando el cargador "
+            "<span style='font-size:.72rem;color:var(--text-secondary);'>Sube el CSV usando el cargador "
             "<b>Se&#241;al RSRP</b> en el sidebar.</span></div>"
             "<div style='display:flex;gap:7px;align-items:flex-start;'>"
             "<span style='background:#38BDF8;color:#0F172A;font-size:.60rem;font-weight:900;"
             "padding:2px 6px;border-radius:99px;flex-shrink:0;'>2</span>"
-            "<span style='font-size:.72rem;color:#CBD5E1;'>Los archivos de cuota van en la "
+            "<span style='font-size:.72rem;color:var(--text-secondary);'>Los archivos de cuota van en la "
             "carpeta del proyecto en el servidor.</span></div></div>",
             unsafe_allow_html=True
         )
@@ -3657,19 +2224,19 @@ def render_instructivo():
             "border-radius:14px;padding:14px 16px;'>"
             "<div style='font-size:.68rem;font-weight:900;color:#38BDF8;text-transform:uppercase;"
             "letter-spacing:.3px;margin-bottom:8px;'>5 tabs disponibles</div>"
-            "<div style='font-size:.72rem;color:#94A3B8;line-height:1.9;'>"
-            "<b style='color:#E2E8F0;'>Resumen</b> &mdash; Estado global de se&#241;al + posici&#243;n comercial<br>"
-            "<b style='color:#E2E8F0;'>Operadores</b> &mdash; Ranking de se&#241;al entre operadores<br>"
-            "<b style='color:#E2E8F0;'>Territorio</b> &mdash; CP cr&#237;ticos y zonas prioritarias<br>"
-            "<b style='color:#E2E8F0;'>Variaci&#243;n</b> &mdash; C&#243;mo cambi&#243; la se&#241;al en el tiempo<br>"
-            "<b style='color:#E2E8F0;'>Mercado</b> &mdash; Cuota, captaci&#243;n y an&#225;lisis CP a CP</div></div>",
+            "<div style='font-size:.72rem;color:var(--text-muted);line-height:1.9;'>"
+            "<b style='color:var(--text-primary);'>Resumen</b> &mdash; Estado global de se&#241;al + posici&#243;n comercial<br>"
+            "<b style='color:var(--text-primary);'>Operadores</b> &mdash; Ranking de se&#241;al entre operadores<br>"
+            "<b style='color:var(--text-primary);'>Territorio</b> &mdash; CP cr&#237;ticos y zonas prioritarias<br>"
+            "<b style='color:var(--text-primary);'>Variaci&#243;n</b> &mdash; C&#243;mo cambi&#243; la se&#241;al en el tiempo<br>"
+            "<b style='color:var(--text-primary);'>Mercado</b> &mdash; Cuota, captaci&#243;n y an&#225;lisis CP a CP</div></div>",
             unsafe_allow_html=True
         )
 
     with col_i2:
         # Vista Agentes
         st.markdown(
-            "<div style='background:linear-gradient(135deg,rgba(17,24,39,0.95),rgba(10,18,34,0.98));"
+            "<div style='background:var(--bg-card);"
             "border:1px solid rgba(225,6,0,0.25);border-radius:20px;padding:22px 24px;margin-bottom:14px;'>"
             "<div style='display:flex;align-items:center;gap:10px;margin-bottom:12px;'>"
             "<div style='width:34px;height:34px;background:rgba(225,6,0,0.15);border-radius:9px;"
@@ -3679,10 +2246,10 @@ def render_instructivo():
             "<circle cx='9' cy='7' r='4'/><path d='M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'/>"
             "</svg></div>"
             "<div style='font-size:.92rem;font-weight:900;color:#E10600;'>Vista Agentes Claro</div></div>"
-            "<div style='font-size:.78rem;color:#94A3B8;line-height:1.7;margin-bottom:14px;'>"
+            "<div style='font-size:.78rem;color:var(--text-muted);line-height:1.7;margin-bottom:14px;'>"
             "Seguimiento del plan de trabajo mensual: metas, ejecuci&#243;n semanal, PDVs, "
             "asesores, cuota de altas y se&#241;al RSRP por agente y circuito.</div>"
-            "<div style='font-size:.68rem;font-weight:900;color:#64748B;text-transform:uppercase;"
+            "<div style='font-size:.68rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;"
             "letter-spacing:.3px;margin-bottom:8px;'>Archivo necesario</div>"
             "<div style='background:rgba(225,6,0,0.06);border:1px solid rgba(225,6,0,0.20);"
             "border-radius:11px;padding:11px 13px;margin-bottom:7px;'>"
@@ -3690,33 +2257,33 @@ def render_instructivo():
             "&#128203; Plan de trabajo mensual .xlsx &nbsp;"
             "<span style='background:#E10600;color:white;font-size:.58rem;padding:1px 5px;"
             "border-radius:99px;'>REQUERIDO</span></div>"
-            "<div style='font-size:.70rem;color:#94A3B8;line-height:1.5;'>"
-            "<b style='color:#E2E8F0;'>El nombre del archivo y de la hoja pueden ser cualquiera</b> "
+            "<div style='font-size:.70rem;color:var(--text-muted);line-height:1.5;'>"
+            "<b style='color:var(--text-primary);'>El nombre del archivo y de la hoja pueden ser cualquiera</b> "
             "&mdash; el sistema detecta autom&#225;ticamente la hoja correcta por su contenido.<br><br>"
             "La hoja debe contener columnas como:<br>"
-            "<span style='color:#E2E8F0;'>AGENTE &middot; META ALTA NAT &middot; EJEC ALTA NAT "
+            "<span style='color:var(--text-primary);'>AGENTE &middot; META ALTA NAT &middot; EJEC ALTA NAT "
             "&middot; EJE ALTA TOTAL &middot; ASESOR</span></div></div>"
-            "<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);"
+            "<div style='background:var(--bg);border:1px solid var(--border);"
             "border-radius:11px;padding:11px 13px;margin-bottom:14px;'>"
-            "<div style='font-size:.70rem;color:#94A3B8;line-height:1.5;'>"
-            "Si el archivo tiene <b style='color:#E2E8F0;'>m&#250;ltiples hojas</b> (una por mes), "
+            "<div style='font-size:.70rem;color:var(--text-muted);line-height:1.5;'>"
+            "Si el archivo tiene <b style='color:var(--text-primary);'>m&#250;ltiples hojas</b> (una por mes), "
             "el sistema las detecta todas y muestra un selector de periodo en el sidebar.</div></div>"
-            "<div style='font-size:.68rem;font-weight:900;color:#64748B;text-transform:uppercase;"
+            "<div style='font-size:.68rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;"
             "letter-spacing:.3px;margin-bottom:7px;'>C&#243;mo cargar</div>"
             "<div style='display:flex;gap:7px;margin-bottom:5px;align-items:flex-start;'>"
             "<span style='background:#E10600;color:white;font-size:.60rem;font-weight:900;"
             "padding:2px 6px;border-radius:99px;flex-shrink:0;'>1</span>"
-            "<span style='font-size:.72rem;color:#CBD5E1;'>Sube el Excel en el cargador "
+            "<span style='font-size:.72rem;color:var(--text-secondary);'>Sube el Excel en el cargador "
             "<b>Plan de trabajo</b> del sidebar.</span></div>"
             "<div style='display:flex;gap:7px;margin-bottom:5px;align-items:flex-start;'>"
             "<span style='background:#E10600;color:white;font-size:.60rem;font-weight:900;"
             "padding:2px 6px;border-radius:99px;flex-shrink:0;'>2</span>"
-            "<span style='font-size:.72rem;color:#CBD5E1;'>Selecciona "
+            "<span style='font-size:.72rem;color:var(--text-secondary);'>Selecciona "
             "<b>Agentes Claro &middot; PDVs</b> en el selector de vista.</span></div>"
             "<div style='display:flex;gap:7px;align-items:flex-start;'>"
             "<span style='background:#E10600;color:white;font-size:.60rem;font-weight:900;"
             "padding:2px 6px;border-radius:99px;flex-shrink:0;'>3</span>"
-            "<span style='font-size:.72rem;color:#CBD5E1;'>Si hay varios meses, aparece un "
+            "<span style='font-size:.72rem;color:var(--text-secondary);'>Si hay varios meses, aparece un "
             "selector de periodo en el sidebar autom&#225;ticamente.</span></div></div>",
             unsafe_allow_html=True
         )
@@ -3727,12 +2294,12 @@ def render_instructivo():
             "border-radius:14px;padding:14px 16px;'>"
             "<div style='font-size:.68rem;font-weight:900;color:#E10600;text-transform:uppercase;"
             "letter-spacing:.3px;margin-bottom:8px;'>5 tabs disponibles</div>"
-            "<div style='font-size:.72rem;color:#94A3B8;line-height:1.9;'>"
-            "<b style='color:#E2E8F0;'>&#8599; &#191;C&#243;mo vamos?</b> &mdash; Resultado total del mes<br>"
-            "<b style='color:#E2E8F0;'>&#9830; &#191;Qui&#233;n cumple?</b> &mdash; Ranking y brecha por agente<br>"
-            "<b style='color:#E2E8F0;'>&#9678; La brecha</b> &mdash; PDVs cr&#237;ticos y capacidad de mejora<br>"
-            "<b style='color:#E2E8F0;'>&#8767; El ritmo</b> &mdash; Curva semanal S1&#8594;S4<br>"
-            "<b style='color:#E2E8F0;'>&#9677; Oportunidades</b> &mdash; Cuota de altas y se&#241;al RSRP</div></div>",
+            "<div style='font-size:.72rem;color:var(--text-muted);line-height:1.9;'>"
+            "<b style='color:var(--text-primary);'>&#8599; &#191;C&#243;mo vamos?</b> &mdash; Resultado total del mes<br>"
+            "<b style='color:var(--text-primary);'>&#9830; &#191;Qui&#233;n cumple?</b> &mdash; Ranking y brecha por agente<br>"
+            "<b style='color:var(--text-primary);'>&#9678; La brecha</b> &mdash; PDVs cr&#237;ticos y capacidad de mejora<br>"
+            "<b style='color:var(--text-primary);'>&#8767; El ritmo</b> &mdash; Curva semanal S1&#8594;S4<br>"
+            "<b style='color:var(--text-primary);'>&#9677; Oportunidades</b> &mdash; Cuota de altas y se&#241;al RSRP</div></div>",
             unsafe_allow_html=True
         )
 
@@ -3740,7 +2307,7 @@ def render_instructivo():
     st.markdown(
         "<div style='background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);"
         "border-radius:12px;padding:12px 16px;margin-top:14px;text-align:center;'>"
-        "<div style='font-size:.68rem;color:#475569;'>"
+        "<div style='font-size:.68rem;color:var(--text-secondary);'>"
         "&#128274; Los archivos se procesan localmente en tu sesi&#243;n y no se almacenan en ning&#250;n servidor &middot; "
         "Dashboard desarrollado para Claro Colombia &middot; "
         "Para soporte t&#233;cnico contacta al administrador del repositorio</div></div>",
@@ -3755,10 +2322,10 @@ def render_claro_view():
 
     if not info.get("found") or df_det.empty:
         st.markdown(f"""
-        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:40px;text-align:center;margin:40px 0;">
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:40px;text-align:center;margin:40px 0;">
             <div style="font-size:2rem;margin-bottom:12px;">📂</div>
-            <div style="font-size:1.1rem;font-weight:800;color:#F8FAFC;margin-bottom:8px;">Sin datos cargados</div>
-            <div style="font-size:.84rem;color:#94A3B8;">{info.get('message', 'Sube el archivo Excel del mes usando el cargador del sidebar.')}</div>
+            <div style="font-size:1.1rem;font-weight:800;color:var(--text-primary);margin-bottom:8px;">Sin datos cargados</div>
+            <div style="font-size:.84rem;color:var(--text-muted);">{info.get('message', 'Sube el archivo Excel del mes usando el cargador del sidebar.')}</div>
         </div>
         """, unsafe_allow_html=True)
         return
@@ -3858,9 +2425,9 @@ def render_claro_view():
 
     _mes_cerrado_label = "Mes cerrado ✓" if _dia_c >= 30 else f"Corte día {_dia_c} (en curso)"
     _archivo_label = (
-        f'<div style="font-size:.68rem;color:#64748B;margin-top:4px;">'
+        f'<div style="font-size:.68rem;color:var(--text-muted);margin-top:4px;">'
         f'{os.path.basename(str(info.get("path","")))} · '
-        f'<b style="color:#E2E8F0;">{_selected_sheet}</b> · '
+        f'<b style="color:var(--text-primary);">{_selected_sheet}</b> · '
         f'{_mes_cerrado_label} · {_n_pdvs:,} PDVs · {_n_ags} agentes</div>'
     )
     st.sidebar.markdown(
@@ -3879,7 +2446,7 @@ def render_claro_view():
                     help="DIAMANTE, PLATINO, ORO, PLATA, BRONCE — jerarquía comercial del PDV")
     zona_sel   = st.sidebar.multiselect("📍 Zona", options=_opts("ZONA"), default=[], key="claro_zona_sel")
 
-    st.sidebar.markdown('<div style="font-size:0.72rem;color:#94A3B8;font-weight:700;letter-spacing:0.4px;margin:8px 0 2px;">FILTROS AVANZADOS</div>', unsafe_allow_html=True)
+    st.sidebar.markdown('<div style="font-size:0.72rem;color:var(--text-muted);font-weight:700;letter-spacing:0.4px;margin:8px 0 2px;">FILTROS AVANZADOS</div>', unsafe_allow_html=True)
     tipo_sel    = st.sidebar.multiselect("🏪 Tipo de negocio", options=_opts("TIPO"), default=[], key="claro_tipo_sel")
     tipol_sel   = st.sidebar.multiselect("🔖 Tipología (A/B/C/D)", options=_opts("TIPOLOGIA"), default=[], key="claro_tipol_sel",
                     help="Clasificación interna del PDV por tamaño y potencial")
@@ -4011,9 +2578,9 @@ def render_claro_view():
     <div class="header-shell">
         <div style="position:relative;z-index:2;">
             <div class="hero-badge">{icon_svg("spark",13)} Panel Claro · Agentes y PDVs</div>
-            <div style="font-size:0.84rem;color:#94A3B8;font-weight:800;letter-spacing:0.55px;">GERENCIA R4 PREPAGO — SEGUIMIENTO COMERCIAL</div>
+            <div style="font-size:0.84rem;color:var(--text-muted);font-weight:800;letter-spacing:0.55px;">GERENCIA R4 PREPAGO — SEGUIMIENTO COMERCIAL</div>
             <div class="hero-title">Agentes Claro · {_periodo_label}</div>
-            <div style="font-size:0.78rem;color:#64748B;margin-top:4px;font-weight:600;">{_estado_mes}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;font-weight:600;">{_estado_mes}</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -4047,34 +2614,34 @@ def render_claro_view():
     # ── Franja de navegación visual ───────────────────────────────────────────
     st.markdown(f"""
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0 4px 0;">
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
             <div style="margin-bottom:6px;">{_nav_icon("chart")}</div>
-            <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;line-height:1.3;">¿Cómo vamos?</div>
-            <div style="font-size:.66rem;color:#64748B;margin-bottom:6px;line-height:1.3;">Estado del mes y proyección</div>
+            <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:3px;line-height:1.3;">¿Cómo vamos?</div>
+            <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:6px;line-height:1.3;">Estado del mes y proyección</div>
             <div style="display:flex;align-items:center;gap:4px;font-size:.70rem;font-weight:800;color:{_sem_c(_proy_global)};">{_dot(_proy_global)}Cumpl. {_proy_global:.0f}%</div>
         </div>
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
             <div style="margin-bottom:6px;">{_nav_icon("users")}</div>
-            <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;line-height:1.3;">¿Quién cumple?</div>
-            <div style="font-size:.66rem;color:#64748B;margin-bottom:6px;line-height:1.3;">Agentes vs su meta</div>
+            <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:3px;line-height:1.3;">¿Quién cumple?</div>
+            <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:6px;line-height:1.3;">Agentes vs su meta</div>
             <div style="display:flex;align-items:center;gap:4px;font-size:.70rem;font-weight:800;color:{_sem_c(100 if _ag_riesgo==0 else 70 if _ag_riesgo<=2 else 0)};">{_dot(100 if _ag_riesgo==0 else 70 if _ag_riesgo<=2 else 0)}{_ag_riesgo} en riesgo</div>
         </div>
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
             <div style="margin-bottom:6px;">{_nav_icon("map")}</div>
-            <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;line-height:1.3;">Brecha</div>
-            <div style="font-size:.66rem;color:#64748B;margin-bottom:6px;line-height:1.3;">PDVs y circuitos críticos</div>
+            <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:3px;line-height:1.3;">Brecha</div>
+            <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:6px;line-height:1.3;">PDVs y circuitos críticos</div>
             <div style="display:flex;align-items:center;gap:4px;font-size:.70rem;font-weight:800;color:{_sem_c(0 if _pdvs_riesgo>5000 else 70 if _pdvs_riesgo>2000 else 100)};">{_dot(0 if _pdvs_riesgo>5000 else 70 if _pdvs_riesgo>2000 else 100)}{_pdvs_riesgo:,} PDVs</div>
         </div>
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
             <div style="margin-bottom:6px;">{_nav_icon("trend")}</div>
-            <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;line-height:1.3;">¿Sube el ritmo?</div>
-            <div style="font-size:.66rem;color:#64748B;margin-bottom:6px;line-height:1.3;">Curva semanal de ventas</div>
+            <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:3px;line-height:1.3;">¿Sube el ritmo?</div>
+            <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:6px;line-height:1.3;">Curva semanal de ventas</div>
             <div style="font-size:.70rem;font-weight:800;color:{'#22C55E' if _tendencia_ok else '#EF4444'};">{'▲ Positiva' if _tendencia_ok else '▼ A la baja'}</div>
         </div>
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
             <div style="margin-bottom:6px;">{_nav_icon("target")}</div>
-            <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:3px;line-height:1.3;">¿Dónde ganar más?</div>
-            <div style="font-size:.66rem;color:#64748B;margin-bottom:6px;line-height:1.3;">Cuota de altas y señal</div>
+            <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:3px;line-height:1.3;">¿Dónde ganar más?</div>
+            <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:6px;line-height:1.3;">Cuota de altas y señal</div>
             <div style="font-size:.70rem;font-weight:800;color:#38BDF8;">Ver oportunidades →</div>
         </div>
     </div>
@@ -4128,32 +2695,32 @@ def render_claro_view():
 
         # ── Protagonista ──────────────────────────────────────────────────────
         st.markdown(f"""
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.96),rgba(10,18,34,0.98));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:24px 28px;margin-bottom:16px;display:flex;align-items:center;gap:32px;">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:24px;padding:24px 28px;margin-bottom:16px;display:flex;align-items:center;gap:32px;">
             <div style="flex:0 0 auto;">
-                <div style="font-size:.72rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">{_titulo_banner}</div>
+                <div style="font-size:.72rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">{_titulo_banner}</div>
                 <div style="font-size:3.8rem;font-weight:950;color:{_c_banner};line-height:1;">{_valor_banner:.1f}%</div>
-                <div style="font-size:.84rem;color:#CBD5E1;margin-top:6px;">{_estado_txt}</div>
+                <div style="font-size:.84rem;color:var(--text-secondary);margin-top:6px;">{_estado_txt}</div>
                 {_bar(_valor_banner, _c_banner)}
-                <div style="font-size:.70rem;color:#64748B;margin-top:4px;">Total: <b style="color:#F8FAFC;">{fmt_int(_ejec_total)}</b> de <b>{fmt_int(_meta_total)}</b> altas (orgánicas + inducidas)</div>
+                <div style="font-size:.70rem;color:var(--text-muted);margin-top:4px;">Total: <b style="color:var(--text-primary);">{fmt_int(_ejec_total)}</b> de <b>{fmt_int(_meta_total)}</b> altas (orgánicas + inducidas)</div>
             </div>
             <div style="width:1px;height:100px;background:rgba(255,255,255,0.08);flex-shrink:0;"></div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;flex:1;">
                 <div>
-                    <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">{_lbl_nat}</div>
+                    <div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">{_lbl_nat}</div>
                     <div style="font-size:1.55rem;font-weight:900;color:{_sc(_val_nat)};">{_val_nat:.1f}%</div>
-                    <div style="font-size:.70rem;color:#64748B;">{fmt_int(ejec_nat_total)} de {fmt_int(meta_nat_total)}</div>
+                    <div style="font-size:.70rem;color:var(--text-muted);">{fmt_int(ejec_nat_total)} de {fmt_int(meta_nat_total)}</div>
                     {_bar(_val_nat, _sc(_val_nat))}
                 </div>
                 <div>
-                    <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">{_lbl_indu}</div>
+                    <div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">{_lbl_indu}</div>
                     <div style="font-size:1.55rem;font-weight:900;color:{_sc(_val_indu)};">{_val_indu:.1f}%</div>
-                    <div style="font-size:.70rem;color:#64748B;">{fmt_int(ejec_indu_total)} de {fmt_int(meta_indu_total)}</div>
+                    <div style="font-size:.70rem;color:var(--text-muted);">{fmt_int(ejec_indu_total)} de {fmt_int(meta_indu_total)}</div>
                     {_bar(_val_indu, _sc(_val_indu))}
                 </div>
                 <div>
-                    <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">PDVs bajo 70%</div>
+                    <div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">PDVs bajo 70%</div>
                     <div style="font-size:1.55rem;font-weight:900;color:{_sc(100-_pct_bajo70)};">{fmt_int(_pdvs_bajo70)}</div>
-                    <div style="font-size:.70rem;color:#64748B;">{_pct_bajo70:.0f}% del portafolio activo</div>
+                    <div style="font-size:.70rem;color:var(--text-muted);">{_pct_bajo70:.0f}% del portafolio activo</div>
                     {_bar(100-_pct_bajo70, _sc(100-_pct_bajo70))}
                 </div>
             </div>
@@ -4167,7 +2734,7 @@ def render_claro_view():
         _FACTOR = 1.0 if _MES_CERRADO else _DIAS_MES / _DIA_CORTE
 
         _label_principal = "Resultado final del mes" if _MES_CERRADO else "Proyección al cierre del mes"
-        st.markdown(f'<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">{_label_principal} por agente</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">{_label_principal} por agente</div>', unsafe_allow_html=True)
 
         by_agente = df.groupby("AGENTE").agg(
             pdvs=("ID","count"),
@@ -4219,23 +2786,23 @@ def render_claro_view():
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
                             <div style="display:flex;align-items:center;gap:6px;">
                                 <span style="width:9px;height:9px;border-radius:50%;background:{ag_c};display:inline-block;flex-shrink:0;"></span>
-                                <span style="font-size:.74rem;font-weight:900;color:#E2E8F0;">{row["AGENTE"]}</span>
+                                <span style="font-size:.74rem;font-weight:900;color:var(--text-primary);">{row["AGENTE"]}</span>
                             </div>
                             <span style="font-size:.80rem;">{badge}</span>
                         </div>
                         <div style="font-size:2rem;font-weight:950;color:{cp};line-height:1.05;">{p:.1f}%</div>
-                        <div style="font-size:.68rem;color:#64748B;margin-top:1px;">{_sub}</div>
+                        <div style="font-size:.68rem;color:var(--text-muted);margin-top:1px;">{_sub}</div>
                         {_bar(p, cp)}
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px;">
-                            <div style="font-size:.70rem;color:#94A3B8;">{_linea2_lbl} <span style="color:#F8FAFC;font-weight:800;">{_linea2_val}</span></div>
-                            <div style="font-size:.70rem;color:#94A3B8;">Brecha: <span style="color:#F8FAFC;font-weight:800;">{fmt_int(row["brecha"])}</span></div>
-                            <div style="font-size:.70rem;color:#94A3B8;">Ejec. total: <span style="color:#F8FAFC;font-weight:800;">{fmt_int(row["ejec_total"])}</span></div>
-                            <div style="font-size:.70rem;color:#94A3B8;">Cuota alta: <span style="color:#F8FAFC;font-weight:800;">{fmt_pct_c(row["cuota_alta"])}</span> <span style="color:{_vc};font-size:.65rem;">{_vt}</span></div>
+                            <div style="font-size:.70rem;color:var(--text-muted);">{_linea2_lbl} <span style="color:var(--text-primary);font-weight:800;">{_linea2_val}</span></div>
+                            <div style="font-size:.70rem;color:var(--text-muted);">Brecha: <span style="color:var(--text-primary);font-weight:800;">{fmt_int(row["brecha"])}</span></div>
+                            <div style="font-size:.70rem;color:var(--text-muted);">Ejec. total: <span style="color:var(--text-primary);font-weight:800;">{fmt_int(row["ejec_total"])}</span></div>
+                            <div style="font-size:.70rem;color:var(--text-muted);">Cuota alta: <span style="color:var(--text-primary);font-weight:800;">{fmt_pct_c(row["cuota_alta"])}</span> <span style="color:{_vc};font-size:.65rem;">{_vt}</span></div>
                         </div>
                     </div>""", unsafe_allow_html=True)
     
         # ── Gráfica de categorías ─────────────────────────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Cumplimiento por categoría de PDV</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Cumplimiento por categoría de PDV</div>', unsafe_allow_html=True)
         by_cat = df.groupby("CATEGORIA").agg(
             pdvs=("ID","count"), ejec_nat=("EJEC ALTA NAT","sum"),
             meta_nat=("META ALTA NAT (>$2000)","sum"), cuota_alta=("CUOTA DE ALTA","mean"),
@@ -4292,7 +2859,7 @@ def render_claro_view():
         by_ag_full["brecha"]    = by_ag_full["meta_total_ag"] - by_ag_full["ejec_total"]
 
         # ── Ranking visual de agentes ─────────────────────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Ranking de agentes — de mejor a peor proyección</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Ranking de agentes — de mejor a peor proyección</div>', unsafe_allow_html=True)
         for _, row in by_ag_full[by_ag_full["AGENTE"].apply(_safe_agente)].sort_values("proy_nat", ascending=False).reset_index(drop=True).iterrows():
             _ag_name2 = str(row["AGENTE"]).strip()
             ag_c  = AGENTE_COLORS.get(_ag_name2, "#64748B")
@@ -4300,10 +2867,10 @@ def render_claro_view():
             w     = min(max(p, 0), 100)
             _brch = fmt_int(row["brecha"])
             st.markdown(f"""
-            <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:10px 14px;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:10px 14px;margin-bottom:6px;">
                 <div style="display:flex;align-items:center;gap:8px;width:180px;flex-shrink:0;">
                     <span style="width:10px;height:10px;border-radius:50%;background:{ag_c};display:inline-block;flex-shrink:0;"></span>
-                    <span style="font-size:.80rem;font-weight:800;color:#F8FAFC;">{row["AGENTE"]}</span>
+                    <span style="font-size:.80rem;font-weight:800;color:var(--text-primary);">{row["AGENTE"]}</span>
                 </div>
                 <div style="flex:1;min-width:0;">
                     <div style="width:100%;height:8px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
@@ -4311,10 +2878,10 @@ def render_claro_view():
                     </div>
                 </div>
                 <div style="width:52px;text-align:right;font-size:1.05rem;font-weight:900;color:{cp};flex-shrink:0;">{p:.0f}%</div>
-                <div style="width:110px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">Hoy: <b style="color:#E2E8F0;">{fmt_pct_c(row["cumpl_nat"])}</b></div>
-                <div style="width:130px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">Brecha: <b style="color:#FCA5A5;">{_brch}</b></div>
-                <div style="width:110px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">Cuota alta: <b style="color:#E2E8F0;">{fmt_pct_c(row["cuota_alta"])}</b></div>
-                <div style="width:80px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">PDVs: <b style="color:#E2E8F0;">{fmt_int(row["pdvs"])}</b></div>
+                <div style="width:110px;text-align:right;font-size:.72rem;color:var(--text-muted);flex-shrink:0;">Hoy: <b style="color:var(--text-primary);">{fmt_pct_c(row["cumpl_nat"])}</b></div>
+                <div style="width:130px;text-align:right;font-size:.72rem;color:var(--text-muted);flex-shrink:0;">Brecha: <b style="color:#FCA5A5;">{_brch}</b></div>
+                <div style="width:110px;text-align:right;font-size:.72rem;color:var(--text-muted);flex-shrink:0;">Cuota alta: <b style="color:var(--text-primary);">{fmt_pct_c(row["cuota_alta"])}</b></div>
+                <div style="width:80px;text-align:right;font-size:.72rem;color:var(--text-muted);flex-shrink:0;">PDVs: <b style="color:var(--text-primary);">{fmt_int(row["pdvs"])}</b></div>
             </div>""", unsafe_allow_html=True)
 
         # ── Dos gráficas clave ────────────────────────────────────────────────
@@ -4341,7 +2908,7 @@ def render_claro_view():
                 text=alt.Text("brecha:Q",format=",.0f")
             )
             st.altair_chart(style_chart(_base+_meta_rule+_brecha_txt), use_container_width=True, theme=None)
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Barra roja = ejecutado · guion blanco = meta · número en rojo encima = altas que aún faltan</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">Barra roja = ejecutado · guion blanco = meta · número en rojo encima = altas que aún faltan</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with a2_r:
@@ -4358,11 +2925,11 @@ def render_claro_view():
             ).properties(height=280)
             r100_indu = alt.Chart(pd.DataFrame({"x":[100]})).mark_rule(color="#22C55E",strokeDash=[5,3],strokeWidth=1.5).encode(x="x:Q")
             st.altair_chart(style_chart(chart_dual2+r100_indu), use_container_width=True, theme=None)
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Si la barra azul es muy corta, el frente inducido está siendo descuidado — oportunidad de captación de volumen.</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">Si la barra azul es muy corta, el frente inducido está siendo descuidado — oportunidad de captación de volumen.</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── Tabla resumen compacta ────────────────────────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:12px 0 6px 0;">Detalle completo por agente</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:12px 0 6px 0;">Detalle completo por agente</div>', unsafe_allow_html=True)
         show_ag = safe_round_columns(by_ag_full[["AGENTE","pdvs","meta_nat","ejec_nat","cumpl_nat","proy_nat","brecha","cuota_alta"]].copy(),
             ["meta_nat","ejec_nat","cumpl_nat","proy_nat","brecha","cuota_alta"])
         show_ag.columns = ["Agente","PDVs","Meta","Ejecutado","Cumpl. %","Cumpl. total %","Brecha","Cuota Alta %"]
@@ -4425,7 +2992,7 @@ def render_claro_view():
             </div>""", unsafe_allow_html=True)
 
         # ── Sección 1: Top asesores + Top barrios ─────────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">¿Quién vende más y dónde?</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">¿Quién vende más y dónde?</div>', unsafe_allow_html=True)
         c3a, c3b = st.columns(2, gap="large")
 
         by_asesor = df.groupby(["ASESOR","AGENTE"]).agg(
@@ -4488,11 +3055,11 @@ def render_claro_view():
             if barrio_col_exists and circuito_col_exists and not by_barrio_top.empty:
                 for _, row_b in by_barrio_top.head(6).iterrows():
                     circs = row_b.get("circuitos_lista","")
-                    st.markdown(f'<div style="font-size:.72rem;color:#F8FAFC;margin-bottom:2px;"><b>{row_b["BARRIO"]}</b> <span style="color:#64748B;">— {circs}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="font-size:.72rem;color:var(--text-primary);margin-bottom:2px;"><b>{row_b["BARRIO"]}</b> <span style="color:var(--text-muted);">— {circs}</span></div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── Sección 5: Capacidad de mejora — asesores, barrios, cuota alta ───
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:20px 0 8px 0;">Capacidad de mejora — ¿dónde hay más potencial sin aprovechar?</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:20px 0 8px 0;">Capacidad de mejora — ¿dónde hay más potencial sin aprovechar?</div>', unsafe_allow_html=True)
 
         _DIA_C3=28; _MES_C3=30; _F_C3=_MES_C3/_DIA_C3
 
@@ -4543,7 +3110,7 @@ def render_claro_view():
             ).properties(height=340)
             _rule_70 = alt.Chart(pd.DataFrame({"x":[70]})).mark_rule(color="#EF4444",strokeDash=[5,3],strokeWidth=1.5).encode(x="x:Q")
             st.altair_chart(style_chart(chart_as_brecha + _rule_70), use_container_width=True, theme=None)
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Línea 🔴 = 70% de cumplimiento (umbral de alerta) · los asesores a la izquierda de la línea necesitan intervención inmediata</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">Línea 🔴 = 70% de cumplimiento (umbral de alerta) · los asesores a la izquierda de la línea necesitan intervención inmediata</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with cm2:
@@ -4563,7 +3130,7 @@ def render_claro_view():
                 ]
             ).properties(height=340)
             st.altair_chart(style_chart(chart_bar_brecha), use_container_width=True, theme=None)
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">🟡 Amarillo = cumpl 70-99% (recuperable) · 🔴 Rojo = &lt;70% (crítico)</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">🟡 Amarillo = cumpl 70-99% (recuperable) · 🔴 Rojo = &lt;70% (crítico)</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # Barrios con menor cuota de alta — oportunidad competitiva
@@ -4581,14 +3148,14 @@ def render_claro_view():
         ).properties(height=340)
         r50_bq = alt.Chart(pd.DataFrame({"x":[50]})).mark_rule(color="#22C55E",strokeDash=[5,3],strokeWidth=1.5).encode(x="x:Q")
         st.altair_chart(style_chart(chart_baja_cuota+r50_bq), use_container_width=True, theme=None)
-        st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Ordenado de menor a mayor cuota · línea verde = 50% (paridad con competencia) · barrios a la izquierda de la línea son los de mayor oportunidad</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">Ordenado de menor a mayor cuota · línea verde = 50% (paridad con competencia) · barrios a la izquierda de la línea son los de mayor oportunidad</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     # -------------------------------------------------------
 
 
         # ── Sección 2: Clasificación + Tipología ─────────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">¿En qué tipo de PDV está la brecha?</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">¿En qué tipo de PDV está la brecha?</div>', unsafe_allow_html=True)
         c3c, c3d = st.columns(2, gap="large")
         with c3c:
             by_clasif = df.groupby("CLASIFICACION").agg(
@@ -4623,7 +3190,7 @@ def render_claro_view():
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── Sección 3: Rutas críticas ─────────────────────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Rutas que necesitan intervención inmediata</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Rutas que necesitan intervención inmediata</div>', unsafe_allow_html=True)
         if "RUTA" in df.columns:
             df_ruta_opp = df[df["META ALTA NAT (>$2000)"] > 0].copy()
             df_ruta_opp["cumpl_pdv"] = (df_ruta_opp["EJEC ALTA NAT"] / df_ruta_opp["META ALTA NAT (>$2000)"] * 100).fillna(0)
@@ -4642,14 +3209,14 @@ def render_claro_view():
                 show_ruta = safe_round_columns(ruta_opp[show_ruta_cols].copy(), ["meta_total","ejec_total","cumpl_ruta","brecha","pct_pdvs_criticos"])
                 show_ruta = show_ruta.rename(columns={k:v for k,v in ruta_rename.items() if k in show_ruta.columns})
                 st.dataframe(show_ruta, use_container_width=True, height=280)
-                st.markdown(f'<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">{len(ruta_opp)} rutas con cumplimiento &lt;70% · ordenadas por mayor brecha</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">{len(ruta_opp)} rutas con cumplimiento &lt;70% · ordenadas por mayor brecha</div>', unsafe_allow_html=True)
             else:
                 st.success("✅ No hay rutas con cumplimiento por debajo del 70%.")
         else:
             st.info("No se encontró la columna RUTA en los datos.")
 
         # ── Sección 4: PDVs individuales ──────────────────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Los 30 PDVs con mayor meta y menor cumplimiento</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Los 30 PDVs con mayor meta y menor cumplimiento</div>', unsafe_allow_html=True)
         df_opp2 = df[df["META ALTA NAT (>$2000)"] > 0].copy()
         df_opp2["cumpl_pdv"] = (df_opp2["EJEC ALTA NAT"] / df_opp2["META ALTA NAT (>$2000)"] * 100).fillna(0)
         df_opp_show2 = df_opp2[df_opp2["cumpl_pdv"] < 70].sort_values("META ALTA NAT (>$2000)", ascending=False).head(30)
@@ -4661,7 +3228,7 @@ def render_claro_view():
             rename_opp2 = {"META ALTA NAT (>$2000)":"Meta","EJEC ALTA NAT":"Ejecutado","cumpl_pdv":"Cumpl. %","ID":"ID PDV","AGENTE":"Agente","ASESOR":"Asesor","CIRCUITO":"Circuito","CLASIFICACION":"Clasificación","CATEGORIA":"Categoría","BARRIO":"Barrio","ZONA":"Zona","RUTA":"Ruta"}
             show_opp2 = show_opp2.rename(columns={k:v for k,v in rename_opp2.items() if k in show_opp2.columns})
             st.dataframe(show_opp2, use_container_width=True, height=300)
-            st.markdown(f'<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">{len(df_opp_show2)} PDVs · ordenados por mayor meta · usa filtros del sidebar para enfocar</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">{len(df_opp_show2)} PDVs · ordenados por mayor meta · usa filtros del sidebar para enfocar</div>', unsafe_allow_html=True)
         else:
             st.success("✅ No hay PDVs con cumplimiento por debajo del 70%.")
 
@@ -4681,12 +3248,12 @@ def render_claro_view():
 
         if not _tiene_semanas:
             st.markdown(
-                f"<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);"
+                f"<div style='background:var(--bg);border:1px solid var(--border);"
                 f"border-radius:16px;padding:40px;text-align:center;margin:24px 0;'>"
                 f"<div style='font-size:1.8rem;margin-bottom:12px;'>📊</div>"
-                f"<div style='font-size:1rem;font-weight:800;color:#F8FAFC;margin-bottom:8px;'>"
+                f"<div style='font-size:1rem;font-weight:800;color:var(--text-primary);margin-bottom:8px;'>"
                 f"Sin datos semanales disponibles — {_periodo_label}</div>"
-                f"<div style='font-size:.82rem;color:#94A3B8;line-height:1.6;'>"
+                f"<div style='font-size:.82rem;color:var(--text-muted);line-height:1.6;'>"
                 f"El archivo de {_periodo_label} no incluye el desglose semanal (S1, S2, S3, S4) para altas orgánicas.<br>"
                 f"El tab de ritmo estará disponible cuando el archivo incluya esas columnas con datos.</div>"
                 f"</div>",
@@ -4703,27 +3270,27 @@ def render_claro_view():
 
             # ── Headline: semana a semana ─────────────────────────────────────────
             st.markdown(f"""
-            <div style="background:linear-gradient(135deg,rgba(17,24,39,0.96),rgba(10,18,34,0.98));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:20px 28px;margin-bottom:16px;">
-                <div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:14px;">Evolución semanal · {_periodo_label}</div>
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:24px;padding:20px 28px;margin-bottom:16px;">
+                <div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:14px;">Evolución semanal · {_periodo_label}</div>
                 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;">
                     <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
-                        <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 1</div>
-                        <div style="font-size:2rem;font-weight:950;color:#F8FAFC;">{fmt_int(s_totals["S1"])}</div>
-                        <div style="font-size:.72rem;color:#64748B;margin-top:2px;">altas</div>
+                        <div style="font-size:.68rem;font-weight:900;color:var(--text-muted);margin-bottom:4px;">SEMANA 1</div>
+                        <div style="font-size:2rem;font-weight:950;color:var(--text-primary);">{fmt_int(s_totals["S1"])}</div>
+                        <div style="font-size:.72rem;color:var(--text-muted);margin-top:2px;">altas</div>
                     </div>
                     <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
-                        <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 2</div>
-                        <div style="font-size:2rem;font-weight:950;color:#F8FAFC;">{fmt_int(s_totals["S2"])}</div>
+                        <div style="font-size:.68rem;font-weight:900;color:var(--text-muted);margin-bottom:4px;">SEMANA 2</div>
+                        <div style="font-size:2rem;font-weight:950;color:var(--text-primary);">{fmt_int(s_totals["S2"])}</div>
                         <div style="font-size:.72rem;color:{_sc4(_var_s2s1)};margin-top:2px;">{_arrow(_var_s2s1)} {abs(_var_s2s1):.0f}% vs S1</div>
                     </div>
                     <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
-                        <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 3</div>
-                        <div style="font-size:2rem;font-weight:950;color:#F8FAFC;">{fmt_int(s_totals["S3"])}</div>
+                        <div style="font-size:.68rem;font-weight:900;color:var(--text-muted);margin-bottom:4px;">SEMANA 3</div>
+                        <div style="font-size:2rem;font-weight:950;color:var(--text-primary);">{fmt_int(s_totals["S3"])}</div>
                         <div style="font-size:.72rem;color:{_sc4(_var_s3s2)};margin-top:2px;">{_arrow(_var_s3s2)} {abs(_var_s3s2):.0f}% vs S2</div>
                     </div>
                     <div style="text-align:center;padding:0 12px;">
-                        <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 4</div>
-                        <div style="font-size:2rem;font-weight:950;color:#F8FAFC;">{fmt_int(s_totals["S4"])}</div>
+                        <div style="font-size:.68rem;font-weight:900;color:var(--text-muted);margin-bottom:4px;">SEMANA 4</div>
+                        <div style="font-size:2rem;font-weight:950;color:var(--text-primary);">{fmt_int(s_totals["S4"])}</div>
                         <div style="font-size:.72rem;color:{_sc4(_var_s4s3)};margin-top:2px;">{_arrow(_var_s4s3)} {abs(_var_s4s3):.0f}% vs S3</div>
                     </div>
                 </div>
@@ -4770,7 +3337,7 @@ def render_claro_view():
                 st.markdown('</div>', unsafe_allow_html=True)
 
             # ── Orgánicas vs Inducidas ────────────────────────────────────────────
-            st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Orgánicas vs inducidas — composición semanal</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Orgánicas vs inducidas — composición semanal</div>', unsafe_allow_html=True)
             df_sem_indu = pd.DataFrame({
                 "Semana": ["S1","S2","S3","S4"],
                 "Inducidas": [s_indu_totals[s] for s in semanas_indu],
@@ -4872,7 +3439,7 @@ def render_claro_view():
             </div>""", unsafe_allow_html=True)
 
         # ── BLOQUE 2: ¿Qué posición tiene cada agente? ───────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">Posición competitiva por agente</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">Posición competitiva por agente</div>', unsafe_allow_html=True)
         cuota_by_ag = df.groupby("AGENTE").agg(
             cuota_mkt=("CUOTA DE MERCADO","mean"), cuota_alta=("CUOTA DE ALTA","mean"), n=("ID","count"),
         ).reset_index()
@@ -4904,7 +3471,7 @@ def render_claro_view():
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── BLOQUE 3: ¿Cómo es la señal de cada agente? ──────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">Calidad de señal RSRP por agente</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">Calidad de señal RSRP por agente</div>', unsafe_allow_html=True)
 
         _df_rsrp = df.copy()
         _df_rsrp["RSRP_n"]      = pd.to_numeric(_df_rsrp["RSRP"],errors="coerce")
@@ -4953,7 +3520,7 @@ def render_claro_view():
                 rows_html += f"""
                 <div style="margin-bottom:10px;">
                     <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
-                        <span style="font-size:.78rem;font-weight:800;color:#E2E8F0;">{rr["AGENTE"]}</span>
+                        <span style="font-size:.78rem;font-weight:800;color:var(--text-primary);">{rr["AGENTE"]}</span>
                         <span style="font-size:.78rem;font-weight:900;color:{_color};">{_v:.1f} dBm &nbsp;
                             <span style="font-size:.66rem;background:{_color}22;border:1px solid {_color}44;border-radius:6px;padding:1px 6px;color:{_color};">{_band}</span>
                         </span>
@@ -4961,7 +3528,7 @@ def render_claro_view():
                     <div style="width:100%;height:10px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden;">
                         <div style="width:{_bar_w}%;height:100%;background:{_color};border-radius:99px;"></div>
                     </div>
-                    <div style="font-size:.67rem;color:#64748B;margin-top:2px;">{_pdvs:,} PDVs medidos · {_crit_p:.1f}% en señal crítica</div>
+                    <div style="font-size:.67rem;color:var(--text-muted);margin-top:2px;">{_pdvs:,} PDVs medidos · {_crit_p:.1f}% en señal crítica</div>
                 </div>"""
 
             st.markdown(f"""
@@ -4969,7 +3536,7 @@ def render_claro_view():
                 <div class="section-title">RSRP medio por agente</div>
                 <div class="section-subtitle">Barra más larga = peor señal · 🟡 Aceptable (-90 a -100 dBm) · 🔴 Crítica (&lt;-100 dBm)</div>
                 <div style="margin-top:12px;">{rows_html}</div>
-                <div style="font-size:.68rem;color:#64748B;margin-top:8px;border-top:1px solid rgba(255,255,255,0.06);padding-top:6px;">
+                <div style="font-size:.68rem;color:var(--text-muted);margin-top:8px;border-top:1px solid rgba(255,255,255,0.06);padding-top:6px;">
                     La barra representa la posición relativa entre agentes — no el valor absoluto.
                     El número a la derecha es el RSRP real en dBm.
                 </div>
@@ -4993,11 +3560,11 @@ def render_claro_view():
                 tooltip=[alt.Tooltip("AGENTE:N"),alt.Tooltip("Banda:N"),alt.Tooltip("Pct:Q",format=".1f",title="%")]
             ).properties(height=280)
             st.altair_chart(style_chart(_ch_dist), use_container_width=True, theme=None)
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">El agente con mayor porción roja tiene más PDVs en señal crítica — afecta directamente la cuota de altas</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">El agente con mayor porción roja tiene más PDVs en señal crítica — afecta directamente la cuota de altas</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── BLOQUE 4: ¿La señal afecta la captación? ─────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">¿La señal afecta la captación de altas?</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">¿La señal afecta la captación de altas?</div>', unsafe_allow_html=True)
         b4a, b4b = st.columns(2, gap="large")
 
         with b4a:
@@ -5058,7 +3625,7 @@ def render_claro_view():
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── BLOQUE 5: Cuota de altas por categoría + tabla zona de mejora ─────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">¿En qué tipo de PDV y agente hay más para ganar?</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">¿En qué tipo de PDV y agente hay más para ganar?</div>', unsafe_allow_html=True)
         b5a, b5b = st.columns(2, gap="large")
         with b5a:
             cuota_cat5 = df.groupby("CATEGORIA").agg(
@@ -5099,11 +3666,11 @@ def render_claro_view():
             )
             _show_mej.columns = ["Agente","PDVs","RSRP medio","% PDVs críticos","Cuota alta %","Cuota mkt %","Cumpl. %","Cumpl. total %","Brecha"]
             st.dataframe(_show_mej, use_container_width=True, height=260)
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">El agente arriba de la tabla tiene menor cuota de altas — es donde hay más potencial de captación por ganar · combina con la señal para priorizar</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">El agente arriba de la tabla tiene menor cuota de altas — es donde hay más potencial de captación por ganar · combina con la señal para priorizar</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── BLOQUE 6: Tabla circuitos+barrios por oportunidad ─────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">Circuitos y barrios con mayor oportunidad de mejora</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:18px 0 8px 0;">Circuitos y barrios con mayor oportunidad de mejora</div>', unsafe_allow_html=True)
         if "CIRCUITO" in df.columns:
             _df_opp5b = df.copy()
             _df_opp5b["RSRP_n5"]      = pd.to_numeric(_df_opp5b["RSRP"],errors="coerce")
@@ -5126,7 +3693,7 @@ def render_claro_view():
             _show5b = safe_round_columns(_circ5b[_sc5b].copy(),["rsrp_medio","cuota_alta","cumpl","brecha"])
             _show5b = _show5b.rename(columns={k:v for k,v in _rn5b.items() if k in _show5b.columns})
             st.dataframe(_show5b, use_container_width=True, height=300)
-            st.markdown('<div style="font-size:.72rem;color:#94A3B8;margin-top:4px;">Filtrados por cuota &lt;50% o cumplimiento &lt;70% · ordenados por PDVs críticos y brecha · incluye barrio para gestión en campo</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">Filtrados por cuota &lt;50% o cumplimiento &lt;70% · ordenados por PDVs críticos y brecha · incluye barrio para gestión en campo</div>', unsafe_allow_html=True)
 
 
     st.markdown("""
@@ -5229,11 +3796,26 @@ except Exception as e:
 
 # SIDEBAR
 # =========================================================
-st.sidebar.markdown("## Centro de control")
-st.sidebar.markdown(f"""<div class="sidebar-guide-row"><span class="sidebar-guide-pill">{icon_svg("filter",12)} Ajusta universo</span><span class="sidebar-guide-pill">{icon_svg("users",12)} Define operadores</span><span class="sidebar-guide-pill">{icon_svg("target",12)} Enfoca lectura</span></div>""", unsafe_allow_html=True)
+st.sidebar.markdown(
+    "<div style='display:flex;align-items:center;gap:10px;padding:4px 0 16px 0;border-bottom:1px solid var(--border);margin-bottom:14px;'>"
+    "<div style='width:32px;height:32px;background:#E10600;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;'>"
+    "<svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'>"
+    "<polyline points='22 7 13.5 15.5 8.5 10.5 2 17'/><polyline points='16 7 22 7 22 13'/></svg></div>"
+    "<div><div style='font-size:.82rem;font-weight:900;color:var(--text-primary);'>Inteligencia Comercial</div>"
+    "<div style='font-size:.66rem;color:var(--text-muted);font-weight:600;'>Claro Colombia</div></div>"
+    "</div>",
+    unsafe_allow_html=True
+)
 
 # ---- CARGADOR 1: AGENTES CLARO ----
-st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("users",12)} Vista Agentes Claro</div><div class="sidebar-title">Plan de trabajo mensual</div><div class="sidebar-sub">Excel con metas, ejecución semanal, PDVs y asesores Claro. El sistema detecta la hoja y el periodo automáticamente.</div>', unsafe_allow_html=True)
+st.sidebar.markdown(
+    "<div class='sidebar-section'>"
+    "<div class='sidebar-section-title'>Agentes Claro</div>"
+    "<div class='sidebar-section-label'>Plan de trabajo mensual</div>"
+    "<div class='sidebar-section-sub'>Excel del mes &middot; el sistema detecta la hoja y el periodo automáticamente</div>"
+    "</div>",
+    unsafe_allow_html=True
+)
 
 _uploaded_claro = st.sidebar.file_uploader(
     "Plan de trabajo (.xlsx)",
@@ -5268,10 +3850,15 @@ else:
     st.session_state.pop("claro_uploaded_file", None)
     st.sidebar.caption("Sin archivo cargado")
 
-st.sidebar.markdown('</div>', unsafe_allow_html=True)
-
 # ---- CARGADOR 2: RED Y MERCADO ----
-st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("eye",12)} Vista Red y Mercado</div><div class="sidebar-title">Archivos de señal y mercado</div><div class="sidebar-sub">Sube los archivos de la vista de operadores. El RSRP es requerido; cuota de mercado y altas son opcionales.</div>', unsafe_allow_html=True)
+st.sidebar.markdown(
+    "<div class='sidebar-section'>"
+    "<div class='sidebar-section-title'>Red y Mercado</div>"
+    "<div class='sidebar-section-label'>Archivos de señal y mercado</div>"
+    "<div class='sidebar-section-sub'>RSRP requerido &middot; cuota de mercado y altas opcionales</div>"
+    "</div>",
+    unsafe_allow_html=True
+)
 
 _uploaded_rsrp = st.sidebar.file_uploader(
     "Señal RSRP · requerido (.csv)",
@@ -5323,10 +3910,13 @@ else:
     if _disk_altas:
         st.sidebar.caption(f"Servidor: {os.path.basename(_disk_altas)}")
 
-st.sidebar.markdown('</div>', unsafe_allow_html=True)
-
 # ---- SWITCH DE VISTA ----
-st.sidebar.markdown(f'<div class="sidebar-block"><div class="sidebar-kicker">{icon_svg("spark",12)} Modo de visualización</div><div class="sidebar-title">Selecciona la vista</div><div class="sidebar-sub">Alterna entre el panel de red y mercado por operador, y la vista focalizada en el desempeño comercial de agentes Claro.</div>', unsafe_allow_html=True)
+st.sidebar.markdown(
+    "<div style='margin-bottom:6px;'>"
+    "<div style='font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;'>Vista activa</div>"
+    "</div>",
+    unsafe_allow_html=True
+)
 _default_vista = (
     "Agentes Claro · PDVs" if _has_claro_file and not _rsrp_available
     else "Instructivo · Guía de uso"
@@ -5355,9 +3945,9 @@ if _show_welcome:
         " stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'>"
         "<polyline points='22 7 13.5 15.5 8.5 10.5 2 17'/>"
         "<polyline points='16 7 22 7 22 13'/></svg></div>"
-        "<div><div style='font-size:1.6rem;font-weight:950;color:#F8FAFC;line-height:1.1;'>"
+        "<div><div style='font-size:1.6rem;font-weight:950;color:var(--text-primary);line-height:1.1;'>"
         "Dashboard de Inteligencia Comercial</div>"
-        "<div style='font-size:.84rem;color:#64748B;margin-top:3px;'>"
+        "<div style='font-size:.84rem;color:var(--text-muted);margin-top:3px;'>"
         "Claro Colombia &middot; Red y Mercado &middot; Gesti&#243;n de Agentes PDVs</div>"
         "</div></div>",
         unsafe_allow_html=True
@@ -5367,85 +3957,85 @@ if _show_welcome:
 
     with col_w1:
         st.markdown(
-            "<div style='background:linear-gradient(135deg,rgba(17,24,39,0.95),rgba(10,18,34,0.98));"
+            "<div style='background:var(--bg-card);"
             "border:1px solid rgba(56,189,248,0.25);border-radius:20px;padding:22px 24px;'>"
             "<div style='font-size:.92rem;font-weight:900;color:#38BDF8;margin-bottom:10px;'>Vista Red y Mercado</div>"
-            "<div style='font-size:.78rem;color:#94A3B8;line-height:1.7;margin-bottom:14px;'>"
+            "<div style='font-size:.78rem;color:var(--text-muted);line-height:1.7;margin-bottom:14px;'>"
             "Analiza se&#241;al RSRP por operador, territorio y variaci&#243;n temporal. "
             "Incluye cuota de mercado y captaci&#243;n de altas.</div>"
-            "<div style='font-size:.68rem;font-weight:900;color:#64748B;text-transform:uppercase;margin-bottom:8px;'>Archivos</div>"
+            "<div style='font-size:.68rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;'>Archivos</div>"
             "<div style='background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.15);border-radius:11px;padding:10px 12px;margin-bottom:6px;'>"
             "<div style='font-size:.74rem;font-weight:900;color:#38BDF8;'>&#128196; RSRP_COMPLETO.csv "
             "<span style='background:#38BDF8;color:#0F172A;font-size:.58rem;padding:1px 5px;border-radius:99px;margin-left:4px;'>REQUERIDO</span></div>"
-            "<div style='font-size:.70rem;color:#94A3B8;margin-top:3px;'>Se&#241;al RSRP por CP, operador y fecha. "
+            "<div style='font-size:.70rem;color:var(--text-muted);margin-top:3px;'>Se&#241;al RSRP por CP, operador y fecha. "
             "Columnas: Codigo_postal &middot; Fecha de inicio &middot; Claro &middot; Tigo &middot; Movistar...</div></div>"
-            "<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:11px;padding:10px 12px;margin-bottom:6px;'>"
-            "<div style='font-size:.74rem;font-weight:900;color:#E2E8F0;'>&#128202; Cuota_mercado_completo.xlsx "
-            "<span style='background:rgba(255,255,255,0.1);color:#94A3B8;font-size:.58rem;padding:1px 5px;border-radius:99px;margin-left:4px;'>OPCIONAL</span></div>"
-            "<div style='font-size:.70rem;color:#94A3B8;margin-top:3px;'>Cuota de mercado por CP y operador.</div></div>"
-            "<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:11px;padding:10px 12px;margin-bottom:12px;'>"
-            "<div style='font-size:.74rem;font-weight:900;color:#E2E8F0;'>&#128202; Cuota_alta_completo.xlsx "
-            "<span style='background:rgba(255,255,255,0.1);color:#94A3B8;font-size:.58rem;padding:1px 5px;border-radius:99px;margin-left:4px;'>OPCIONAL</span></div>"
-            "<div style='font-size:.70rem;color:#94A3B8;margin-top:3px;'>Captaci&#243;n de altas por CP y operador.</div></div>"
-            "<div style='font-size:.68rem;font-weight:900;color:#64748B;text-transform:uppercase;margin-bottom:6px;'>C&#243;mo activar</div>"
+            "<div style='background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:10px 12px;margin-bottom:6px;'>"
+            "<div style='font-size:.74rem;font-weight:900;color:var(--text-primary);'>&#128202; Cuota_mercado_completo.xlsx "
+            "<span style='background:rgba(255,255,255,0.1);color:var(--text-muted);font-size:.58rem;padding:1px 5px;border-radius:99px;margin-left:4px;'>OPCIONAL</span></div>"
+            "<div style='font-size:.70rem;color:var(--text-muted);margin-top:3px;'>Cuota de mercado por CP y operador.</div></div>"
+            "<div style='background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:10px 12px;margin-bottom:12px;'>"
+            "<div style='font-size:.74rem;font-weight:900;color:var(--text-primary);'>&#128202; Cuota_alta_completo.xlsx "
+            "<span style='background:rgba(255,255,255,0.1);color:var(--text-muted);font-size:.58rem;padding:1px 5px;border-radius:99px;margin-left:4px;'>OPCIONAL</span></div>"
+            "<div style='font-size:.70rem;color:var(--text-muted);margin-top:3px;'>Captaci&#243;n de altas por CP y operador.</div></div>"
+            "<div style='font-size:.68rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;'>C&#243;mo activar</div>"
             "<div style='display:flex;gap:7px;margin-bottom:5px;align-items:flex-start;'>"
             "<span style='background:#38BDF8;color:#0F172A;font-size:.60rem;font-weight:900;padding:2px 6px;border-radius:99px;flex-shrink:0;'>1</span>"
-            "<span style='font-size:.72rem;color:#CBD5E1;'>Sube el CSV usando el cargador <b>Se&#241;al RSRP</b> del sidebar.</span></div>"
+            "<span style='font-size:.72rem;color:var(--text-secondary);'>Sube el CSV usando el cargador <b>Se&#241;al RSRP</b> del sidebar.</span></div>"
             "<div style='display:flex;gap:7px;align-items:flex-start;'>"
             "<span style='background:#38BDF8;color:#0F172A;font-size:.60rem;font-weight:900;padding:2px 6px;border-radius:99px;flex-shrink:0;'>2</span>"
-            "<span style='font-size:.72rem;color:#CBD5E1;'>Archivos de cuota van en la carpeta del proyecto en el servidor.</span></div>"
+            "<span style='font-size:.72rem;color:var(--text-secondary);'>Archivos de cuota van en la carpeta del proyecto en el servidor.</span></div>"
             "</div>",
             unsafe_allow_html=True
         )
 
     with col_w2:
         st.markdown(
-            "<div style='background:linear-gradient(135deg,rgba(17,24,39,0.95),rgba(10,18,34,0.98));"
+            "<div style='background:var(--bg-card);"
             "border:1px solid rgba(225,6,0,0.25);border-radius:20px;padding:22px 24px;'>"
             "<div style='font-size:.92rem;font-weight:900;color:#E10600;margin-bottom:10px;'>Vista Agentes Claro</div>"
-            "<div style='font-size:.78rem;color:#94A3B8;line-height:1.7;margin-bottom:14px;'>"
+            "<div style='font-size:.78rem;color:var(--text-muted);line-height:1.7;margin-bottom:14px;'>"
             "Seguimiento del plan mensual: metas, ejecuci&#243;n semanal, PDVs, "
             "asesores y cuota de altas por agente.</div>"
-            "<div style='font-size:.68rem;font-weight:900;color:#64748B;text-transform:uppercase;margin-bottom:8px;'>Archivo</div>"
+            "<div style='font-size:.68rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;'>Archivo</div>"
             "<div style='background:rgba(225,6,0,0.06);border:1px solid rgba(225,6,0,0.20);border-radius:11px;padding:10px 12px;margin-bottom:6px;'>"
             "<div style='font-size:.74rem;font-weight:900;color:#FCA5A5;'>&#128203; Plan de trabajo mensual .xlsx "
             "<span style='background:#E10600;color:white;font-size:.58rem;padding:1px 5px;border-radius:99px;margin-left:4px;'>REQUERIDO</span></div>"
-            "<div style='font-size:.70rem;color:#94A3B8;margin-top:3px;'>"
-            "<b style='color:#E2E8F0;'>El nombre del archivo y de la hoja pueden ser cualquiera</b> "
+            "<div style='font-size:.70rem;color:var(--text-muted);margin-top:3px;'>"
+            "<b style='color:var(--text-primary);'>El nombre del archivo y de la hoja pueden ser cualquiera</b> "
             "&mdash; el sistema detecta la hoja correcta por su contenido.<br><br>"
             "Columnas necesarias: AGENTE &middot; META ALTA NAT &middot; EJEC ALTA NAT &middot; EJE ALTA TOTAL</div></div>"
-            "<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:11px;padding:10px 12px;margin-bottom:12px;'>"
-            "<div style='font-size:.70rem;color:#94A3B8;'>Si el archivo tiene "
-            "<b style='color:#E2E8F0;'>m&#250;ltiples hojas</b> (una por mes), "
+            "<div style='background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:10px 12px;margin-bottom:12px;'>"
+            "<div style='font-size:.70rem;color:var(--text-muted);'>Si el archivo tiene "
+            "<b style='color:var(--text-primary);'>m&#250;ltiples hojas</b> (una por mes), "
             "el sistema las detecta y muestra un selector de periodo en el sidebar.</div></div>"
-            "<div style='font-size:.68rem;font-weight:900;color:#64748B;text-transform:uppercase;margin-bottom:6px;'>C&#243;mo activar</div>"
+            "<div style='font-size:.68rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;'>C&#243;mo activar</div>"
             "<div style='display:flex;gap:7px;margin-bottom:5px;align-items:flex-start;'>"
             "<span style='background:#E10600;color:white;font-size:.60rem;font-weight:900;padding:2px 6px;border-radius:99px;flex-shrink:0;'>1</span>"
-            "<span style='font-size:.72rem;color:#CBD5E1;'>Sube el Excel en el cargador <b>Plan de trabajo</b> del sidebar.</span></div>"
+            "<span style='font-size:.72rem;color:var(--text-secondary);'>Sube el Excel en el cargador <b>Plan de trabajo</b> del sidebar.</span></div>"
             "<div style='display:flex;gap:7px;margin-bottom:5px;align-items:flex-start;'>"
             "<span style='background:#E10600;color:white;font-size:.60rem;font-weight:900;padding:2px 6px;border-radius:99px;flex-shrink:0;'>2</span>"
-            "<span style='font-size:.72rem;color:#CBD5E1;'>Selecciona <b>Agentes Claro &middot; PDVs</b> en el selector de vista.</span></div>"
+            "<span style='font-size:.72rem;color:var(--text-secondary);'>Selecciona <b>Agentes Claro &middot; PDVs</b> en el selector de vista.</span></div>"
             "<div style='display:flex;gap:7px;align-items:flex-start;'>"
             "<span style='background:#E10600;color:white;font-size:.60rem;font-weight:900;padding:2px 6px;border-radius:99px;flex-shrink:0;'>3</span>"
-            "<span style='font-size:.72rem;color:#CBD5E1;'>Si hay varios meses, aparece un selector de periodo autom&#225;ticamente.</span></div>"
+            "<span style='font-size:.72rem;color:var(--text-secondary);'>Si hay varios meses, aparece un selector de periodo autom&#225;ticamente.</span></div>"
             "</div>",
             unsafe_allow_html=True
         )
 
     st.markdown(
-        "<div style='background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);"
+        "<div style='background:var(--bg);border:1px solid var(--border);"
         "border-radius:14px;padding:16px 20px;margin-top:12px;'>"
-        "<div style='font-size:.68rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:10px;'>Tabs disponibles en cada vista</div>"
+        "<div style='font-size:.68rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;'>Tabs disponibles en cada vista</div>"
         "<div style='display:grid;grid-template-columns:1fr 1fr;gap:16px;'>"
         "<div><div style='font-size:.72rem;font-weight:900;color:#38BDF8;margin-bottom:5px;'>Red y Mercado</div>"
-        "<div style='font-size:.70rem;color:#94A3B8;line-height:1.8;'>"
+        "<div style='font-size:.70rem;color:var(--text-muted);line-height:1.8;'>"
         "Resumen &middot; Estado global de se&#241;al<br>"
         "Operadores &middot; Ranking competitivo<br>"
         "Territorio &middot; Zonas cr&#237;ticas por CP<br>"
         "Variaci&#243;n &middot; Cambio de se&#241;al<br>"
         "Mercado &middot; Cuota y captaci&#243;n</div></div>"
         "<div><div style='font-size:.72rem;font-weight:900;color:#E10600;margin-bottom:5px;'>Agentes Claro</div>"
-        "<div style='font-size:.70rem;color:#94A3B8;line-height:1.8;'>"
+        "<div style='font-size:.70rem;color:var(--text-muted);line-height:1.8;'>"
         "&#8599; &#191;C&#243;mo vamos? &middot; Resultado del mes<br>"
         "&#9830; &#191;Qui&#233;n cumple? &middot; Ranking agentes<br>"
         "&#9678; La brecha &middot; PDVs cr&#237;ticos<br>"
@@ -5455,7 +4045,7 @@ if _show_welcome:
         unsafe_allow_html=True
     )
     st.markdown(
-        "<div style='font-size:.66rem;color:#475569;text-align:center;margin-top:12px;'>"
+        "<div style='font-size:.66rem;color:var(--text-secondary);text-align:center;margin-top:12px;'>"
         "Los archivos se procesan localmente en tu sesi&#243;n &middot; "
         "No se almacenan en ning&#250;n servidor &middot; Dashboard Claro Colombia</div>",
         unsafe_allow_html=True
@@ -6209,13 +4799,13 @@ if _vista_claro:
 # Guard: if no RSRP data, show friendly message
 if not _rsrp_available:
     st.markdown(
-        "<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);"
+        "<div style='background:var(--bg);border:1px solid var(--border);"
         "border-radius:20px;padding:48px 32px;text-align:center;margin:60px auto;max-width:520px;'>"
         "<div style='font-size:2.5rem;margin-bottom:14px;'>📡</div>"
-        "<div style='font-size:1.1rem;font-weight:800;color:#F8FAFC;margin-bottom:8px;'>Sin datos de señal RSRP</div>"
-        "<div style='font-size:.84rem;color:#94A3B8;margin-bottom:16px;'>"
+        "<div style='font-size:1.1rem;font-weight:800;color:var(--text-primary);margin-bottom:8px;'>Sin datos de señal RSRP</div>"
+        "<div style='font-size:.84rem;color:var(--text-muted);margin-bottom:16px;'>"
         "Sube el archivo de señal RSRP usando el cargador del sidebar para activar esta vista.</div>"
-        "<div style='font-size:.76rem;color:#64748B;'>"
+        "<div style='font-size:.76rem;color:var(--text-muted);'>"
         "Acepta archivos .csv y .xlsx &middot; "
         "Columnas requeridas: Codigo_postal &middot; Fecha de inicio &middot; Claro &middot; Tigo &middot; Movistar...</div>"
         "</div>",
@@ -6294,7 +4884,7 @@ st.markdown(f"""
 <div class="header-shell">
     <div style="position:relative;z-index:2;">
         <div class="hero-badge">Panel ejecutivo corporativo</div>
-        <div style="font-size:0.84rem;color:#94A3B8;font-weight:800;letter-spacing:0.55px;">{AREA_NAME}</div>
+        <div style="font-size:0.84rem;color:var(--text-muted);font-weight:800;letter-spacing:0.55px;">{AREA_NAME}</div>
         <div class="hero-title">{DASHBOARD_TITLE}</div>
     </div>
 </div>
@@ -6326,34 +4916,34 @@ _t3_color = "#EF4444" if worst_zone is not None and worst_zone.get("Pct_critica"
 
 st.markdown(f"""
 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0 10px 0;">
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
         <div style="margin-bottom:5px;">{_op_nav_icon("eye")}</div>
-        <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:2px;">Resumen</div>
-        <div style="font-size:.66rem;color:#64748B;margin-bottom:5px;">Estado global de señal</div>
+        <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:2px;">Resumen</div>
+        <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:5px;">Estado global de señal</div>
         <div style="display:flex;align-items:center;gap:4px;font-size:.70rem;font-weight:800;color:{_t1_color};"><span style="width:7px;height:7px;border-radius:50%;background:{_t1_color};display:inline-block;flex-shrink:0;"></span>{fmt_dBm(global_median)}</div>
     </div>
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
         <div style="margin-bottom:5px;">{_op_nav_icon("users")}</div>
-        <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:2px;">Operadores</div>
-        <div style="font-size:.66rem;color:#64748B;margin-bottom:5px;">Ranking competitivo</div>
+        <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:2px;">Operadores</div>
+        <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:5px;">Ranking competitivo</div>
         <div style="font-size:.70rem;font-weight:800;color:{OPERATOR_COLORS.get(best_operator["Operador"],"#F8FAFC")};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Líder: {best_operator["Operador"]}</div>
     </div>
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
         <div style="margin-bottom:5px;">{_op_nav_icon("map")}</div>
-        <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:2px;">Territorio</div>
-        <div style="font-size:.66rem;color:#64748B;margin-bottom:5px;">Zonas críticas</div>
+        <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:2px;">Territorio</div>
+        <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:5px;">Zonas críticas</div>
         <div style="display:flex;align-items:center;gap:4px;font-size:.70rem;font-weight:800;color:{_t3_color};"><span style="width:7px;height:7px;border-radius:50%;background:{_t3_color};display:inline-block;flex-shrink:0;"></span>{fmt_int(cp_critical_count)} CP críticos</div>
     </div>
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
         <div style="margin-bottom:5px;">{_op_nav_icon("trend")}</div>
-        <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:2px;">Variación</div>
-        <div style="font-size:.66rem;color:#64748B;margin-bottom:5px;">Cambio de señal</div>
+        <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:2px;">Variación</div>
+        <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:5px;">Cambio de señal</div>
         <div style="font-size:.70rem;font-weight:800;color:{"#22C55E" if variation_result.get("variacion_global",0)>=0 else "#EF4444"};">{"▲" if variation_result.get("variacion_global",0)>=0 else "▼"} {fmt_var_dBm(variation_result.get("variacion_global",0))}</div>
     </div>
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
         <div style="margin-bottom:5px;">{_op_nav_icon("brief")}</div>
-        <div style="font-size:.76rem;font-weight:900;color:#F8FAFC;margin-bottom:2px;">Mercado</div>
-        <div style="font-size:.66rem;color:#64748B;margin-bottom:5px;">Cuota y captación</div>
+        <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:2px;">Mercado</div>
+        <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:5px;">Cuota y captación</div>
         <div style="font-size:.70rem;font-weight:800;color:{OPERATOR_COLORS.get(leader_market["Operador"],"#38BDF8") if leader_market is not None else "#38BDF8"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{leader_market["Operador"] if leader_market is not None else "N/D"} lidera</div>
     </div>
 </div>
@@ -6391,13 +4981,13 @@ with tab1:
 
     # ── PROTAGONISTA — señal mediana, todo lo demás subordinado ──────────────
     st.markdown(f"""
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.97),rgba(10,18,34,0.99));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:28px 32px;margin-bottom:16px;">
-        <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Señal RSRP mediana · {periodo_txt_corto} · {fmt_int(obs_validas)} mediciones</div>
+    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.97),rgba(10,18,34,0.99));border:1px solid var(--border);border-radius:24px;padding:28px 32px;margin-bottom:16px;">
+        <div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Señal RSRP mediana · {periodo_txt_corto} · {fmt_int(obs_validas)} mediciones</div>
         <div style="display:flex;align-items:flex-end;gap:20px;margin-bottom:16px;">
             <div style="font-size:5rem;font-weight:950;color:{_t1c};line-height:1;">{fmt_dBm(_t1m)}</div>
             <div style="padding-bottom:8px;">
                 <div style="font-size:1.1rem;font-weight:800;color:{_t1c};">{_t1e}</div>
-                <div style="font-size:.82rem;color:#94A3B8;">{_t1msg}</div>
+                <div style="font-size:.82rem;color:var(--text-muted);">{_t1msg}</div>
             </div>
         </div>
         <div style="width:100%;height:6px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden;margin-bottom:20px;">
@@ -6405,21 +4995,21 @@ with tab1:
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.07);">
             <div>
-                <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Códigos postales críticos</div>
+                <div style="font-size:.62rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Códigos postales críticos</div>
                 <div style="font-size:1.8rem;font-weight:900;color:{_t1cp_c};">{fmt_int(cp_critical_count)}</div>
-                <div style="font-size:.68rem;color:#64748B;">{fmt_pct(cp_critical_share)} del territorio · señal bajo -100 dBm</div>
+                <div style="font-size:.68rem;color:var(--text-muted);">{fmt_pct(cp_critical_share)} del territorio · señal bajo -100 dBm</div>
                 {_bar_op(cp_critical_share*100, _t1cp_c)}
             </div>
             <div>
-                <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Cobertura buena o mejor</div>
+                <div style="font-size:.62rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Cobertura buena o mejor</div>
                 <div style="font-size:1.8rem;font-weight:900;color:{_t1pb_c};">{fmt_pct(pct_good)}</div>
-                <div style="font-size:.68rem;color:#64748B;">Excelente + Buena (≥ -90 dBm)</div>
+                <div style="font-size:.68rem;color:var(--text-muted);">Excelente + Buena (≥ -90 dBm)</div>
                 {_bar_op(pct_good, _t1pb_c)}
             </div>
             <div>
-                <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Operador con mejor señal</div>
+                <div style="font-size:.62rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Operador con mejor señal</div>
                 <div style="font-size:1.2rem;font-weight:900;color:{OPERATOR_COLORS.get(best_operator["Operador"],"#F8FAFC")};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{best_operator["Operador"]}</div>
-                <div style="font-size:.68rem;color:#64748B;">Mediana {fmt_dBm(best_operator["RSRP_mediana"])} · {float(best_operator["Buena_o_mejor"]):.1f}% buena+</div>
+                <div style="font-size:.68rem;color:var(--text-muted);">Mediana {fmt_dBm(best_operator["RSRP_mediana"])} · {float(best_operator["Buena_o_mejor"]):.1f}% buena+</div>
                 {_bar_op(float(best_operator["Buena_o_mejor"]), OPERATOR_COLORS.get(best_operator["Operador"],"#64748B"))}
             </div>
         </div>
@@ -6427,7 +5017,7 @@ with tab1:
     """, unsafe_allow_html=True)
 
     # ── Distribución de señal ─────────────────────────────────────────────────
-    st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Distribución de señal en el territorio</div>', unsafe_allow_html=True)
+    st.markdown('<div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Distribución de señal en el territorio</div>', unsafe_allow_html=True)
     r1c1, r1c2 = st.columns((1.15, 0.85), gap="large")
     with r1c1:
         dist = df_f.groupby("Categoria_RSRP",as_index=False).size().rename(columns={"size":"Cantidad","Categoria_RSRP":"Categoria"})
@@ -6455,13 +5045,13 @@ with tab1:
                 st.markdown(f"""
                 <div style="margin-bottom:12px;">
                     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;">
-                        <span style="font-size:.76rem;font-weight:800;color:#E2E8F0;">{rr["Categoria"]}</span>
+                        <span style="font-size:.76rem;font-weight:800;color:var(--text-primary);">{rr["Categoria"]}</span>
                         <span style="font-size:.85rem;font-weight:900;color:{_cc};">{_ww:.1f}%</span>
                     </div>
                     <div style="width:100%;height:7px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden;">
                         <div style="width:{_ww:.1f}%;height:100%;background:{_cc};border-radius:99px;"></div>
                     </div>
-                    <div style="font-size:.65rem;color:#64748B;margin-top:2px;">{int(rr["Cantidad"]):,} mediciones</div>
+                    <div style="font-size:.65rem;color:var(--text-muted);margin-top:2px;">{int(rr["Cantidad"]):,} mediciones</div>
                 </div>""", unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -6470,7 +5060,7 @@ with tab1:
         st.markdown("""
         <div style="display:flex;align-items:center;gap:10px;margin:20px 0 10px 0;">
             <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
-            <div style="font-size:.66rem;font-weight:900;color:#64748B;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;padding:0 12px;">Posición comercial</div>
+            <div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;padding:0 12px;">Posición comercial</div>
             <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
         </div>
         """, unsafe_allow_html=True)
@@ -6533,8 +5123,8 @@ with tab1:
 
     st.markdown(f"""
     <div style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(99,102,241,0.06));border:1px solid rgba(99,102,241,0.18);border-radius:18px;padding:16px 20px;margin-top:14px;">
-        <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Conclusión ejecutiva del periodo</div>
-        <div style="font-size:.84rem;color:#E2E8F0;line-height:1.7;">{_concl_red}{_concl_biz}</div>
+        <div style="font-size:.62rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Conclusión ejecutiva del periodo</div>
+        <div style="font-size:.84rem;color:var(--text-primary);line-height:1.7;">{_concl_red}{_concl_biz}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -6549,7 +5139,7 @@ with tab2:
     _brecha = float(_lid["RSRP_mediana"] - _rez["RSRP_mediana"])
 
     # ── 3 KPIs ───────────────────────────────────────────────────────────────
-    st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">¿Qué tan diferente es la señal entre operadores?</div>', unsafe_allow_html=True)
+    st.markdown('<div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">¿Qué tan diferente es la señal entre operadores?</div>', unsafe_allow_html=True)
     ok1,ok2,ok3 = st.columns(3,gap="medium")
     with ok1:
         _lc = OPERATOR_COLORS.get(_lid["Operador"],"#F8FAFC")
@@ -6576,7 +5166,7 @@ with tab2:
         </div>""", unsafe_allow_html=True)
 
     # ── Ranking — una fila completa por operador ──────────────────────────────
-    st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">Ranking por señal mediana — de mejor a peor</div>', unsafe_allow_html=True)
+    st.markdown('<div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">Ranking por señal mediana — de mejor a peor</div>', unsafe_allow_html=True)
     for idx_op, ro in _ops.iterrows():
         _oc  = OPERATOR_COLORS.get(ro["Operador"],"#64748B")
         _med = float(ro["RSRP_mediana"])
@@ -6592,22 +5182,22 @@ with tab2:
         _cc  = "#EF4444" if _cri>30 else "#F59E0B" if _cri>10 else "#22C55E"
         _pos = idx_op + 1
         st.markdown(f"""
-        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:10px 14px;margin-bottom:6px;">
-            <div style="width:24px;text-align:center;font-size:.80rem;font-weight:900;color:#64748B;flex-shrink:0;">#{_pos}</div>
+        <div style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:10px 14px;margin-bottom:6px;">
+            <div style="width:24px;text-align:center;font-size:.80rem;font-weight:900;color:var(--text-muted);flex-shrink:0;">#{_pos}</div>
             <div style="width:150px;flex-shrink:0;display:flex;align-items:center;gap:7px;">
                 <span style="width:9px;height:9px;border-radius:50%;background:{_oc};display:inline-block;flex-shrink:0;"></span>
-                <span style="font-size:.80rem;font-weight:800;color:#F8FAFC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{ro["Operador"]}</span>
+                <span style="font-size:.80rem;font-weight:800;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{ro["Operador"]}</span>
             </div>
             <div style="flex:1;min-width:0;"><div style="width:100%;height:8px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;"><div style="width:{_ww}%;height:100%;background:{_mc};border-radius:99px;opacity:.85;"></div></div></div>
             <div style="width:90px;text-align:right;font-size:.95rem;font-weight:900;color:{_mc};flex-shrink:0;">{_med:.1f} dBm</div>
-            <div style="width:95px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">Buena+: <b style="color:#22C55E;">{_bun:.1f}%</b></div>
-            <div style="width:85px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">Aceptable: <b>{_ace:.1f}%</b></div>
-            <div style="width:85px;text-align:right;font-size:.72rem;color:#94A3B8;flex-shrink:0;">Crítica: <b style="color:{_cc};">{_cri:.1f}%</b></div>
-            <div style="width:75px;text-align:right;font-size:.66rem;color:#64748B;flex-shrink:0;">{_obs:,} obs<br>{_cod} CP</div>
+            <div style="width:95px;text-align:right;font-size:.72rem;color:var(--text-muted);flex-shrink:0;">Buena+: <b style="color:#22C55E;">{_bun:.1f}%</b></div>
+            <div style="width:85px;text-align:right;font-size:.72rem;color:var(--text-muted);flex-shrink:0;">Aceptable: <b>{_ace:.1f}%</b></div>
+            <div style="width:85px;text-align:right;font-size:.72rem;color:var(--text-muted);flex-shrink:0;">Crítica: <b style="color:{_cc};">{_cri:.1f}%</b></div>
+            <div style="width:75px;text-align:right;font-size:.66rem;color:var(--text-muted);flex-shrink:0;">{_obs:,} obs<br>{_cod} CP</div>
         </div>""", unsafe_allow_html=True)
 
     # ── Gráfica que AÑADE valor: composición interna normalizada ─────────────
-    st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">Composición interna de señal — la estructura real de cada operador</div>', unsafe_allow_html=True)
+    st.markdown('<div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">Composición interna de señal — la estructura real de cada operador</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-card"><div class="section-title">% de señal por banda (normalizado al 100%)</div><div class="section-subtitle">El ranking muestra quién tiene mejor mediana. Esta gráfica muestra QUÉ TAN DISTINTA es la estructura interna de cada operador. Un operador puede tener buena mediana pero mucha señal crítica oculta.</div>', unsafe_allow_html=True)
     sp = alt.Chart(quality_pct[quality_pct["Categoria_RSRP"].isin(order_quality[:-1])]).mark_bar().encode(
         x=alt.X("Operador:N",title=None),
@@ -6631,8 +5221,8 @@ with tab2:
     )
     st.markdown(f"""
     <div style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(99,102,241,0.06));border:1px solid rgba(99,102,241,0.18);border-radius:18px;padding:16px 20px;margin-top:14px;">
-        <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Conclusión ejecutiva</div>
-        <div style="font-size:.84rem;color:#E2E8F0;line-height:1.7;">{_concl_op}</div>
+        <div style="font-size:.62rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Conclusión ejecutiva</div>
+        <div style="font-size:.84rem;color:var(--text-primary);line-height:1.7;">{_concl_op}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -6656,20 +5246,20 @@ with tab3:
 
     # ── Headline ──────────────────────────────────────────────────────────────
     st.markdown(f"""
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.97),rgba(10,18,34,0.99));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:22px 28px;margin-bottom:16px;">
-        <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Análisis territorial · {fmt_int(_n_cp)} CP evaluados · {fmt_int(cp_critical_count)} críticos ({fmt_pct(cp_critical_share)})</div>
+    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.97),rgba(10,18,34,0.99));border:1px solid var(--border);border-radius:24px;padding:22px 28px;margin-bottom:16px;">
+        <div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Análisis territorial · {fmt_int(_n_cp)} CP evaluados · {fmt_int(cp_critical_count)} críticos ({fmt_pct(cp_critical_share)})</div>
         <div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:24px;align-items:center;">
             <div>
                 <div style="font-size:.62rem;font-weight:900;color:#FCA5A5;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Zona prioritaria de intervención</div>
                 <div style="font-size:1.5rem;font-weight:900;color:{_wz_c};">{_wz_cp}</div>
-                <div style="font-size:.76rem;color:#94A3B8;margin-top:3px;">{fmt_pct(_wz_pct)} señal crítica · Mediana {fmt_dBm(_wz_med)} · Op. débil: {_wz_op}</div>
+                <div style="font-size:.76rem;color:var(--text-muted);margin-top:3px;">{fmt_pct(_wz_pct)} señal crítica · Mediana {fmt_dBm(_wz_med)} · Op. débil: {_wz_op}</div>
                 {_bar_op(_wz_pct,"#EF4444")}
             </div>
             <div style="height:60px;background:rgba(255,255,255,0.07);"></div>
             <div>
                 <div style="font-size:.62rem;font-weight:900;color:#86EFAC;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Zona de mayor solidez</div>
                 <div style="font-size:1.5rem;font-weight:900;color:#22C55E;">{_bz_cp}</div>
-                <div style="font-size:.76rem;color:#94A3B8;margin-top:3px;">{fmt_pct(_bz_pct)} buena o mejor · Op. líder: {best_zone["Operador_lider"] if best_zone is not None else "N/D"}</div>
+                <div style="font-size:.76rem;color:var(--text-muted);margin-top:3px;">{fmt_pct(_bz_pct)} buena o mejor · Op. líder: {best_zone["Operador_lider"] if best_zone is not None else "N/D"}</div>
                 {_bar_op(_bz_pct,"#22C55E")}
             </div>
         </div>
@@ -6716,7 +5306,7 @@ with tab3:
                 st.markdown(f"""
                 <div style="margin-bottom:12px;">
                     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;">
-                        <span style="font-size:.74rem;color:#E2E8F0;font-weight:700;">{rn["Rango"]} crítica</span>
+                        <span style="font-size:.74rem;color:var(--text-primary);font-weight:700;">{rn["Rango"]} crítica</span>
                         <span style="font-size:.82rem;font-weight:900;color:{_rcc};">{int(rn["CP"])} CP</span>
                     </div>
                     <div style="width:100%;height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
@@ -6744,8 +5334,8 @@ with tab3:
     )
     st.markdown(f"""
     <div style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(99,102,241,0.06));border:1px solid rgba(99,102,241,0.18);border-radius:18px;padding:16px 20px;margin-top:14px;">
-        <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Conclusión ejecutiva</div>
-        <div style="font-size:.84rem;color:#E2E8F0;line-height:1.7;">{_concl_ter}</div>
+        <div style="font-size:.62rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Conclusión ejecutiva</div>
+        <div style="font-size:.84rem;color:var(--text-primary);line-height:1.7;">{_concl_ter}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -6760,25 +5350,25 @@ with tab4:
     _pf4  = str(variation_result.get("periodo_final","N/D"))
 
     st.markdown(f"""
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.97),rgba(10,18,34,0.99));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:22px 28px;margin-bottom:16px;">
-        <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Variación de señal RSRP · comparando <b style="color:#E2E8F0;">{_pi4}</b> vs <b style="color:#E2E8F0;">{_pf4}</b></div>
+    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.97),rgba(10,18,34,0.99));border:1px solid var(--border);border-radius:24px;padding:22px 28px;margin-bottom:16px;">
+        <div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Variación de señal RSRP · comparando <b style="color:var(--text-primary);">{_pi4}</b> vs <b style="color:var(--text-primary);">{_pf4}</b></div>
         <div style="display:flex;align-items:flex-end;gap:20px;margin-bottom:12px;">
             <div style="font-size:4rem;font-weight:950;color:{_vc4};line-height:1;">{"▲" if _vg4>=0 else "▼"} {fmt_var_dBm(_vg4)}</div>
             <div style="padding-bottom:6px;">
                 <div style="font-size:1rem;font-weight:800;color:{_vc4};">{"Señal mejoró" if _vg4>=0 else "Señal se deterioró"} en el periodo</div>
-                <div style="font-size:.76rem;color:#94A3B8;">{nivel_temporal_variacion} · {fmt_int(len(variation_cp)) if not variation_cp.empty else "N/D"} CP con datos en ambos periodos</div>
+                <div style="font-size:.76rem;color:var(--text-muted);">{nivel_temporal_variacion} · {fmt_int(len(variation_cp)) if not variation_cp.empty else "N/D"} CP con datos en ambos periodos</div>
             </div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);">
             <div>
                 <div style="font-size:.62rem;font-weight:900;color:#86EFAC;text-transform:uppercase;margin-bottom:3px;">CP con mayor mejora</div>
                 <div style="font-size:1.5rem;font-weight:900;color:#22C55E;">{fmt_var_dBm(mayor_mejora["Variacion_RSRP"]) if mayor_mejora is not None else "N/D"}</div>
-                <div style="font-size:.68rem;color:#64748B;">CP {str(mayor_mejora["Codigo_postal"]) if mayor_mejora is not None else "N/D"}</div>
+                <div style="font-size:.68rem;color:var(--text-muted);">CP {str(mayor_mejora["Codigo_postal"]) if mayor_mejora is not None else "N/D"}</div>
             </div>
             <div>
                 <div style="font-size:.62rem;font-weight:900;color:#FCA5A5;text-transform:uppercase;margin-bottom:3px;">CP con mayor deterioro</div>
                 <div style="font-size:1.5rem;font-weight:900;color:#EF4444;">{fmt_var_dBm(mayor_deterioro["Variacion_RSRP"]) if mayor_deterioro is not None else "N/D"}</div>
-                <div style="font-size:.68rem;color:#64748B;">CP {str(mayor_deterioro["Codigo_postal"]) if mayor_deterioro is not None else "N/D"}</div>
+                <div style="font-size:.68rem;color:var(--text-muted);">CP {str(mayor_deterioro["Codigo_postal"]) if mayor_deterioro is not None else "N/D"}</div>
             </div>
         </div>
     </div>
@@ -6848,8 +5438,8 @@ with tab4:
         )
         st.markdown(f"""
         <div style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(99,102,241,0.06));border:1px solid rgba(99,102,241,0.18);border-radius:18px;padding:16px 20px;margin-top:14px;">
-            <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Conclusión ejecutiva</div>
-            <div style="font-size:.84rem;color:#E2E8F0;line-height:1.7;">{_concl_var}</div>
+            <div style="font-size:.62rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Conclusión ejecutiva</div>
+            <div style="font-size:.84rem;color:var(--text-primary);line-height:1.7;">{_concl_var}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -6879,38 +5469,38 @@ with tab5:
         _same5 = _lm5==_la5
         _gmc5  = "#22C55E" if _gm5>=15 else "#F59E0B" if _gm5>=5 else "#EF4444"
         st.markdown(f"""
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.97),rgba(10,18,34,0.99));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:22px 28px;margin-bottom:16px;">
-            <div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">Posición competitiva en mercado y captación</div>
+        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.97),rgba(10,18,34,0.99));border:1px solid var(--border);border-radius:24px;padding:22px 28px;margin-bottom:16px;">
+            <div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">Posición competitiva en mercado y captación</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;">
                 <div>
-                    <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:4px;">Líder de mercado</div>
+                    <div style="font-size:.62rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Líder de mercado</div>
                     <div style="font-size:1.2rem;font-weight:900;color:{_lmc5};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{_lm5}</div>
-                    <div style="font-size:.68rem;color:#64748B;">{_lmp5:.1f}% cuota acumulada</div>
+                    <div style="font-size:.68rem;color:var(--text-muted);">{_lmp5:.1f}% cuota acumulada</div>
                     {_bar_op(_lmp5,_lmc5)}
                 </div>
                 <div>
-                    <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:4px;">Líder de captación</div>
+                    <div style="font-size:.62rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Líder de captación</div>
                     <div style="font-size:1.2rem;font-weight:900;color:{_lac5};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{_la5}</div>
-                    <div style="font-size:.68rem;color:#64748B;">{_lap5:.1f}% de las altas nuevas</div>
+                    <div style="font-size:.68rem;color:var(--text-muted);">{_lap5:.1f}% de las altas nuevas</div>
                     {_bar_op(_lap5,_lac5)}
                 </div>
                 <div>
-                    <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:4px;">Ventaja del líder</div>
+                    <div style="font-size:.62rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Ventaja del líder</div>
                     <div style="font-size:1.6rem;font-weight:900;color:{_gmc5};">{_gm5:.1f} pp</div>
-                    <div style="font-size:.68rem;color:#64748B;">{"Liderazgo sólido" if _gm5>=15 else "Liderazgo moderado" if _gm5>=5 else "Mercado disputado"}</div>
+                    <div style="font-size:.68rem;color:var(--text-muted);">{"Liderazgo sólido" if _gm5>=15 else "Liderazgo moderado" if _gm5>=5 else "Mercado disputado"}</div>
                 </div>
                 <div>
-                    <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;margin-bottom:4px;">Focos identificados</div>
+                    <div style="font-size:.62rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Focos identificados</div>
                     <div style="font-size:1.6rem;font-weight:900;color:{"#EF4444" if _rsk5>3 else "#F59E0B" if _rsk5>0 else "#22C55E"};">{_rsk5+_opp5}</div>
-                    <div style="font-size:.68rem;color:#64748B;">{_rsk5} riesgos · {_opp5} oportunidades</div>
+                    <div style="font-size:.68rem;color:var(--text-muted);">{_rsk5} riesgos · {_opp5} oportunidades</div>
                 </div>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
         # ── BLOQUE 2: Ranking doble mercado vs captación ──────────────────────
-        st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Mercado vs captación por operador</div>', unsafe_allow_html=True)
-        st.markdown('<div style="font-size:.74rem;color:#64748B;margin-bottom:8px;">Mercado = cuota acumulada · Captación = % de clientes nuevos · si captación supera mercado, ese operador gana participación activa</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Mercado vs captación por operador</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.74rem;color:var(--text-muted);margin-bottom:8px;">Mercado = cuota acumulada · Captación = % de clientes nuevos · si captación supera mercado, ese operador gana participación activa</div>', unsafe_allow_html=True)
         if not market_operator.empty and not altas_operator.empty:
             _mkt5 = market_operator[["Operador","Cuota_mercado_global"]].copy()
             _alt5 = altas_operator[["Operador","Participacion_altas_global"]].copy()
@@ -6922,18 +5512,18 @@ with tab5:
                 _df5 = _av5-_mv5
                 _dc5 = "#22C55E" if _df5>=0 else "#EF4444"
                 st.markdown(f"""
-                <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:9px 14px;margin-bottom:6px;">
+                <div style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:9px 14px;margin-bottom:6px;">
                     <div style="width:150px;flex-shrink:0;display:flex;align-items:center;gap:7px;">
                         <span style="width:9px;height:9px;border-radius:50%;background:{_oc5};display:inline-block;flex-shrink:0;"></span>
-                        <span style="font-size:.78rem;font-weight:800;color:#F8FAFC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{rr["Operador"]}</span>
+                        <span style="font-size:.78rem;font-weight:800;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{rr["Operador"]}</span>
                     </div>
                     <div style="flex:1;min-width:0;">
-                        <div style="font-size:.60rem;color:#64748B;margin-bottom:1px;">Mercado</div>
+                        <div style="font-size:.60rem;color:var(--text-muted);margin-bottom:1px;">Mercado</div>
                         <div style="width:100%;height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;"><div style="width:{min(_mv5,100):.1f}%;height:100%;background:{_oc5};border-radius:99px;opacity:.65;"></div></div>
                     </div>
                     <div style="width:46px;text-align:right;font-size:.90rem;font-weight:900;color:{_oc5};flex-shrink:0;">{_mv5:.1f}%</div>
                     <div style="flex:1;min-width:0;">
-                        <div style="font-size:.60rem;color:#64748B;margin-bottom:1px;">Captación</div>
+                        <div style="font-size:.60rem;color:var(--text-muted);margin-bottom:1px;">Captación</div>
                         <div style="width:100%;height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;"><div style="width:{min(_av5,100):.1f}%;height:100%;background:{_oc5};border-radius:99px;opacity:.92;"></div></div>
                     </div>
                     <div style="width:46px;text-align:right;font-size:.90rem;font-weight:900;color:{_oc5};flex-shrink:0;">{_av5:.1f}%</div>
@@ -6941,7 +5531,7 @@ with tab5:
                 </div>""", unsafe_allow_html=True)
 
         # ── BLOQUE 3: Evolución temporal ──────────────────────────────────────
-        st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">Evolución en el tiempo</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">Evolución en el tiempo</div>', unsafe_allow_html=True)
         t5c1,t5c2 = st.columns(2,gap="large")
         with t5c1:
             st.markdown('<div class="section-card"><div class="section-title">Cuota de mercado por periodo</div><div class="section-subtitle">Línea que sube = ganando mercado · línea que baja = cediendo</div>', unsafe_allow_html=True)
@@ -6955,7 +5545,7 @@ with tab5:
                 st.altair_chart(style_chart(mc), use_container_width=True, theme=None)
                 if pd.notna(market_growth_pct):
                     _mgc = "#22C55E" if market_growth_pct>=0 else "#EF4444"
-                    st.markdown(f'<div style="font-size:.68rem;color:#94A3B8;margin-top:4px;">Volumen: <span style="color:{_mgc};font-weight:800;">{"▲" if market_growth_pct>=0 else "▼"} {abs(market_growth_pct):.1f}%</span> entre {market_period_initial} y {market_period_final}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="font-size:.68rem;color:var(--text-muted);margin-top:4px;">Volumen: <span style="color:{_mgc};font-weight:800;">{"▲" if market_growth_pct>=0 else "▼"} {abs(market_growth_pct):.1f}%</span> entre {market_period_initial} y {market_period_final}</div>', unsafe_allow_html=True)
             else:
                 st.info("Sin datos temporales de mercado.")
             st.markdown('</div>', unsafe_allow_html=True)
@@ -6971,7 +5561,7 @@ with tab5:
                 st.altair_chart(style_chart(ac), use_container_width=True, theme=None)
                 if pd.notna(altas_growth_pct):
                     _agc = "#22C55E" if altas_growth_pct>=0 else "#EF4444"
-                    st.markdown(f'<div style="font-size:.68rem;color:#94A3B8;margin-top:4px;">Altas totales: <span style="color:{_agc};font-weight:800;">{"▲" if altas_growth_pct>=0 else "▼"} {abs(altas_growth_pct):.1f}%</span> entre {altas_period_initial} y {altas_period_final}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="font-size:.68rem;color:var(--text-muted);margin-top:4px;">Altas totales: <span style="color:{_agc};font-weight:800;">{"▲" if altas_growth_pct>=0 else "▼"} {abs(altas_growth_pct):.1f}%</span> entre {altas_period_initial} y {altas_period_final}</div>', unsafe_allow_html=True)
             else:
                 st.info("Sin datos temporales de altas.")
             st.markdown('</div>', unsafe_allow_html=True)
@@ -6981,11 +5571,11 @@ with tab5:
             st.markdown("""
             <div style="display:flex;align-items:center;gap:10px;margin:20px 0 10px 0;">
                 <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
-                <div style="font-size:.66rem;font-weight:900;color:#64748B;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;padding:0 12px;">Comparativo directo entre dos operadores — CP a CP</div>
+                <div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;padding:0 12px;">Comparativo directo entre dos operadores — CP a CP</div>
                 <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
             </div>
             """, unsafe_allow_html=True)
-            st.markdown('<div style="font-size:.74rem;color:#64748B;margin-bottom:10px;">Selecciona dos operadores para ver CP a CP en qué zonas el segundo le está ganando al primero en mercado, captación o señal — incluso si el primero es globalmente dominante.</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:.74rem;color:var(--text-muted);margin-bottom:10px;">Selecciona dos operadores para ver CP a CP en qué zonas el segundo le está ganando al primero en mercado, captación o señal — incluso si el primero es globalmente dominante.</div>', unsafe_allow_html=True)
 
             # Prep data
             tc = territorial_cross.copy()
@@ -7051,7 +5641,7 @@ with tab5:
                 _n_altas = len(opp_altas)
 
                 # 3 KPIs
-                st.markdown(f'<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">{_op_b} le gana a {_op_a} en...</div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">{_op_b} le gana a {_op_a} en...</div>', unsafe_allow_html=True)
                 k4a,k4b,k4c = st.columns(3, gap="medium")
                 with k4a:
                     _cc = "#EF4444" if _n_cuota > 20 else "#F59E0B" if _n_cuota > 5 else "#22C55E"
@@ -7101,28 +5691,28 @@ with tab5:
 
                 with dim_tab1:
                     if not opp_cuota.empty:
-                        st.markdown(f'<div style="font-size:.74rem;color:#64748B;margin:8px 0;">Zonas donde {_op_b} tiene mayor cuota de mercado que {_op_a}. Ordenadas por mayor ventaja del competidor.</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div style="font-size:.74rem;color:var(--text-muted);margin:8px 0;">Zonas donde {_op_b} tiene mayor cuota de mercado que {_op_a}. Ordenadas por mayor ventaja del competidor.</div>', unsafe_allow_html=True)
                         _d1 = _build_display_cols(opp_cuota.head(25), _col_a_cuota, _col_b_cuota, _col_a_rsrp, _col_b_rsrp, "gap_cuota")
                         st.dataframe(_d1, use_container_width=True, height=340)
-                        st.markdown(f'<div style="font-size:.66rem;color:#94A3B8;margin-top:3px;">{_n_cuota} CP donde {_op_b} supera a {_op_a} en cuota de mercado</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div style="font-size:.66rem;color:var(--text-muted);margin-top:3px;">{_n_cuota} CP donde {_op_b} supera a {_op_a} en cuota de mercado</div>', unsafe_allow_html=True)
                     else:
                         st.success(f"✅ {_op_a} supera a {_op_b} en cuota de mercado en todos los CP compartidos.")
 
                 with dim_tab2:
                     if not opp_rsrp.empty:
-                        st.markdown(f'<div style="font-size:.74rem;color:#64748B;margin:8px 0;">Zonas donde {_op_b} tiene señal RSRP más de 3 dBm mejor que {_op_a}. Estas zonas son riesgo futuro aunque hoy {_op_a} tenga mercado.</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div style="font-size:.74rem;color:var(--text-muted);margin:8px 0;">Zonas donde {_op_b} tiene señal RSRP más de 3 dBm mejor que {_op_a}. Estas zonas son riesgo futuro aunque hoy {_op_a} tenga mercado.</div>', unsafe_allow_html=True)
                         _d2 = _build_display_cols(opp_rsrp.head(25), _col_a_cuota, _col_b_cuota, _col_a_rsrp, _col_b_rsrp, "gap_rsrp")
                         st.dataframe(_d2, use_container_width=True, height=340)
-                        st.markdown(f'<div style="font-size:.66rem;color:#94A3B8;margin-top:3px;">{_n_rsrp} CP donde {_op_b} tiene ventaja de señal superior a 3 dBm</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div style="font-size:.66rem;color:var(--text-muted);margin-top:3px;">{_n_rsrp} CP donde {_op_b} tiene ventaja de señal superior a 3 dBm</div>', unsafe_allow_html=True)
                     else:
                         st.success(f"✅ {_op_a} tiene igual o mejor señal que {_op_b} en todos los CP compartidos.")
 
                 with dim_tab3:
                     if not opp_altas.empty:
-                        st.markdown(f'<div style="font-size:.74rem;color:#64748B;margin:8px 0;">Zonas donde {_op_b} capta más altas que {_op_a}. Captación = clientes nuevos que se van con el competidor.</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div style="font-size:.74rem;color:var(--text-muted);margin:8px 0;">Zonas donde {_op_b} capta más altas que {_op_a}. Captación = clientes nuevos que se van con el competidor.</div>', unsafe_allow_html=True)
                         _d3 = _build_display_cols(opp_altas.head(25), _col_a_cuota, _col_b_cuota, _col_a_rsrp, _col_b_rsrp, "gap_altas", [_col_a_altas, _col_b_altas])
                         st.dataframe(_d3, use_container_width=True, height=340)
-                        st.markdown(f'<div style="font-size:.66rem;color:#94A3B8;margin-top:3px;">{_n_altas} CP donde {_op_b} capta más clientes nuevos que {_op_a}</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div style="font-size:.66rem;color:var(--text-muted);margin-top:3px;">{_n_altas} CP donde {_op_b} capta más clientes nuevos que {_op_a}</div>', unsafe_allow_html=True)
                     else:
                         st.success(f"✅ {_op_a} capta más altas que {_op_b} en todos los CP compartidos.")
 
@@ -7133,14 +5723,14 @@ with tab5:
                     for _g in _all_gaps:
                         _worst = _worst[_worst[_g] > 0]
                     if not _worst.empty:
-                        st.markdown(f'<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.20);border-radius:14px;padding:12px 16px;margin-top:10px;"><div style="font-size:.64rem;font-weight:900;color:#FCA5A5;text-transform:uppercase;margin-bottom:5px;">Máxima urgencia para {_op_a}</div><div style="font-size:.80rem;color:#E2E8F0;">{len(_worst)} CP donde {_op_b} supera a {_op_a} en todas las dimensiones disponibles ({", ".join([g.replace("gap_","") for g in _all_gaps])}) simultáneamente — intervención prioritaria.</div></div>', unsafe_allow_html=True)
+                        st.markdown(f'<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.20);border-radius:14px;padding:12px 16px;margin-top:10px;"><div style="font-size:.64rem;font-weight:900;color:#FCA5A5;text-transform:uppercase;margin-bottom:5px;">Máxima urgencia para {_op_a}</div><div style="font-size:.80rem;color:var(--text-primary);">{len(_worst)} CP donde {_op_b} supera a {_op_a} en todas las dimensiones disponibles ({", ".join([g.replace("gap_","") for g in _all_gaps])}) simultáneamente — intervención prioritaria.</div></div>', unsafe_allow_html=True)
 
             else:
                 st.info(f"No hay CP compartidos entre {_op_a} y {_op_b} en los datos visibles.")
 
         # ── BLOQUE 5: Variación de operadores si hay histórico ────────────────
         if not market_operator_delta.empty or not altas_operator_delta.empty:
-            st.markdown('<div style="font-size:.66rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">¿Quién ganó y quién perdió en el periodo?</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 8px 0;">¿Quién ganó y quién perdió en el periodo?</div>', unsafe_allow_html=True)
             t5c3,t5c4 = st.columns(2,gap="large")
             with t5c3:
                 st.markdown('<div class="section-card"><div class="section-title">Variación de cuota de mercado</div><div class="section-subtitle">Cambio entre inicio y fin · verde = ganó · rojo = cedió</div>', unsafe_allow_html=True)
@@ -7187,7 +5777,7 @@ with tab5:
 
         st.markdown(f"""
         <div style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(99,102,241,0.06));border:1px solid rgba(99,102,241,0.18);border-radius:18px;padding:16px 20px;margin-top:14px;">
-            <div style="font-size:.62rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Conclusión ejecutiva</div>
-            <div style="font-size:.84rem;color:#E2E8F0;line-height:1.7;">{_concl_mkt}</div>
+            <div style="font-size:.62rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Conclusión ejecutiva</div>
+            <div style="font-size:.84rem;color:var(--text-primary);line-height:1.7;">{_concl_mkt}</div>
         </div>
         """, unsafe_allow_html=True)
