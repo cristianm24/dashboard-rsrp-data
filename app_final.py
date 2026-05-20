@@ -622,7 +622,108 @@ h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-weight: 800; }
     background: var(--accent-soft);
 }
 
-/* ── Animations ───────────────────────────────────────── */
+/* ── Streamlit dark mode kill switch ────────────────── */
+/* Streamlit sometimes forces dark backgrounds — override everything */
+[data-testid="stApp"],
+[data-testid="stAppViewContainer"],
+.stApp,
+.main,
+.block-container,
+[class^="css-"],
+[class*=" css-"] {
+    background-color: var(--bg) !important;
+}
+/* Kill the dark gradient body */
+body {
+    background-color: var(--bg) !important;
+    background-image: none !important;
+}
+/* Ensure all markdown text is readable */
+[data-testid="stMarkdownContainer"],
+[data-testid="stMarkdownContainer"] *:not(svg):not(path):not(circle):not(line):not(polyline):not(rect) {
+    color: var(--text-primary) !important;
+}
+/* Streamlit metric */
+[data-testid="stMetricValue"] { color: var(--text-primary) !important; }
+[data-testid="stMetricLabel"] { color: var(--text-muted) !important; }
+[data-testid="stMetricDelta"] { font-size:.78rem !important; }
+
+/* ── Micro-interactions ───────────────────────────── */
+/* Smooth hover on all interactive elements */
+button, [role="button"], a, label { transition: var(--transition) !important; }
+
+/* Number counter animation for KPIs */
+@keyframes countUp {
+    from { opacity:0; transform:translateY(6px) scale(0.96); }
+    to   { opacity:1; transform:translateY(0) scale(1); }
+}
+.kpi-value { animation: countUp 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+/* Shimmer loading effect */
+@keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+.shimmer {
+    background: linear-gradient(90deg,
+        var(--bg-sidebar) 25%, var(--border) 50%, var(--bg-sidebar) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius-sm);
+}
+
+/* Progress bar animated fill */
+@keyframes fillBar {
+    from { width: 0 !important; }
+}
+.progress-bar-fill { animation: fillBar 0.8s cubic-bezier(0.4,0,0.2,1) both; }
+
+/* Card entrance with spring */
+@keyframes springIn {
+    0%   { opacity:0; transform:scale(0.96) translateY(8px); }
+    60%  { opacity:1; transform:scale(1.01) translateY(-2px); }
+    100% { opacity:1; transform:scale(1) translateY(0); }
+}
+
+/* Pulse dot for live/active indicators */
+@keyframes pulseDot {
+    0%, 100% { transform: scale(1); opacity:1; }
+    50%       { transform: scale(1.4); opacity:.7; }
+}
+.live-dot {
+    width:7px; height:7px;
+    background: var(--green);
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulseDot 1.8s ease-in-out infinite;
+}
+
+/* Accent line slide-in */
+@keyframes slideAccent {
+    from { transform: scaleX(0); transform-origin: left; }
+    to   { transform: scaleX(1); transform-origin: left; }
+}
+.header-shell::before { animation: slideAccent 0.4s cubic-bezier(0.4,0,0.2,1) both; }
+
+/* Hover scale for action buttons */
+[data-testid="stDownloadButton"] button:hover {
+    transform: translateY(-2px) scale(1.02) !important;
+}
+[data-testid="stFileUploader"] button:hover {
+    transform: translateY(-1px) scale(1.01) !important;
+}
+
+/* Tab active indicator slide */
+[data-testid="stTabs"] [aria-selected="true"] {
+    animation: fadeDown 0.2s ease both !important;
+}
+
+/* Stagger children inside section cards */
+.section-card > *:nth-child(1) { animation: fadeUp .20s ease both; }
+.section-card > *:nth-child(2) { animation: fadeUp .27s ease both; }
+.section-card > *:nth-child(3) { animation: fadeUp .34s ease both; }
+.section-card > *:nth-child(4) { animation: fadeUp .41s ease both; }
+
 @keyframes fadeUp {
     from { opacity:0; transform:translateY(12px); }
     to   { opacity:1; transform:translateY(0); }
@@ -2602,31 +2703,31 @@ def render_instructivo():
     # ── Franja de navegación visual ───────────────────────────────────────────
     st.markdown(f"""
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0 4px 0;">
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
             <div style="margin-bottom:6px;">{_nav_icon("chart")}</div>
             <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:3px;line-height:1.3;">¿Cómo vamos?</div>
             <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:6px;line-height:1.3;">Estado del mes y proyección</div>
             <div style="display:flex;align-items:center;gap:4px;font-size:.70rem;font-weight:800;color:{_sem_c(_proy_global)};">{_dot(_proy_global)}Cumpl. {_proy_global:.0f}%</div>
         </div>
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
             <div style="margin-bottom:6px;">{_nav_icon("users")}</div>
             <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:3px;line-height:1.3;">¿Quién cumple?</div>
             <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:6px;line-height:1.3;">Agentes vs su meta</div>
             <div style="display:flex;align-items:center;gap:4px;font-size:.70rem;font-weight:800;color:{_sem_c(100 if _ag_riesgo==0 else 70 if _ag_riesgo<=2 else 0)};">{_dot(100 if _ag_riesgo==0 else 70 if _ag_riesgo<=2 else 0)}{_ag_riesgo} en riesgo</div>
         </div>
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
             <div style="margin-bottom:6px;">{_nav_icon("map")}</div>
             <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:3px;line-height:1.3;">Brecha</div>
             <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:6px;line-height:1.3;">PDVs y circuitos críticos</div>
             <div style="display:flex;align-items:center;gap:4px;font-size:.70rem;font-weight:800;color:{_sem_c(0 if _pdvs_riesgo>5000 else 70 if _pdvs_riesgo>2000 else 100)};">{_dot(0 if _pdvs_riesgo>5000 else 70 if _pdvs_riesgo>2000 else 100)}{_pdvs_riesgo:,} PDVs</div>
         </div>
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
             <div style="margin-bottom:6px;">{_nav_icon("trend")}</div>
             <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:3px;line-height:1.3;">¿Sube el ritmo?</div>
             <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:6px;line-height:1.3;">Curva semanal de ventas</div>
             <div style="font-size:.70rem;font-weight:800;color:{'#22C55E' if _tendencia_ok else '#EF4444'};">{'▲ Positiva' if _tendencia_ok else '▼ A la baja'}</div>
         </div>
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
             <div style="margin-bottom:6px;">{_nav_icon("target")}</div>
             <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:3px;line-height:1.3;">¿Dónde ganar más?</div>
             <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:6px;line-height:1.3;">Cuota de altas y señal</div>
@@ -3979,8 +4080,8 @@ if _show_welcome:
             f"<div style='font-size:.64rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;"
             f"letter-spacing:.4px;margin-bottom:7px;'>Archivos</div>"
             + _fr("📄","RSRP_COMPLETO.csv",_tag_req,"Se&#241;al por CP, operador y fecha")
-            + _fr("📊","Cuota_mercado_completo.csv",_tag_opt,"Cuota de mercado &middot; Habilita el tab Mercado")
-            + _fr("📊","Cuota_alta_completo.csv",_tag_opt,"Captaci&#243;n de altas por CP")
+            + _fr("📊","Cuota_mercado_completo.csv",_tag_req,"Cuota de mercado por CP y operador")
+            + _fr("📊","Cuota_alta_completo.csv",_tag_req,"Captaci&#243;n de altas por CP y operador")
             + f"<div style='font-size:.64rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;"
             f"letter-spacing:.4px;margin:10px 0 7px;'>C&#243;mo activar</div>"
             + _sr(1,"Sube el CSV en el cargador <b>Se&#241;al RSRP</b> del sidebar")
@@ -4892,31 +4993,31 @@ _t3_color = "#EF4444" if worst_zone is not None and worst_zone.get("Pct_critica"
 
 st.markdown(f"""
 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0 10px 0;">
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
         <div style="margin-bottom:5px;">{_op_nav_icon("eye")}</div>
         <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:2px;">Resumen</div>
         <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:5px;">Estado global de señal</div>
         <div style="display:flex;align-items:center;gap:4px;font-size:.70rem;font-weight:800;color:{_t1_color};"><span style="width:7px;height:7px;border-radius:50%;background:{_t1_color};display:inline-block;flex-shrink:0;"></span>{fmt_dBm(global_median)}</div>
     </div>
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
         <div style="margin-bottom:5px;">{_op_nav_icon("users")}</div>
         <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:2px;">Operadores</div>
         <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:5px;">Ranking competitivo</div>
         <div style="font-size:.70rem;font-weight:800;color:{OPERATOR_COLORS.get(best_operator["Operador"],"#F8FAFC")};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Líder: {best_operator["Operador"]}</div>
     </div>
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
         <div style="margin-bottom:5px;">{_op_nav_icon("map")}</div>
         <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:2px;">Territorio</div>
         <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:5px;">Zonas críticas</div>
         <div style="display:flex;align-items:center;gap:4px;font-size:.70rem;font-weight:800;color:{_t3_color};"><span style="width:7px;height:7px;border-radius:50%;background:{_t3_color};display:inline-block;flex-shrink:0;"></span>{fmt_int(cp_critical_count)} CP críticos</div>
     </div>
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
         <div style="margin-bottom:5px;">{_op_nav_icon("trend")}</div>
         <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:2px;">Variación</div>
         <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:5px;">Cambio de señal</div>
         <div style="font-size:.70rem;font-weight:800;color:{"#22C55E" if variation_result.get("variacion_global",0)>=0 else "#EF4444"};">{"▲" if variation_result.get("variacion_global",0)>=0 else "▼"} {fmt_var_dBm(variation_result.get("variacion_global",0))}</div>
     </div>
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.92),rgba(10,18,34,0.96));border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:11px 12px;box-sizing:border-box;overflow:hidden;min-width:0;">
         <div style="margin-bottom:5px;">{_op_nav_icon("brief")}</div>
         <div style="font-size:.76rem;font-weight:900;color:var(--text-primary);margin-bottom:2px;">Mercado</div>
         <div style="font-size:.66rem;color:var(--text-muted);margin-bottom:5px;">Cuota y captación</div>
@@ -4957,7 +5058,7 @@ with tab1:
 
     # ── PROTAGONISTA — señal mediana, todo lo demás subordinado ──────────────
     st.markdown(f"""
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.97),rgba(10,18,34,0.99));border:1px solid var(--border);border-radius:24px;padding:28px 32px;margin-bottom:16px;">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:24px;padding:28px 32px;margin-bottom:16px;">
         <div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Señal RSRP mediana · {periodo_txt_corto} · {fmt_int(obs_validas)} mediciones</div>
         <div style="display:flex;align-items:flex-end;gap:20px;margin-bottom:16px;">
             <div style="font-size:5rem;font-weight:950;color:{_t1c};line-height:1;">{fmt_dBm(_t1m)}</div>
@@ -5222,7 +5323,7 @@ with tab3:
 
     # ── Headline ──────────────────────────────────────────────────────────────
     st.markdown(f"""
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.97),rgba(10,18,34,0.99));border:1px solid var(--border);border-radius:24px;padding:22px 28px;margin-bottom:16px;">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:24px;padding:22px 28px;margin-bottom:16px;">
         <div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Análisis territorial · {fmt_int(_n_cp)} CP evaluados · {fmt_int(cp_critical_count)} críticos ({fmt_pct(cp_critical_share)})</div>
         <div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:24px;align-items:center;">
             <div>
@@ -5326,7 +5427,7 @@ with tab4:
     _pf4  = str(variation_result.get("periodo_final","N/D"))
 
     st.markdown(f"""
-    <div style="background:linear-gradient(135deg,rgba(17,24,39,0.97),rgba(10,18,34,0.99));border:1px solid var(--border);border-radius:24px;padding:22px 28px;margin-bottom:16px;">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:24px;padding:22px 28px;margin-bottom:16px;">
         <div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Variación de señal RSRP · comparando <b style="color:var(--text-primary);">{_pi4}</b> vs <b style="color:var(--text-primary);">{_pf4}</b></div>
         <div style="display:flex;align-items:flex-end;gap:20px;margin-bottom:12px;">
             <div style="font-size:4rem;font-weight:950;color:{_vc4};line-height:1;">{"▲" if _vg4>=0 else "▼"} {fmt_var_dBm(_vg4)}</div>
@@ -5445,7 +5546,7 @@ with tab5:
         _same5 = _lm5==_la5
         _gmc5  = "#22C55E" if _gm5>=15 else "#F59E0B" if _gm5>=5 else "#EF4444"
         st.markdown(f"""
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.97),rgba(10,18,34,0.99));border:1px solid var(--border);border-radius:24px;padding:22px 28px;margin-bottom:16px;">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:24px;padding:22px 28px;margin-bottom:16px;">
             <div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">Posición competitiva en mercado y captación</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;">
                 <div>
