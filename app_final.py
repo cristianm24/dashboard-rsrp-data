@@ -3503,16 +3503,18 @@ def _load_from_xl(xl, source_label):
             except Exception:
                 continue
 
-    # 5. Infer cut day from weekly data
-    _s_cols = [c for c in ["S1","S2","S3","S4"] if c in df_det.columns]
-    _semanas_con_datos = sum(
-        1 for s in _s_cols
-        if pd.to_numeric(df_det[s], errors="coerce").sum() > 0
-    )
-    _dia_corte = min(max(_semanas_con_datos * 7, 7), 30)
-    # If S4 has data, assume full month
-    if "S4" in df_det.columns and pd.to_numeric(df_det["S4"], errors="coerce").sum() > 0:
-        _dia_corte = 30
+    # 5. Infer cut day — only count S4 as week-4 if S3 also has significant data
+    _dia_corte = 7
+    for _s, _day in [("S1",7), ("S2",14), ("S3",21), ("S4",30)]:
+        if _s not in df_det.columns:
+            continue
+        _tot = pd.to_numeric(df_det[_s], errors="coerce").sum()
+        if _s == "S4":
+            _s3t = pd.to_numeric(df_det["S3"], errors="coerce").sum() if "S3" in df_det.columns else 0
+            if _tot > 100 and _s3t > 100:
+                _dia_corte = _day
+        elif _tot > 100:
+            _dia_corte = _day
 
     return df_det, df_cierre, df_plan, {
         "found": True,
@@ -3773,15 +3775,30 @@ def render_claro_view():
     _all_plan  = info.get("all_plan_sheets", [])
 
     def _compute_cut_day(df_sheet):
-        """Compute cut day from S1-S4 weekly data."""
-        semanas = {"S1": 7, "S2": 14, "S3": 21, "S4": 30}
+        """Compute cut day from S1-S4 weekly data (orgánicas only, not S1.1/S2.1 inducidas).
+        Only counts a week if it has meaningful data (>= 100 total across PDVs).
+        """
+        semanas = [("S1", 7), ("S2", 14), ("S3", 21), ("S4", 30)]
         cut = 0
-        for s, day in semanas.items():
-            if s in df_sheet.columns:
-                total = pd.to_numeric(df_sheet[s], errors="coerce").sum()
-                if total > 0:
+        for s, day in semanas:
+            if s not in df_sheet.columns:
+                continue
+            total = pd.to_numeric(df_sheet[s], errors="coerce").sum()
+            # S4 alone with tiny value (< S1) likely means it is an inducida col mislabeled
+            # Only count S4 as real week-4 if S3 also has significant data
+            if s == "S4":
+                s3_total = pd.to_numeric(df_sheet["S3"], errors="coerce").sum() if "S3" in df_sheet.columns else 0
+                if total > 100 and s3_total > 100:
                     cut = day
+            elif total > 100:
+                cut = day
         return max(cut, 7)  # at least week 1
+
+    # Use current date + sheet name to determine if month is truly closed
+    _dia_c_calc    = _compute_cut_day(df_det)
+    _MES_CERRADO   = _is_month_closed(_selected_sheet, _dia_c_calc)
+    _dia_c         = 30 if _MES_CERRADO else _dia_c_calc
+    _estado_mes    = "· Mes cerrado ✓" if _MES_CERRADO else f"· Día {_dia_c} (en curso)"
 
     def _reload_sheet(sheet_name):
         """Load a specific sheet from the uploaded or disk file."""
@@ -4655,128 +4672,144 @@ def render_claro_view():
     with tc4:
         semanas      = ["S1","S2","S3","S4"]
         semanas_indu = ["S1.1","S2.1","S3.1","S4.1"]
-        s_totals      = {s: float(df[s].sum()) if s in df.columns else 0.0 for s in semanas}
-        s_indu_totals = {s: float(df[s].sum()) if s in df.columns else 0.0 for s in semanas_indu}
+        s_totals      = {s: float(pd.to_numeric(df[s], errors="coerce").sum()) if s in df.columns else 0.0 for s in semanas}
+        s_indu_totals = {s: float(pd.to_numeric(df[s], errors="coerce").sum()) if s in df.columns else 0.0 for s in semanas_indu}
         _s_list       = [s_totals["S1"],s_totals["S2"],s_totals["S3"],s_totals["S4"]]
-        _mejor_s      = max(semanas, key=lambda s: s_totals[s])
-        _peor_s       = min(semanas, key=lambda s: s_totals[s])
-        _tendencia_c4 = _s_list[2] >= _s_list[1] >= _s_list[0]
-        _var_s2s1     = ((s_totals["S2"]-s_totals["S1"])/s_totals["S1"]*100) if s_totals["S1"]>0 else 0
-        _var_s3s2     = ((s_totals["S3"]-s_totals["S2"])/s_totals["S2"]*100) if s_totals["S2"]>0 else 0
-        _var_s4s3     = ((s_totals["S4"]-s_totals["S3"])/s_totals["S3"]*100) if s_totals["S3"]>0 else 0
+        # Only count weeks with meaningful data (>100 total)
+        _semanas_con_datos = [s for s in semanas if s_totals[s] > 100]
+        _tiene_semanas = len(_semanas_con_datos) >= 2
 
-        def _sc4(v): return "#22C55E" if v >= 0 else "#EF4444"
-        def _arrow(v): return "↑" if v >= 0 else "↓"
-
-        # ── Headline: semana a semana ─────────────────────────────────────────
-        st.markdown(f"""
-        <div style="background:linear-gradient(135deg,rgba(17,24,39,0.96),rgba(10,18,34,0.98));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:20px 28px;margin-bottom:16px;">
-            <div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:14px;">Evolución semanal · 1–27 Abril 2026</div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;">
-                <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
-                    <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 1</div>
-                    <div style="font-size:2rem;font-weight:950;color:#F8FAFC;">{fmt_int(s_totals["S1"])}</div>
-                    <div style="font-size:.72rem;color:#64748B;margin-top:2px;">altas</div>
-                </div>
-                <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
-                    <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 2</div>
-                    <div style="font-size:2rem;font-weight:950;color:#F8FAFC;">{fmt_int(s_totals["S2"])}</div>
-                    <div style="font-size:.72rem;color:{_sc4(_var_s2s1)};margin-top:2px;">{_arrow(_var_s2s1)} {abs(_var_s2s1):.0f}% vs S1</div>
-                </div>
-                <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
-                    <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 3</div>
-                    <div style="font-size:2rem;font-weight:950;color:#F8FAFC;">{fmt_int(s_totals["S3"])}</div>
-                    <div style="font-size:.72rem;color:{_sc4(_var_s3s2)};margin-top:2px;">{_arrow(_var_s3s2)} {abs(_var_s3s2):.0f}% vs S2</div>
-                </div>
-                <div style="text-align:center;padding:0 12px;">
-                    <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 4</div>
-                    <div style="font-size:2rem;font-weight:950;color:#F8FAFC;">{fmt_int(s_totals["S4"])}</div>
-                    <div style="font-size:.72rem;color:{_sc4(_var_s4s3)};margin-top:2px;">{_arrow(_var_s4s3)} {abs(_var_s4s3):.0f}% vs S3</div>
-                </div>
-            </div>
-            <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:10px;">
-                <span style="font-size:.82rem;font-weight:800;color:{"#22C55E" if _tendencia_c4 else "#EF4444"};"> {"▲ Tendencia positiva — el ritmo crece semana a semana" if _tendencia_c4 else f"▼ Tendencia a la baja — {_mejor_s} fue el pico, {_peor_s} el punto más bajo"}</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        # ── Gráficas ──────────────────────────────────────────────────────────
-        c4a, c4b = st.columns(2, gap="large")
-        df_semana = pd.DataFrame({"Semana": semanas, "Total": [s_totals[s] for s in semanas]})
-
-        with c4a:
-            st.markdown('<div class="section-card"><div class="section-title">Curva de ejecución semanal</div><div class="section-subtitle">↑ subida = aceleración · ↓ bajada = desaceleración · área rellena = volumen acumulado</div>', unsafe_allow_html=True)
-            chart_sem = alt.Chart(df_semana).mark_line(point=True,strokeWidth=3,color="#E10600").encode(
-                x=alt.X("Semana:N",title=None,sort=semanas),
-                y=alt.Y("Total:Q",title="Altas"),
-                tooltip=[alt.Tooltip("Semana:N"),alt.Tooltip("Total:Q",format=",.0f")]
-            ).properties(height=260)
-            area_sem = alt.Chart(df_semana).mark_area(opacity=0.12,color="#E10600").encode(
-                x=alt.X("Semana:N",sort=semanas), y=alt.Y("Total:Q")
+        if not _tiene_semanas:
+            st.markdown(
+                f"<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);"
+                f"border-radius:16px;padding:40px;text-align:center;margin:24px 0;'>"
+                f"<div style='font-size:1.8rem;margin-bottom:12px;'>📊</div>"
+                f"<div style='font-size:1rem;font-weight:800;color:#F8FAFC;margin-bottom:8px;'>"
+                f"Sin datos semanales disponibles — {_periodo_label}</div>"
+                f"<div style='font-size:.82rem;color:#94A3B8;line-height:1.6;'>"
+                f"El archivo de {_periodo_label} no incluye el desglose semanal (S1, S2, S3, S4) para altas orgánicas.<br>"
+                f"El tab de ritmo estará disponible cuando el archivo incluya esas columnas con datos.</div>"
+                f"</div>",
+                unsafe_allow_html=True
             )
-            st.altair_chart(style_chart(area_sem+chart_sem), use_container_width=True, theme=None)
-            st.markdown('</div>', unsafe_allow_html=True)
+        else:
+            _tendencia_c4 = _s_list[2] >= _s_list[1] >= _s_list[0]
+            _var_s2s1     = ((s_totals["S2"]-s_totals["S1"])/s_totals["S1"]*100) if s_totals["S1"]>0 else 0
+            _var_s3s2     = ((s_totals["S3"]-s_totals["S2"])/s_totals["S2"]*100) if s_totals["S2"]>0 else 0
+            _var_s4s3     = ((s_totals["S4"]-s_totals["S3"])/s_totals["S3"]*100) if s_totals["S3"]>0 else 0
 
-        with c4b:
-            sem_by_ag = []
-            for s in semanas:
-                if s in df.columns:
-                    grp = df.groupby("AGENTE")[s].sum().reset_index()
-                    grp["Semana"] = s; grp = grp.rename(columns={s:"Altas"})
-                    sem_by_ag.append(grp)
-            df_sem_ag = pd.concat(sem_by_ag, ignore_index=True) if sem_by_ag else pd.DataFrame()
-            st.markdown('<div class="section-card"><div class="section-title">Ritmo semanal por agente</div><div class="section-subtitle">Cada línea = un agente · línea que sube = aceleró · línea que baja = perdió ritmo</div>', unsafe_allow_html=True)
-            if not df_sem_ag.empty:
-                chart_sem_ag = alt.Chart(df_sem_ag).mark_line(point=True,strokeWidth=2).encode(
-                    x=alt.X("Semana:N",sort=semanas,title=None),
-                    y=alt.Y("Altas:Q",title="Altas orgánicas"),
-                    color=alt.Color("AGENTE:N",scale=alt.Scale(domain=list(AGENTE_COLORS.keys()),range=list(AGENTE_COLORS.values())),legend=alt.Legend(title="Agente")),
-                    tooltip=[alt.Tooltip("Semana:N"),alt.Tooltip("AGENTE:N"),alt.Tooltip("Altas:Q",format=",.0f")]
+            def _sc4(v): return "#22C55E" if v >= 0 else "#EF4444"
+            def _arrow(v): return "↑" if v >= 0 else "↓"
+
+            # ── Headline: semana a semana ─────────────────────────────────────────
+            st.markdown(f"""
+            <div style="background:linear-gradient(135deg,rgba(17,24,39,0.96),rgba(10,18,34,0.98));border:1px solid rgba(255,255,255,0.10);border-radius:24px;padding:20px 28px;margin-bottom:16px;">
+                <div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin-bottom:14px;">Evolución semanal · {_periodo_label}</div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;">
+                    <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
+                        <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 1</div>
+                        <div style="font-size:2rem;font-weight:950;color:#F8FAFC;">{fmt_int(s_totals["S1"])}</div>
+                        <div style="font-size:.72rem;color:#64748B;margin-top:2px;">altas</div>
+                    </div>
+                    <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
+                        <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 2</div>
+                        <div style="font-size:2rem;font-weight:950;color:#F8FAFC;">{fmt_int(s_totals["S2"])}</div>
+                        <div style="font-size:.72rem;color:{_sc4(_var_s2s1)};margin-top:2px;">{_arrow(_var_s2s1)} {abs(_var_s2s1):.0f}% vs S1</div>
+                    </div>
+                    <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
+                        <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 3</div>
+                        <div style="font-size:2rem;font-weight:950;color:#F8FAFC;">{fmt_int(s_totals["S3"])}</div>
+                        <div style="font-size:.72rem;color:{_sc4(_var_s3s2)};margin-top:2px;">{_arrow(_var_s3s2)} {abs(_var_s3s2):.0f}% vs S2</div>
+                    </div>
+                    <div style="text-align:center;padding:0 12px;">
+                        <div style="font-size:.68rem;font-weight:900;color:#94A3B8;margin-bottom:4px;">SEMANA 4</div>
+                        <div style="font-size:2rem;font-weight:950;color:#F8FAFC;">{fmt_int(s_totals["S4"])}</div>
+                        <div style="font-size:.72rem;color:{_sc4(_var_s4s3)};margin-top:2px;">{_arrow(_var_s4s3)} {abs(_var_s4s3):.0f}% vs S3</div>
+                    </div>
+                </div>
+                <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:.82rem;font-weight:800;color:{"#22C55E" if _tendencia_c4 else "#EF4444"};"> {"▲ Tendencia positiva — el ritmo crece semana a semana" if _tendencia_c4 else f"▼ Tendencia a la baja — {_mejor_s} fue el pico, {_peor_s} el punto más bajo"}</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # ── Gráficas ──────────────────────────────────────────────────────────
+            c4a, c4b = st.columns(2, gap="large")
+            df_semana = pd.DataFrame({"Semana": semanas, "Total": [s_totals[s] for s in semanas]})
+
+            with c4a:
+                st.markdown('<div class="section-card"><div class="section-title">Curva de ejecución semanal</div><div class="section-subtitle">↑ subida = aceleración · ↓ bajada = desaceleración · área rellena = volumen acumulado</div>', unsafe_allow_html=True)
+                chart_sem = alt.Chart(df_semana).mark_line(point=True,strokeWidth=3,color="#E10600").encode(
+                    x=alt.X("Semana:N",title=None,sort=semanas),
+                    y=alt.Y("Total:Q",title="Altas"),
+                    tooltip=[alt.Tooltip("Semana:N"),alt.Tooltip("Total:Q",format=",.0f")]
                 ).properties(height=260)
-                st.altair_chart(style_chart(chart_sem_ag), use_container_width=True, theme=None)
-            st.markdown('</div>', unsafe_allow_html=True)
+                area_sem = alt.Chart(df_semana).mark_area(opacity=0.12,color="#E10600").encode(
+                    x=alt.X("Semana:N",sort=semanas), y=alt.Y("Total:Q")
+                )
+                st.altair_chart(style_chart(area_sem+chart_sem), use_container_width=True, theme=None)
+                st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── Orgánicas vs Inducidas ────────────────────────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Orgánicas vs inducidas — composición semanal</div>', unsafe_allow_html=True)
-        df_sem_indu = pd.DataFrame({
-            "Semana": ["S1","S2","S3","S4"],
-            "Inducidas": [s_indu_totals[s] for s in semanas_indu],
-            "Orgánicas": [s_totals[s2] for s2 in semanas],
-        })
-        df_sem_indu["Acum_org"]  = df_sem_indu["Orgánicas"].cumsum()
-        df_sem_indu["Acum_indu"] = df_sem_indu["Inducidas"].cumsum()
-        df_sem_indu_long = df_sem_indu.melt("Semana", var_name="Tipo", value_name="Altas",
-                                             value_vars=["Orgánicas","Inducidas"])
-        df_acum = df_sem_indu[["Semana","Acum_org","Acum_indu"]].melt("Semana",var_name="Tipo",value_name="Acumulado")
-        df_acum["Tipo"] = df_acum["Tipo"].map({"Acum_org":"Orgánicas","Acum_indu":"Inducidas"})
+            with c4b:
+                sem_by_ag = []
+                for s in semanas:
+                    if s in df.columns:
+                        grp = df.groupby("AGENTE")[s].sum().reset_index()
+                        grp["Semana"] = s; grp = grp.rename(columns={s:"Altas"})
+                        sem_by_ag.append(grp)
+                df_sem_ag = pd.concat(sem_by_ag, ignore_index=True) if sem_by_ag else pd.DataFrame()
+                st.markdown('<div class="section-card"><div class="section-title">Ritmo semanal por agente</div><div class="section-subtitle">Cada línea = un agente · línea que sube = aceleró · línea que baja = perdió ritmo</div>', unsafe_allow_html=True)
+                if not df_sem_ag.empty:
+                    chart_sem_ag = alt.Chart(df_sem_ag).mark_line(point=True,strokeWidth=2).encode(
+                        x=alt.X("Semana:N",sort=semanas,title=None),
+                        y=alt.Y("Altas:Q",title="Altas orgánicas"),
+                        color=alt.Color("AGENTE:N",scale=alt.Scale(domain=list(AGENTE_COLORS.keys()),range=list(AGENTE_COLORS.values())),legend=alt.Legend(title="Agente")),
+                        tooltip=[alt.Tooltip("Semana:N"),alt.Tooltip("AGENTE:N"),alt.Tooltip("Altas:Q",format=",.0f")]
+                    ).properties(height=260)
+                    st.altair_chart(style_chart(chart_sem_ag), use_container_width=True, theme=None)
+                st.markdown('</div>', unsafe_allow_html=True)
 
-        c4c, c4d = st.columns(2, gap="large")
-        with c4c:
-            st.markdown('<div class="section-card"><div class="section-title">Orgánicas vs inducidas por semana</div><div class="section-subtitle">🔴 Orgánicas = planes &gt;$2.000 (mayor valor) · 🔵 Inducidas = planes ≤$2.000</div>', unsafe_allow_html=True)
-            chart_comp = alt.Chart(df_sem_indu_long).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
-                x=alt.X("Semana:N",sort=["S1","S2","S3","S4"],title=None),
-                y=alt.Y("Altas:Q",title="Altas"),
-                color=alt.Color("Tipo:N",scale=alt.Scale(domain=["Orgánicas","Inducidas"],range=["#E10600","#38BDF8"]),legend=alt.Legend(title="")),
-                xOffset="Tipo:N",
-                tooltip=[alt.Tooltip("Semana:N"),alt.Tooltip("Tipo:N"),alt.Tooltip("Altas:Q",format=",.0f")]
-            ).properties(height=240)
-            st.altair_chart(style_chart(chart_comp), use_container_width=True, theme=None)
-            st.markdown('</div>', unsafe_allow_html=True)
-        with c4d:
-            st.markdown('<div class="section-card"><div class="section-title">Avance acumulado</div><div class="section-subtitle">Si la línea 🔴 crece más rápido que la 🔵, la captación de calidad va bien</div>', unsafe_allow_html=True)
-            chart_acum = alt.Chart(df_acum).mark_line(point=True,strokeWidth=3).encode(
-                x=alt.X("Semana:N",sort=["S1","S2","S3","S4"],title=None),
-                y=alt.Y("Acumulado:Q",title="Altas acumuladas"),
-                color=alt.Color("Tipo:N",scale=alt.Scale(domain=["Orgánicas","Inducidas"],range=["#E10600","#38BDF8"]),legend=alt.Legend(title="")),
-                tooltip=[alt.Tooltip("Semana:N"),alt.Tooltip("Tipo:N"),alt.Tooltip("Acumulado:Q",format=",.0f")]
-            ).properties(height=240)
-            st.altair_chart(style_chart(chart_acum), use_container_width=True, theme=None)
-            st.markdown('</div>', unsafe_allow_html=True)
+            # ── Orgánicas vs Inducidas ────────────────────────────────────────────
+            st.markdown('<div style="font-size:.70rem;font-weight:900;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Orgánicas vs inducidas — composición semanal</div>', unsafe_allow_html=True)
+            df_sem_indu = pd.DataFrame({
+                "Semana": ["S1","S2","S3","S4"],
+                "Inducidas": [s_indu_totals[s] for s in semanas_indu],
+                "Orgánicas": [s_totals[s2] for s2 in semanas],
+            })
+            df_sem_indu["Acum_org"]  = df_sem_indu["Orgánicas"].cumsum()
+            df_sem_indu["Acum_indu"] = df_sem_indu["Inducidas"].cumsum()
+            df_sem_indu_long = df_sem_indu.melt("Semana", var_name="Tipo", value_name="Altas",
+                                                 value_vars=["Orgánicas","Inducidas"])
+            df_acum = df_sem_indu[["Semana","Acum_org","Acum_indu"]].melt("Semana",var_name="Tipo",value_name="Acumulado")
+            df_acum["Tipo"] = df_acum["Tipo"].map({"Acum_org":"Orgánicas","Acum_indu":"Inducidas"})
+
+            c4c, c4d = st.columns(2, gap="large")
+            with c4c:
+                st.markdown('<div class="section-card"><div class="section-title">Orgánicas vs inducidas por semana</div><div class="section-subtitle">🔴 Orgánicas = planes &gt;$2.000 (mayor valor) · 🔵 Inducidas = planes ≤$2.000</div>', unsafe_allow_html=True)
+                chart_comp = alt.Chart(df_sem_indu_long).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
+                    x=alt.X("Semana:N",sort=["S1","S2","S3","S4"],title=None),
+                    y=alt.Y("Altas:Q",title="Altas"),
+                    color=alt.Color("Tipo:N",scale=alt.Scale(domain=["Orgánicas","Inducidas"],range=["#E10600","#38BDF8"]),legend=alt.Legend(title="")),
+                    xOffset="Tipo:N",
+                    tooltip=[alt.Tooltip("Semana:N"),alt.Tooltip("Tipo:N"),alt.Tooltip("Altas:Q",format=",.0f")]
+                ).properties(height=240)
+                st.altair_chart(style_chart(chart_comp), use_container_width=True, theme=None)
+                st.markdown('</div>', unsafe_allow_html=True)
+            with c4d:
+                st.markdown('<div class="section-card"><div class="section-title">Avance acumulado</div><div class="section-subtitle">Si la línea 🔴 crece más rápido que la 🔵, la captación de calidad va bien</div>', unsafe_allow_html=True)
+                chart_acum = alt.Chart(df_acum).mark_line(point=True,strokeWidth=3).encode(
+                    x=alt.X("Semana:N",sort=["S1","S2","S3","S4"],title=None),
+                    y=alt.Y("Acumulado:Q",title="Altas acumuladas"),
+                    color=alt.Color("Tipo:N",scale=alt.Scale(domain=["Orgánicas","Inducidas"],range=["#E10600","#38BDF8"]),legend=alt.Legend(title="")),
+                    tooltip=[alt.Tooltip("Semana:N"),alt.Tooltip("Tipo:N"),alt.Tooltip("Acumulado:Q",format=",.0f")]
+                ).properties(height=240)
+                st.altair_chart(style_chart(chart_acum), use_container_width=True, theme=None)
+                st.markdown('</div>', unsafe_allow_html=True)
 
 
-    # -------------------------------------------------------
-    # TAB C5 — ¿DÓNDE GANAR MÁS?
-    # -------------------------------------------------------
+        # -------------------------------------------------------
+        # TAB C5 — ¿DÓNDE GANAR MÁS?
+        # -------------------------------------------------------
     with tc5:
         # ── Cálculos globales ─────────────────────────────────────────────────
         _cuota_alta_50    = (pd.to_numeric(df["CUOTA DE ALTA"],errors="coerce")>50).sum()
@@ -5113,31 +5146,65 @@ def render_claro_view():
 # =========================================================
 # DISPONIBILIDAD DE ARCHIVOS
 # =========================================================
-_has_claro_file = (
-    st.session_state.get("claro_uploaded_file") is not None or
-    find_existing_file(CLARO_FILE_CANDIDATES) is not None
-)
-# RSRP only available if user explicitly uploaded it in this session
-# Disk files are only used as fallback when NO upload interface exists (dev mode)
+from datetime import date as _date
+import calendar as _calendar
+
+# File availability — ONLY from user uploads in this session
+# Disk files are NEVER counted — they would show data the user didn't explicitly load
+_claro_uploaded  = st.session_state.get("claro_uploaded_file") is not None
 _rsrp_uploaded   = st.session_state.get("rsrp_uploaded_file") is not None
-_rsrp_on_disk    = find_existing_file(DATA_FILE_CANDIDATES) is not None
 _market_uploaded = st.session_state.get("market_uploaded_file") is not None
 _altas_uploaded  = st.session_state.get("altas_uploaded_file") is not None
 
-# rsrp_available = uploaded by user OR on disk but only if claro file is NOT the only thing loaded
-# If user only uploaded claro, operators view must be empty regardless of disk
-_only_claro_uploaded = (
-    st.session_state.get("claro_uploaded_file") is not None and
-    not _rsrp_uploaded
-)
-_rsrp_available = _rsrp_uploaded or (_rsrp_on_disk and not _only_claro_uploaded)
-_has_rsrp_file  = _rsrp_available
+_has_claro_file  = _claro_uploaded
+_rsrp_available  = _rsrp_uploaded
+_has_rsrp_file   = _rsrp_available
+
+# Show welcome screen whenever NO files are uploaded at all
+_show_welcome    = not _has_claro_file and not _rsrp_available
 
 _vista_sel = st.session_state.get("vista_activa", "Instructivo · Guía de uso")
-_show_welcome   = False  # Views always accessible - each view shows its own "no data" message
 
-# If only claro file loaded, go straight to agentes view
+# Smart default: if claro loaded go to agentes, if rsrp loaded go to operadores
 _vista_claro_direct = _has_claro_file and not _rsrp_available
+
+
+def _is_month_closed(sheet_name: str, dia_corte: int) -> bool:
+    """
+    Determines if a month is closed using two signals:
+    1. Current date vs the month implied by the sheet name
+    2. Cut day >= 28 (close enough to end of month)
+    """
+    today = _date.today()
+    # Try to extract month/year from sheet name (e.g. "MAYO", "ABRIL 2026", "Mayo 2026")
+    _meses = {
+        "enero":1,"february":2,"febrero":2,"marzo":3,"march":3,
+        "abril":4,"april":4,"mayo":5,"may":5,"junio":6,"june":6,
+        "julio":7,"july":7,"agosto":8,"august":8,"septiembre":9,"september":9,
+        "octubre":10,"october":10,"noviembre":11,"november":11,"diciembre":12,"december":12
+    }
+    sheet_lower = sheet_name.lower()
+    sheet_month = None
+    sheet_year  = today.year
+    for name, num in _meses.items():
+        if name in sheet_lower:
+            sheet_month = num
+            break
+    # Try to extract year
+    import re as _re
+    _yr = _re.search(r"20\d{2}", sheet_name)
+    if _yr:
+        sheet_year = int(_yr.group())
+    # If we know the sheet month/year, compare with today
+    if sheet_month:
+        last_day = _calendar.monthrange(sheet_year, sheet_month)[1]
+        sheet_end = _date(sheet_year, sheet_month, last_day)
+        if today > sheet_end:
+            return True  # month already passed
+        if today.month == sheet_month and today.year == sheet_year:
+            return False  # current month = in progress
+    # Fallback: use cut day
+    return dia_corte >= 28
 
 # =========================================================
 # CARGA DATOS RED Y MERCADO
@@ -5198,11 +5265,8 @@ if _uploaded_claro is not None:
     except Exception as _e:
         st.sidebar.error(f"Error: {_e}")
 else:
-    _disk_claro = find_existing_file(CLARO_FILE_CANDIDATES)
-    if _disk_claro:
-        st.sidebar.info(f"Servidor: {os.path.basename(_disk_claro)}")
-    else:
-        st.sidebar.caption("Sin archivo cargado")
+    st.session_state.pop("claro_uploaded_file", None)
+    st.sidebar.caption("Sin archivo cargado")
 
 st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
@@ -5220,6 +5284,7 @@ if _uploaded_rsrp is not None:
     st.session_state["rsrp_uploaded_file"] = _uploaded_rsrp
     st.sidebar.success(f"✅ {_uploaded_rsrp.name}")
 else:
+    st.session_state.pop("rsrp_uploaded_file", None)
     _disk_rsrp = find_existing_file(DATA_FILE_CANDIDATES)
     if _disk_rsrp:
         st.sidebar.info(f"Servidor: {os.path.basename(_disk_rsrp)}")
@@ -5237,6 +5302,7 @@ if _uploaded_market is not None:
     st.session_state["market_uploaded_file"] = _uploaded_market
     st.sidebar.success(f"✅ {_uploaded_market.name}")
 else:
+    st.session_state.pop("market_uploaded_file", None)
     _disk_market = find_existing_file(MARKET_FILE_CANDIDATES)
     if _disk_market:
         st.sidebar.caption(f"Servidor: {os.path.basename(_disk_market)}")
@@ -5252,6 +5318,7 @@ if _uploaded_altas is not None:
     st.session_state["altas_uploaded_file"] = _uploaded_altas
     st.sidebar.success(f"✅ {_uploaded_altas.name}")
 else:
+    st.session_state.pop("altas_uploaded_file", None)
     _disk_altas = find_existing_file(ALTAS_FILE_CANDIDATES)
     if _disk_altas:
         st.sidebar.caption(f"Servidor: {os.path.basename(_disk_altas)}")
