@@ -3537,11 +3537,11 @@ def render_claro_view():
                             axis=alt.Axis(labelColor="#374151", titleColor="#111827")),
                     y=alt.Y(f"{y_col}:N", sort="-x", title=None,
                             axis=alt.Axis(labelLimit=220, labelColor="#374151")),
-                    color=alt.Color("color_sem:N",
-                        scale=alt.Scale(
-                            domain=["#22C55E","#F59E0B","#EF4444"],
-                            range=["#22C55E","#F59E0B","#EF4444"]
-                        ), legend=None),
+                    color=alt.condition(
+                        alt.datum.cumpl >= 100,
+                        alt.value("#22C55E"),
+                        alt.condition(alt.datum.cumpl >= 70, alt.value("#F59E0B"), alt.value("#EF4444"))
+                    ),
                     tooltip=_tt_barrio
                 ).properties(height=380)
                 st.altair_chart(style_chart(chart_circ), use_container_width=True, theme=None)
@@ -3597,8 +3597,7 @@ def render_claro_view():
                     alt.Tooltip("AGENTE:N",        title="Agente"),
                     alt.Tooltip("cumpl:Q",         format=".1f", title="Cumpl. %"),
                     alt.Tooltip("brecha:Q",        format=",.0f", title="Altas pendientes"),
-                    alt.Tooltip("proy_nat:Q",       format=".1f", title="Cumpl. total %"),
-                    alt.Tooltip("ejec_total:Q",    format=",.0f", title="Altas ejecutadas"),
+                    alt.Tooltip("ejec_nat:Q",      format=",.0f", title="Altas ejecutadas"),
                     alt.Tooltip("cuota_alta:Q",    format=".1f", title="Cuota alta %"),
                     alt.Tooltip("pdvs:Q",          title="PDVs"),
                 ]
