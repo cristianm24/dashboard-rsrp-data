@@ -2335,9 +2335,9 @@ def _process_claro_df(df_det):
     for c in ["AGENTE","CATEGORIA","TIPOLOGIA","CLASIFICACION","ZONA",
               "TIPO","ASESOR","RUTA","CIRCUITO","BARRIO"]:
         if c in df_det.columns:
-            df_det[c] = df_det[c].astype(str).str.strip()
-            # Replace literal "nan" string (from pandas NaN→str conversion) with empty
-            df_det[c] = df_det[c].replace({"nan":"", "None":"", "<NA>":"", "NaN":""})
+            # Use object dtype explicitly to avoid pandas StringDtype with pd.NA
+            df_det[c] = df_det[c].astype(object).fillna("").astype(str).str.strip()
+            df_det[c] = df_det[c].replace({"nan":"", "None":"", "<NA>":"", "NaN":"", "nan ":"", " ":""})
 
     # Remove rows where AGENTE is null, empty, or looks like a header repeat
     if "AGENTE" in df_det.columns:
@@ -2452,7 +2452,8 @@ def _find_cierre_sheets(xl):
     # Coerción string
     for c in ["AGENTE","CATEGORIA","TIPOLOGIA","CLASIFICACION","ZONA","TIPO","ASESOR","RUTA","CIRCUITO","BARRIO"]:
         if c in df_det.columns:
-            df_det[c] = df_det[c].astype(str).str.strip().replace({"nan":"","None":"","<NA>":"","NaN":""})
+            df_det[c] = df_det[c].astype(object).fillna("").astype(str).str.strip()
+            df_det[c] = df_det[c].replace({"nan":"","None":"","<NA>":"","NaN":""})
 
     return df_det, faltantes, nuevas
 
@@ -3388,13 +3389,15 @@ def render_claro_view():
         _eje = "EJE ALTA TOTAL" if "EJE ALTA TOTAL" in df.columns else "EJEC ALTA NAT"
 
         # DEBUG — mostrar estado real del df
+        _b_sample = df['BARRIO'].iloc[0] if 'BARRIO' in df.columns and len(df)>0 else 'N/A'
+        _b_non_empty = (df['BARRIO'].astype(str).str.strip() != "").sum() if 'BARRIO' in df.columns else 0
         st.markdown(
             f"<div style='font-size:.68rem;color:var(--text-muted);background:var(--bg-sidebar);"
             f"border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin-bottom:8px;'>"
             f"🔍 Debug: df={len(df)} filas · "
-            f"BARRIO={df['BARRIO'].notna().sum() if 'BARRIO' in df.columns else 'NO EXISTE'} vals · "
+            f"BARRIO non-empty={_b_non_empty} · "
             f"BARRIO dtype={df['BARRIO'].dtype if 'BARRIO' in df.columns else 'N/A'} · "
-            f"BARRIO sample={repr(str(df['BARRIO'].iloc[0]) if 'BARRIO' in df.columns and len(df)>0 else 'empty')}"
+            f"BARRIO[0]={repr(_b_sample)} type={type(_b_sample).__name__}"
             f"</div>",
             unsafe_allow_html=True
         )
