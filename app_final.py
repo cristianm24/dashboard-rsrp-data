@@ -2452,7 +2452,7 @@ def _find_cierre_sheets(xl):
     # Coerción string
     for c in ["AGENTE","CATEGORIA","TIPOLOGIA","CLASIFICACION","ZONA","TIPO","ASESOR","RUTA","CIRCUITO","BARRIO"]:
         if c in df_det.columns:
-            df_det[c] = df_det[c].astype(str).str.strip().replace("nan", pd.NA)
+            df_det[c] = df_det[c].astype(str).str.strip().replace({"nan":"","None":"","<NA>":"","NaN":""})
 
     return df_det, faltantes, nuevas
 
