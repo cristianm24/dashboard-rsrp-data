@@ -2559,6 +2559,7 @@ def load_claro_data_from_path(path):
 def load_claro_data_from_upload(uploaded_file):
     """Carga desde archivo subido por el usuario."""
     try:
+        uploaded_file.seek(0)
         xl = pd.ExcelFile(uploaded_file)
     except Exception as e:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
@@ -2572,6 +2573,19 @@ def load_claro_data():
     Punto de entrada. Prioridad: archivo subido > archivo en disco.
     Nunca lanza excepción.
     """
+    # Use stored bytes to avoid stream exhaustion on rerun
+    file_bytes = st.session_state.get("claro_file_bytes")
+    file_name  = st.session_state.get("claro_file_name", "plan.xlsx")
+    if file_bytes is not None:
+        try:
+            import io
+            buf = io.BytesIO(file_bytes)
+            buf.name = file_name
+            return load_claro_data_from_upload(buf)
+        except Exception as e:
+            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
+                "found": False, "message": str(e)
+            }
     uploaded = st.session_state.get("claro_uploaded_file")
     if uploaded is not None:
         try:
@@ -2800,7 +2814,12 @@ def render_claro_view():
 
     def _reload_sheet(sheet_name):
         """Load a specific sheet from the uploaded or disk file."""
-        src = st.session_state.get("claro_uploaded_file") or find_existing_file(CLARO_FILE_CANDIDATES)
+        import io as _io
+        file_bytes = st.session_state.get("claro_file_bytes")
+        if file_bytes is not None:
+            src = _io.BytesIO(file_bytes)
+        else:
+            src = st.session_state.get("claro_uploaded_file") or find_existing_file(CLARO_FILE_CANDIDATES)
         if src is None:
             return df_det, _compute_cut_day(df_det)
         if hasattr(src, "seek"):
@@ -4294,7 +4313,12 @@ _uploaded_claro = st.sidebar.file_uploader(
 )
 
 if _uploaded_claro is not None:
+    # Store bytes so stream position is never exhausted on rerun
+    _uploaded_claro.seek(0)
     st.session_state["claro_uploaded_file"] = _uploaded_claro
+    st.session_state["claro_file_bytes"] = _uploaded_claro.read()
+    st.session_state["claro_file_name"] = _uploaded_claro.name
+    _uploaded_claro.seek(0)
     try:
         _xl_prev = pd.ExcelFile(_uploaded_claro)
         _sheet_prev, _header_prev, _err_prev = _find_detail_sheet(_xl_prev)
@@ -4316,6 +4340,8 @@ if _uploaded_claro is not None:
         st.sidebar.error(f"Error: {_e}")
 else:
     st.session_state.pop("claro_uploaded_file", None)
+    st.session_state.pop("claro_file_bytes", None)
+    st.session_state.pop("claro_file_name", None)
     st.sidebar.caption("Sin archivo cargado")
 
 # ---- CARGADOR 2: RED Y MERCADO ----
