@@ -3709,7 +3709,7 @@ def render_claro_view():
                 st.altair_chart(style_chart(chart_tip), use_container_width=True, theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── Sección 3: Rutas críticas ─────────────────────────────────────────
+        # ── Rutas críticas ─────────────────────────────────────────────────────
         st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Rutas que necesitan intervención inmediata</div>', unsafe_allow_html=True)
         if "RUTA" in df.columns:
             df_ruta_opp = df[df["META ALTA NAT (>$2000)"] > 0].copy()
@@ -3718,21 +3718,27 @@ def render_claro_view():
             for _rc in ["RUTA","AGENTE","BARRIO"]:
                 if _rc in df_ruta_opp.columns:
                     df_ruta_opp[_rc] = df_ruta_opp[_rc].fillna("").astype(str).str.strip()
+            # Build barrio list per ruta
+            ruta_barrio = df_ruta_opp.groupby(["RUTA","AGENTE"])["BARRIO"].apply(
+                lambda x: ", ".join(sorted(set(v for v in x if v != "")))[:80]
+            ).reset_index()
+            ruta_barrio.columns = ["RUTA","AGENTE","BARRIOS"]
             ruta_group_cols = [c for c in ["RUTA","AGENTE"] if c in df_ruta_opp.columns]
             ruta_opp = df_ruta_opp.groupby(ruta_group_cols).agg(
                 pdvs_totales=("ID","count"), pdvs_criticos=("cumpl_pdv", lambda x: (x < 70).sum()),
                 meta_total=("META ALTA NAT (>$2000)","sum"), ejec_total=("EJEC ALTA NAT","sum"),
             ).reset_index()
+            ruta_opp = ruta_opp.merge(ruta_barrio, on=ruta_group_cols, how="left")
             ruta_opp["cumpl_ruta"]        = (ruta_opp["ejec_total"]/ruta_opp["meta_total"].replace(0,np.nan)*100).fillna(0)
             ruta_opp["brecha"]            = ruta_opp["meta_total"] - ruta_opp["ejec_total"]
             ruta_opp["pct_pdvs_criticos"] = (ruta_opp["pdvs_criticos"]/ruta_opp["pdvs_totales"].replace(0,np.nan)*100).fillna(0)
-            ruta_opp = ruta_opp[ruta_opp["cumpl_ruta"] < 70].sort_values("brecha", ascending=False).head(20)
+            ruta_opp = ruta_opp[ruta_opp["cumpl_ruta"] < 70].sort_values("brecha", ascending=False).head(15)
             if not ruta_opp.empty:
-                ruta_rename = {"RUTA":"Ruta","AGENTE":"Agente","BARRIO":"Barrio","pdvs_totales":"PDVs","pdvs_criticos":"PDVs críticos","meta_total":"Meta","ejec_total":"Ejecutado","cumpl_ruta":"Cumpl. %","brecha":"Brecha","pct_pdvs_criticos":"% críticos"}
+                ruta_rename = {"RUTA":"Ruta","AGENTE":"Agente","BARRIOS":"Barrios","pdvs_totales":"PDVs","pdvs_criticos":"PDVs crit.","meta_total":"Meta","ejec_total":"Ejecutado","cumpl_ruta":"Cumpl. %","brecha":"Brecha","pct_pdvs_criticos":"% crit."}
                 show_ruta_cols = [c for c in ruta_rename.keys() if c in ruta_opp.columns]
                 show_ruta = safe_round_columns(ruta_opp[show_ruta_cols].copy(), ["meta_total","ejec_total","cumpl_ruta","brecha","pct_pdvs_criticos"])
                 show_ruta = show_ruta.rename(columns={k:v for k,v in ruta_rename.items() if k in show_ruta.columns})
-                show_table(show_ruta, height=280)
+                show_table(show_ruta, height=320)
                 st.markdown(f'<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">{len(ruta_opp)} rutas con cumplimiento &lt;70% · ordenadas por mayor brecha</div>', unsafe_allow_html=True)
             else:
                 st.success("✅ No hay rutas con cumplimiento por debajo del 70%.")
