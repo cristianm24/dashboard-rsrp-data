@@ -156,34 +156,13 @@ h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-weight: 800; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
 
-/* ── Sidebar toggle — always visible, styled red ──────── */
+/* ── Sidebar: always expanded, collapse button hidden ─── */
+/* Hide the collapse button so sidebar can never be closed */
+[data-testid="stSidebarCollapseButton"] {
+    display: none !important;
+}
 [data-testid="stSidebarCollapsedControl"] {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: all !important;
-    z-index: 999999 !important;
-}
-[data-testid="stSidebarCollapsedControl"] button {
-    background: #E10600 !important;
-    border-radius: 8px !important;
-    border: none !important;
-    width: 2.5rem !important;
-    height: 2.5rem !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    box-shadow: 0 2px 10px rgba(225,6,0,0.35) !important;
-    cursor: pointer !important;
-}
-[data-testid="stSidebarCollapsedControl"] button svg {
-    fill: white !important;
-    stroke: white !important;
-    color: white !important;
-}
-[data-testid="stSidebarCollapsedControl"] button:hover {
-    background: #C00500 !important;
-    transform: scale(1.05) !important;
+    display: none !important;
 }
 
 /* ── Sidebar itself ──────────────────────────────────── */
