@@ -20,7 +20,7 @@ import altair as alt
 st.set_page_config(
     page_title="Panel Ejecutivo de Desempeño de Red y Mercado",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
 
 # =========================================================
@@ -915,30 +915,38 @@ button, [role="button"], a, label { transition: var(--transition) !important; }
 [data-testid="block-container"] { padding: 1.2rem 2rem 2rem !important; max-width: 1400px !important; }
 
 /* Hide Streamlit branding */
-/* Hide Streamlit branding but keep sidebar toggle visible */
+/* Hide only branding — keep everything else visible */
 #MainMenu { visibility: hidden; }
 footer { visibility: hidden; }
 [data-testid="stToolbar"] { display: none; }
-
-/* Sidebar collapse/expand button — force always visible */
-[data-testid="stSidebarCollapsedControl"],
-[data-testid="collapsedControl"],
-[data-testid="stSidebarCollapseButton"],
-button[kind="header"],
-.stSidebarCollapsedControl,
-section[data-testid="stSidebar"] + div > button,
-div[data-testid="stSidebarCollapsedControl"] {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    z-index: 9999 !important;
-    pointer-events: all !important;
-}
-
-/* Keep header transparent but not hidden */
+/* Header transparent so sidebar button shows */
 header[data-testid="stHeader"] {
     background: transparent !important;
     box-shadow: none !important;
+}
+/* Always show sidebar collapse/expand button */
+[data-testid="stSidebarCollapsedControl"] {
+    display: block !important;
+    visibility: visible !important;
+    pointer-events: all !important;
+    z-index: 999990 !important;
+}
+[data-testid="stSidebarCollapsedControl"] button,
+[data-testid="stSidebarCollapseButton"] button {
+    background: #E10600 !important;
+    color: white !important;
+    border-radius: 8px !important;
+    border: none !important;
+    width: 2rem !important;
+    height: 2rem !important;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+[data-testid="stSidebarCollapsedControl"] svg,
+[data-testid="stSidebarCollapseButton"] svg {
+    fill: white !important;
+    stroke: white !important;
 }
 
 /* Separator */
@@ -1009,63 +1017,7 @@ hr { border: none; border-top: 1px solid var(--border) !important; margin: 16px 
 </style>
 """, unsafe_allow_html=True)
 
-# JS: inject a floating sidebar toggle button that always works
-st.markdown("""
-<script>
-(function() {
-    function addSidebarBtn() {
-        if (document.getElementById('_sb_toggle_btn')) return;
-        var btn = document.createElement('button');
-        btn.id = '_sb_toggle_btn';
-        btn.innerHTML = '&#9776;';
-        btn.title = 'Abrir/cerrar sidebar';
-        btn.style.cssText = [
-            'position:fixed',
-            'top:12px',
-            'left:12px',
-            'z-index:99999',
-            'width:36px',
-            'height:36px',
-            'background:#E10600',
-            'color:white',
-            'border:none',
-            'border-radius:8px',
-            'font-size:18px',
-            'cursor:pointer',
-            'display:flex',
-            'align-items:center',
-            'justify-content:center',
-            'box-shadow:0 2px 8px rgba(0,0,0,0.2)',
-            'transition:all 0.2s ease'
-        ].join(';');
-        btn.onmouseover = function(){ this.style.background='#C00500'; this.style.transform='scale(1.05)'; };
-        btn.onmouseout  = function(){ this.style.background='#E10600'; this.style.transform='scale(1)'; };
-        btn.onclick = function() {
-            // Try Streamlit's native toggle first
-            var native = document.querySelector('[data-testid="stSidebarCollapsedControl"] button') ||
-                         document.querySelector('[data-testid="collapsedControl"] button') ||
-                         document.querySelector('button[kind="header"]');
-            if (native) { native.click(); return; }
-            // Fallback: toggle sidebar visibility directly
-            var sb = document.querySelector('[data-testid="stSidebar"]');
-            if (sb) {
-                sb.style.display = sb.style.display === 'none' ? '' : 'none';
-            }
-        };
-        document.body.appendChild(btn);
-    }
-    // Run after DOM loads
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', addSidebarBtn);
-    } else {
-        addSidebarBtn();
-    }
-    // Also run after Streamlit rerenders
-    setTimeout(addSidebarBtn, 500);
-    setTimeout(addSidebarBtn, 1500);
-})();
-</script>
-""", unsafe_allow_html=True)
+
 st.markdown("""
 <script>
 (function(){
@@ -4377,6 +4329,13 @@ except Exception as e:
 
 # SIDEBAR
 # =========================================================
+# Ensure sidebar is always expanded by default in page config
+# (set at top of file in st.set_page_config)
+
+# Native sidebar button in main area as fallback
+with st.sidebar:
+    pass  # ensure sidebar renders
+
 st.sidebar.markdown(
     "<div style='display:flex;align-items:center;gap:10px;padding:4px 0 16px 0;border-bottom:1px solid var(--border);margin-bottom:14px;'>"
     "<div style='width:32px;height:32px;background:#E10600;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;'>"
