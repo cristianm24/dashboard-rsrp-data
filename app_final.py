@@ -4277,6 +4277,44 @@ def render_claro_view():
 from datetime import date as _date
 import calendar as _calendar
 
+# ── BOTÓN PARA ABRIR SIDEBAR (siempre visible) ─────────────────────────────
+# Este botón usa st.markdown con un enlace que recarga la página
+# garantizando que el sidebar vuelva a aparecer
+_top_bar_left, _top_bar_right = st.columns([0.04, 0.96])
+with _top_bar_left:
+    if st.button("☰", key="_open_sidebar", help="Abrir / cerrar panel de configuración",
+                 use_container_width=True):
+        # Force a full page reload which resets sidebar state to expanded
+        st.markdown(
+            "<meta http-equiv='refresh' content='0'>",
+            unsafe_allow_html=True
+        )
+        st.stop()
+
+st.markdown("""
+<style>
+/* Make ☰ button always visible and well-styled */
+button[data-testid="baseButton-secondary"][key="_open_sidebar"],
+div[data-testid="column"]:first-child button {
+    background: #E10600 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-size: 1rem !important;
+    padding: 0 !important;
+    min-height: 36px !important;
+    min-width: 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+    position: fixed !important;
+    top: 10px !important;
+    left: 10px !important;
+    z-index: 9999999 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # File availability — ONLY from user uploads in this session
 # Disk files are NEVER counted — they would show data the user didn't explicitly load
 _claro_uploaded  = st.session_state.get("claro_uploaded_file") is not None
