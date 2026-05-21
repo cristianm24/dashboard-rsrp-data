@@ -3261,7 +3261,7 @@ def render_claro_view():
                     tooltip=[alt.Tooltip("CATEGORIA:N"),alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %"),alt.Tooltip("pdvs:Q",title="PDVs")]
                 ).properties(height=260)
                 r100 = alt.Chart(pd.DataFrame({"y":[100]})).mark_rule(color="#22C55E",strokeDash=[5,3],strokeWidth=2).encode(y="y:Q")
-                st.altair_chart(style_chart(ch+r100), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(ch+r100), width='stretch', theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with c1b:
@@ -3274,7 +3274,7 @@ def render_claro_view():
                     tooltip=[alt.Tooltip("CATEGORIA:N"),alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %"),alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %"),alt.Tooltip("pdvs:Q",title="PDVs")]
                 ).properties(height=260)
                 r50 = alt.Chart(pd.DataFrame({"y":[50]})).mark_rule(color="#38BDF8",strokeDash=[5,3],strokeWidth=1.5).encode(y="y:Q")
-                st.altair_chart(style_chart(ch2+r50), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(ch2+r50), width='stretch', theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
     # -------------------------------------------------------
@@ -3343,7 +3343,7 @@ def render_claro_view():
                 y=alt.Y("ejec_nat:Q"),
                 text=alt.Text("brecha:Q",format=",.0f")
             )
-            st.altair_chart(style_chart(_base+_meta_rule+_brecha_txt), use_container_width=True, theme=None)
+            st.altair_chart(style_chart(_base+_meta_rule+_brecha_txt), width='stretch', theme=None)
             st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">Barra roja = ejecutado · guion blanco = meta · número en rojo encima = altas que aún faltan</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -3360,7 +3360,7 @@ def render_claro_view():
                 tooltip=[alt.Tooltip("AGENTE:N"),alt.Tooltip("Frente:N"),alt.Tooltip("Cumpl:Q",format=".1f",title="Cumpl. %")]
             ).properties(height=280)
             r100_indu = alt.Chart(pd.DataFrame({"x":[100]})).mark_rule(color="#22C55E",strokeDash=[5,3],strokeWidth=1.5).encode(x="x:Q")
-            st.altair_chart(style_chart(chart_dual2+r100_indu), use_container_width=True, theme=None)
+            st.altair_chart(style_chart(chart_dual2+r100_indu), width='stretch', theme=None)
             st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">Si la barra azul es muy corta, el frente inducido está siendo descuidado — oportunidad de captación de volumen.</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -3477,7 +3477,7 @@ def render_claro_view():
                              alt.Tooltip("ejec_total:Q", format=",.0f", title="Altas"),
                              alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %")]
                 ).properties(height=360)
-                st.altair_chart(style_chart(chart_as), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(chart_as), width='stretch', theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # Chart: Top barrios por ejecución
@@ -3524,7 +3524,7 @@ def render_claro_view():
                         alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %"),
                     ]
                 ).properties(height=360)
-                st.altair_chart(style_chart(chart_top), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(chart_top), width='stretch', theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── Sección 2: Barrios con mayor brecha ───────────────────────
@@ -3562,7 +3562,7 @@ def render_claro_view():
                              alt.Tooltip("brecha:Q", format=",.0f", title="Brecha"),
                              alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %")]
                 ).properties(height=360)
-                st.altair_chart(style_chart(chart_brecha_bar), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(chart_brecha_bar), width='stretch', theme=None)
             st.markdown('🟡 Amarillo = 70–99% · 🔴 Rojo = &lt;70%', unsafe_allow_html=False)
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -3580,7 +3580,7 @@ def render_claro_view():
                              alt.Tooltip("cuota_alta:Q", format=".1f", title="Cuota alta %"),
                              alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %")]
                 ).properties(height=380)
-                st.altair_chart(style_chart(chart_cuota_bar), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(chart_cuota_bar), width='stretch', theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── Sección 3: Tipo de PDV ────────────────────────────────────
@@ -3601,7 +3601,7 @@ def render_claro_view():
                     tooltip=[alt.Tooltip("CLASIFICACION:N"), alt.Tooltip("pdvs:Q", title="PDVs"),
                              alt.Tooltip("ejec_nat:Q", format=",.0f", title="Altas")]
                 ).properties(height=300)
-                st.altair_chart(style_chart(chart_cl), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(chart_cl), width='stretch', theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with ct2:
@@ -3623,7 +3623,7 @@ def render_claro_view():
                     tooltip=[alt.Tooltip("TIPOLOGIA:N"), alt.Tooltip("pdvs:Q",title="PDVs"),
                              alt.Tooltip("ejec_nat:Q",format=",.0f"), alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %")]
                 ).properties(height=280)
-                st.altair_chart(style_chart(chart_tip), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(chart_tip), width='stretch', theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── Sección 4: Rutas críticas ─────────────────────────────────
@@ -3755,7 +3755,7 @@ def render_claro_view():
                 area_sem = alt.Chart(df_semana).mark_area(opacity=0.12,color="#E10600").encode(
                     x=alt.X("Semana:N",sort=semanas), y=alt.Y("Total:Q")
                 )
-                st.altair_chart(style_chart(area_sem+chart_sem), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(area_sem+chart_sem), width='stretch', theme=None)
                 st.markdown('</div>', unsafe_allow_html=True)
 
             with c4b:
@@ -3774,7 +3774,7 @@ def render_claro_view():
                         color=alt.Color("AGENTE:N",scale=alt.Scale(domain=list(AGENTE_COLORS.keys()),range=list(AGENTE_COLORS.values())),legend=alt.Legend(title="Agente")),
                         tooltip=[alt.Tooltip("Semana:N"),alt.Tooltip("AGENTE:N"),alt.Tooltip("Altas:Q",format=",.0f")]
                     ).properties(height=260)
-                    st.altair_chart(style_chart(chart_sem_ag), use_container_width=True, theme=None)
+                    st.altair_chart(style_chart(chart_sem_ag), width='stretch', theme=None)
                 st.markdown('</div>', unsafe_allow_html=True)
 
             # ── Orgánicas vs Inducidas ────────────────────────────────────────────
@@ -3801,7 +3801,7 @@ def render_claro_view():
                     xOffset="Tipo:N",
                     tooltip=[alt.Tooltip("Semana:N"),alt.Tooltip("Tipo:N"),alt.Tooltip("Altas:Q",format=",.0f")]
                 ).properties(height=240)
-                st.altair_chart(style_chart(chart_comp), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(chart_comp), width='stretch', theme=None)
                 st.markdown('</div>', unsafe_allow_html=True)
             with c4d:
                 st.markdown('<div class="section-card"><div class="section-title">Avance acumulado</div><div class="section-subtitle">Si la línea 🔴 crece más rápido que la 🔵, la captación de calidad va bien</div>', unsafe_allow_html=True)
@@ -3811,7 +3811,7 @@ def render_claro_view():
                     color=alt.Color("Tipo:N",scale=alt.Scale(domain=["Orgánicas","Inducidas"],range=["#E10600","#38BDF8"]),legend=alt.Legend(title="")),
                     tooltip=[alt.Tooltip("Semana:N"),alt.Tooltip("Tipo:N"),alt.Tooltip("Acumulado:Q",format=",.0f")]
                 ).properties(height=240)
-                st.altair_chart(style_chart(chart_acum), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(chart_acum), width='stretch', theme=None)
                 st.markdown('</div>', unsafe_allow_html=True)
 
 
@@ -3896,7 +3896,7 @@ def render_claro_view():
                 xOffset="Indicador:N",
                 tooltip=[alt.Tooltip("AGENTE:N"),alt.Tooltip("Indicador:N"),alt.Tooltip("Valor:Q",format=".1f",title="Cuota %")]
             ).properties(height=280)
-            st.altair_chart(style_chart(chart_cuota), use_container_width=True, theme=None)
+            st.altair_chart(style_chart(chart_cuota), width='stretch', theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
         with b2b:
             cuota_vals = pd.to_numeric(df["CUOTA DE MERCADO"],errors="coerce").dropna()
@@ -3908,7 +3908,7 @@ def render_claro_view():
                     y=alt.Y("count():Q",title="PDVs"),
                     tooltip=[alt.Tooltip("Cuota:Q",bin=True),alt.Tooltip("count():Q",title="PDVs")]
                 ).properties(height=280)
-                st.altair_chart(style_chart(chart_hist), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(chart_hist), width='stretch', theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── BLOQUE 3: ¿Cómo es la señal de cada agente? ──────────────────────
@@ -4000,7 +4000,7 @@ def render_claro_view():
                 order=alt.Order("Banda:N",sort="descending"),
                 tooltip=[alt.Tooltip("AGENTE:N"),alt.Tooltip("Banda:N"),alt.Tooltip("Pct:Q",format=".1f",title="%")]
             ).properties(height=280)
-            st.altair_chart(style_chart(_ch_dist), use_container_width=True, theme=None)
+            st.altair_chart(style_chart(_ch_dist), width='stretch', theme=None)
             st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">El agente con mayor porción roja tiene más PDVs en señal crítica — afecta directamente la cuota de altas</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -4023,7 +4023,7 @@ def render_claro_view():
                 tooltip=[alt.Tooltip("AGENTE:N"),alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %")]
             )
             _dual_c = alt.layer(_ch_crit,_ch_cuota_line).resolve_scale(y="independent").properties(height=280)
-            st.altair_chart(style_chart(_dual_c), use_container_width=True, theme=None)
+            st.altair_chart(style_chart(_dual_c), width='stretch', theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with b4b:
@@ -4060,7 +4060,7 @@ def render_claro_view():
                     x=alt.X("Banda:N",sort=_bo2), y=alt.Y("cuota_alta_media:Q"),
                     text=alt.Text("cuota_alta_media:Q",format=".1f")
                 )
-                st.altair_chart(style_chart(_ch_band+_r50b+_txt_b), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(_ch_band+_r50b+_txt_b), width='stretch', theme=None)
                 if _ausentes:
                     st.markdown(f'<div style="font-size:.72rem;color:#FCA5A5;background:rgba(239,68,68,0.10);border-radius:10px;padding:5px 10px;margin-top:4px;">⚠️ Sin PDVs en banda: <b>{", ".join(_ausentes)}</b></div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
@@ -4082,7 +4082,7 @@ def render_claro_view():
                 tooltip=[alt.Tooltip("CATEGORIA:N"),alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %"),alt.Tooltip("cuota_mkt:Q",format=".1f",title="Cuota mkt %"),alt.Tooltip("n:Q",title="PDVs")]
             ).properties(height=280)
             _r50c5 = alt.Chart(pd.DataFrame({"y":[50]})).mark_rule(color="#38BDF8",strokeDash=[5,3],strokeWidth=1.5).encode(y="y:Q")
-            st.altair_chart(style_chart(_ch_cat5+_r50c5), use_container_width=True, theme=None)
+            st.altair_chart(style_chart(_ch_cat5+_r50c5), width='stretch', theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with b5b:
@@ -5485,7 +5485,7 @@ with tab1:
                 color=alt.Color("Categoria:N",scale=alt.Scale(domain=["Excelente","Buena","Aceptable","Crítica","Sin medición"],range=["#22C55E","#84CC16","#F59E0B","#EF4444","#64748B"]),legend=None),
                 tooltip=[alt.Tooltip("Categoria:N",title="Banda"),alt.Tooltip("Cantidad:Q",title="Mediciones",format=","),alt.Tooltip("Pct:Q",title="%",format=".1f")]
             ).properties(height=240)
-            st.altair_chart(style_chart(_dch), use_container_width=True, theme=None)
+            st.altair_chart(style_chart(_dch), width='stretch', theme=None)
         st.markdown('</div>', unsafe_allow_html=True)
 
     with r1c2:
@@ -5658,7 +5658,7 @@ with tab2:
         order=alt.Order("Categoria_RSRP:N",sort="descending"),
         tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Categoria_RSRP:N",title="Banda"),alt.Tooltip("Porcentaje:Q",title="%",format=".1f"),alt.Tooltip("Cantidad:Q",title="Mediciones",format=",")]
     ).properties(height=280)
-    st.altair_chart(style_chart(sp), use_container_width=True, theme=None)
+    st.altair_chart(style_chart(sp), width='stretch', theme=None)
     st.markdown('</div>', unsafe_allow_html=True)
 
     # ── Conclusión ejecutiva ──────────────────────────────────────────────────
@@ -5737,7 +5737,7 @@ with tab3:
                 color=alt.value("#EF4444"),
                 tooltip=[alt.Tooltip("Codigo_postal:N",title="CP"),alt.Tooltip("Pct_critica:Q",title="% crítica",format=".1f"),alt.Tooltip("RSRP_mediana:Q",title="Mediana (dBm)",format=".1f"),alt.Tooltip("Operador_mas_debil:N",title="Op. más débil"),alt.Tooltip("Operadores_presentes:Q",title="# Operadores")]
             ).properties(height=400)
-            st.altair_chart(style_chart(bars), use_container_width=True, theme=None)
+            st.altair_chart(style_chart(bars), width='stretch', theme=None)
         else:
             st.info("Sin datos territoriales.")
         st.markdown('</div>', unsafe_allow_html=True)
@@ -5840,7 +5840,7 @@ with tab4:
                     tooltip=[alt.Tooltip(f"{_pc}:T",title="Periodo"),alt.Tooltip("RSRP_mediana:Q",title="Mediana (dBm)",format=".1f")]
                 ).properties(height=280)
                 ta = alt.Chart(variation_period).mark_area(opacity=0.10,color="#E10600").encode(x=alt.X(f"{_pc}:T"),y=alt.Y("RSRP_mediana:Q"))
-                st.altair_chart(style_chart(ta+tj), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(ta+tj), width='stretch', theme=None)
             else:
                 st.info("Sin datos de trayectoria.")
             st.markdown('</div>', unsafe_allow_html=True)
@@ -5855,7 +5855,7 @@ with tab4:
                     tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("RSRP_inicial:Q",title=f"Señal {_pi4}",format=".1f"),alt.Tooltip("RSRP_final:Q",title=f"Señal {_pf4}",format=".1f"),alt.Tooltip("Variacion_RSRP:Q",title="Variación",format="+.1f")]
                 ).properties(height=280)
                 zl = alt.Chart(pd.DataFrame({"y":[0]})).mark_rule(color="rgba(255,255,255,0.2)",strokeDash=[4,3]).encode(y="y:Q")
-                st.altair_chart(style_chart(ov+zl), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(ov+zl), width='stretch', theme=None)
             else:
                 st.info("Sin datos de variación por operador.")
             st.markdown('</div>', unsafe_allow_html=True)
@@ -5994,7 +5994,7 @@ with tab5:
                     color=alt.Color("Operador:N",scale=alt.Scale(domain=list(OPERATOR_COLORS.keys()),range=list(OPERATOR_COLORS.values())),legend=alt.Legend(title="")),
                     tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Periodo_Mes:T",title="Periodo"),alt.Tooltip("Cuota_mercado:Q",title="Cuota %",format=".1f"),alt.Tooltip("Mercado_total:Q",title="Total mercado",format=",")]
                 ).properties(height=260)
-                st.altair_chart(style_chart(mc), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(mc), width='stretch', theme=None)
                 if pd.notna(market_growth_pct):
                     _mgc = "#22C55E" if market_growth_pct>=0 else "#EF4444"
                     st.markdown(f'<div style="font-size:.68rem;color:var(--text-muted);margin-top:4px;">Volumen: <span style="color:{_mgc};font-weight:800;">{"▲" if market_growth_pct>=0 else "▼"} {abs(market_growth_pct):.1f}%</span> entre {market_period_initial} y {market_period_final}</div>', unsafe_allow_html=True)
@@ -6010,7 +6010,7 @@ with tab5:
                     color=alt.Color("Operador:N",scale=alt.Scale(domain=list(OPERATOR_COLORS.keys()),range=list(OPERATOR_COLORS.values())),legend=alt.Legend(title="")),
                     tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Periodo_Mes:T",title="Periodo"),alt.Tooltip("Participacion_altas:Q",title="%",format=".1f"),alt.Tooltip("Altas_total:Q",title="Altas",format=",")]
                 ).properties(height=260)
-                st.altair_chart(style_chart(ac), use_container_width=True, theme=None)
+                st.altair_chart(style_chart(ac), width='stretch', theme=None)
                 if pd.notna(altas_growth_pct):
                     _agc = "#22C55E" if altas_growth_pct>=0 else "#EF4444"
                     st.markdown(f'<div style="font-size:.68rem;color:var(--text-muted);margin-top:4px;">Altas totales: <span style="color:{_agc};font-weight:800;">{"▲" if altas_growth_pct>=0 else "▼"} {abs(altas_growth_pct):.1f}%</span> entre {altas_period_initial} y {altas_period_final}</div>', unsafe_allow_html=True)
@@ -6194,7 +6194,7 @@ with tab5:
                         tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Valor_inicial:Q",format=".1f",title="Inicial %"),alt.Tooltip("Valor_final:Q",format=".1f",title="Final %"),alt.Tooltip("Variacion:Q",format="+.1f",title="Variación pp")]
                     ).properties(height=240)
                     _z0m = alt.Chart(pd.DataFrame({"y":[0]})).mark_rule(color="rgba(255,255,255,0.2)",strokeDash=[4,3]).encode(y="y:Q")
-                    st.altair_chart(style_chart(_moc+_z0m), use_container_width=True, theme=None)
+                    st.altair_chart(style_chart(_moc+_z0m), width='stretch', theme=None)
                 else:
                     st.info("Sin datos.")
                 st.markdown('</div>', unsafe_allow_html=True)
@@ -6208,7 +6208,7 @@ with tab5:
                         tooltip=[alt.Tooltip("Operador:N"),alt.Tooltip("Valor_inicial:Q",format=".1f",title="Inicial %"),alt.Tooltip("Valor_final:Q",format=".1f",title="Final %"),alt.Tooltip("Variacion:Q",format="+.1f",title="Variación pp")]
                     ).properties(height=240)
                     _z0a = alt.Chart(pd.DataFrame({"y":[0]})).mark_rule(color="rgba(255,255,255,0.2)",strokeDash=[4,3]).encode(y="y:Q")
-                    st.altair_chart(style_chart(_aoc+_z0a), use_container_width=True, theme=None)
+                    st.altair_chart(style_chart(_aoc+_z0a), width='stretch', theme=None)
                 else:
                     st.info("Sin datos.")
                 st.markdown('</div>', unsafe_allow_html=True)
