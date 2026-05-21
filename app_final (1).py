@@ -2557,64 +2557,65 @@ def load_claro_data_from_path(path):
 
 
 def load_claro_data_from_upload(uploaded_file):
-    """Carga desde archivo subido. Soporta CSV, xlsx y xls."""
+    """Carga desde archivo subido. Lee bytes UNA vez y usa BytesIO para todo."""
     import io as _io
     fname = getattr(uploaded_file, "name", "plan.xlsx").lower()
 
-    # ── CSV path ─────────────────────────────────────────────────────
+    # Read raw bytes ONCE
+    try:
+        uploaded_file.seek(0)
+        raw = uploaded_file.read()
+    except Exception:
+        raw = st.session_state.get("claro_file_bytes", b"")
+        fname = st.session_state.get("claro_file_name", fname)
+
+    if not raw:
+        raw = st.session_state.get("claro_file_bytes", b"")
+    if not raw:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
+            "found": False, "message": "No se pudieron leer los bytes del archivo."
+        }
+
+    # ── CSV ──────────────────────────────────────────────────────────
     if fname.endswith(".csv"):
         try:
-            uploaded_file.seek(0)
             try:
-                df = pd.read_csv(uploaded_file, sep=None, engine="python",
-                                 encoding="utf-8", on_bad_lines="skip")
+                df = pd.read_csv(_io.BytesIO(raw), sep=None, engine="python", encoding="utf-8", on_bad_lines="skip")
             except Exception:
-                uploaded_file.seek(0)
-                df = pd.read_csv(uploaded_file, sep=",", encoding="latin-1",
-                                 on_bad_lines="skip")
+                df = pd.read_csv(_io.BytesIO(raw), sep=",", encoding="latin-1", on_bad_lines="skip")
             df.columns = [str(c).strip() for c in df.columns]
             import re as _re
             _m = _re.search(r"(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)", fname, _re.IGNORECASE)
             sheet_name = _m.group(0).upper() if _m else fname.replace(".csv","").upper()[:20]
             df, faltantes, _ = _process_claro_df(df)
             if faltantes:
-                return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {"found": False, "message": f"CSV sin columnas: {', '.join(faltantes)}"}
+                return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {"found":False,"message":f"CSV sin columnas: {', '.join(faltantes)}"}
             _dia = 7
-            for _s, _d in [("S1",7),("S2",14),("S3",21),("S4",30)]:
+            for _s,_d in [("S1",7),("S2",14),("S3",21),("S4",30)]:
                 if _s in df.columns and pd.to_numeric(df[_s],errors="coerce").sum() > 100:
                     if _s == "S4":
-                        if pd.to_numeric(df.get("S3", pd.Series([0])),errors="coerce").sum() > 100: _dia = _d
-                    else:
-                        _dia = _d
+                        if pd.to_numeric(df.get("S3",pd.Series([0])),errors="coerce").sum() > 100: _dia = _d
+                    else: _dia = _d
             return df, pd.DataFrame(), pd.DataFrame(), {"found":True,"message":None,"path":fname,"sheet_name":sheet_name,"header_row":0,"dia_corte":_dia,"all_plan_sheets":[sheet_name]}
         except Exception as e:
             return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {"found":False,"message":f"Error CSV: {e}"}
 
-    # ── Excel path ───────────────────────────────────────────────────
+    # ── Excel: detect format from magic bytes ────────────────────────
+    is_xls = raw[:2] == bytes([0xD0, 0xCF])
+    engine = "xlrd" if is_xls else "openpyxl"
+    REQUIRED = ["AGENTE","ID","META ALTA NAT (>$2000)","EJEC ALTA NAT","CATEGORIA","ASESOR"]
+
     try:
-        uploaded_file.seek(0)
-        raw = uploaded_file.read()
-        buf = _io.BytesIO(raw)
-        # Detect real format from magic bytes
-        is_xls = raw[:2] == bytes([0xD0, 0xCF])
-        engine = "xlrd" if is_xls else "openpyxl"
-
-        # Get sheet names first
-        buf.seek(0)
-        xl_tmp = pd.ExcelFile(buf, engine=engine)
-        sheet_names = xl_tmp.sheet_names
-
-        # Find best sheet by score
-        REQUIRED = ["AGENTE","ID","META ALTA NAT (>$2000)","EJEC ALTA NAT","CATEGORIA","ASESOR"]
+        sheet_names = pd.ExcelFile(_io.BytesIO(raw), engine=engine).sheet_names
         best_sheet, best_hr, best_score = sheet_names[0], 0, 0
         all_plan = []
         sheet_order = {s:i for i,s in enumerate(sheet_names)}
+
         for sheet in sheet_names:
-            for hr in [0, 4, 5]:
+            for hr in [0,4,5]:
                 try:
-                    buf.seek(0)
-                    preview = pd.read_excel(buf, sheet_name=sheet, header=hr, nrows=2, engine=engine)
-                    cols = [str(c).strip() for c in preview.columns]
+                    preview = pd.read_excel(_io.BytesIO(raw), sheet_name=sheet, header=hr, nrows=2, engine=engine)
+                    cols  = [str(c).strip() for c in preview.columns]
                     score = sum(1 for c in REQUIRED if c in cols)
                     if score >= 3:
                         all_plan.append({"sheet":sheet,"header_row":hr,"score":score})
@@ -2624,88 +2625,34 @@ def load_claro_data_from_upload(uploaded_file):
                 except Exception:
                     pass
 
-        # Sort by sheet order, pick last (most recent)
         all_plan_sorted = sorted(all_plan, key=lambda x: sheet_order.get(x["sheet"],0))
         if all_plan_sorted:
-            best = all_plan_sorted[-1]
-            best_sheet, best_hr = best["sheet"], best["header_row"]
+            p = all_plan_sorted[-1]
+            best_sheet, best_hr = p["sheet"], p["header_row"]
 
-        # Load the best sheet
-        buf.seek(0)
-        df = pd.read_excel(buf, sheet_name=best_sheet, header=best_hr, engine=engine)
+        df = pd.read_excel(_io.BytesIO(raw), sheet_name=best_sheet, header=best_hr, engine=engine)
         df.columns = [str(c).strip() for c in df.columns]
         df, faltantes, _ = _process_claro_df(df)
         if faltantes:
             return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {"found":False,"message":f"Faltan columnas: {', '.join(faltantes)}"}
 
         _dia = 7
-        for _s, _d in [("S1",7),("S2",14),("S3",21),("S4",30)]:
+        for _s,_d in [("S1",7),("S2",14),("S3",21),("S4",30)]:
             if _s in df.columns and pd.to_numeric(df[_s],errors="coerce").sum() > 100:
                 if _s == "S4":
-                    if pd.to_numeric(df.get("S3", pd.Series([0])),errors="coerce").sum() > 100: _dia = _d
-                else:
-                    _dia = _d
+                    if pd.to_numeric(df.get("S3",pd.Series([0])),errors="coerce").sum() > 100: _dia = _d
+                else: _dia = _d
 
         return df, pd.DataFrame(), pd.DataFrame(), {
-            "found": True, "message": None,
-            "path": fname, "sheet_name": best_sheet,
-            "header_row": best_hr, "dia_corte": _dia,
-            "all_plan_sheets": [p["sheet"] for p in all_plan_sorted],
+            "found":True,"message":None,"path":fname,
+            "sheet_name":best_sheet,"header_row":best_hr,"dia_corte":_dia,
+            "all_plan_sheets":[p["sheet"] for p in all_plan_sorted],
         }
     except Exception as e:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
-            "found": False,
-            "message": f"Error abriendo Excel: {e}. Intenta guardar como .xlsx desde Excel (no como CSV)."
+            "found":False,
+            "message":f"Error abriendo Excel ({engine}): {e}"
         }
-
-    # ── CSV path (recomendado — más rápido y confiable) ──────────────
-    if fname.endswith(".csv"):
-        try:
-            uploaded_file.seek(0)
-            try:
-                df = pd.read_csv(uploaded_file, sep=None, engine="python",
-                                 encoding="utf-8", on_bad_lines="skip")
-            except Exception:
-                uploaded_file.seek(0)
-                df = pd.read_csv(uploaded_file, sep=",", encoding="latin-1",
-                                 on_bad_lines="skip")
-            df.columns = [str(c).strip() for c in df.columns]
-
-            # Detect month name from filename for period label
-            import re as _re
-            _month_match = _re.search(
-                r"(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)",
-                fname, _re.IGNORECASE
-            )
-            sheet_name = _month_match.group(0).upper() if _month_match else fname.replace(".csv","").upper()[:20]
-
-            df, faltantes, _ = _process_claro_df(df)
-            if faltantes:
-                return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
-                    "found": False,
-                    "message": f"El CSV no tiene columnas requeridas: {', '.join(faltantes)}"
-                }
-            # Cut day from S columns
-            _dia = 7
-            for _s, _d in [("S1",7),("S2",14),("S3",21),("S4",30)]:
-                if _s in df.columns and pd.to_numeric(df[_s],errors="coerce").sum() > 100:
-                    if _s == "S4":
-                        _s3 = pd.to_numeric(df["S3"],errors="coerce").sum() if "S3" in df.columns else 0
-                        if _s3 > 100: _dia = _d
-                    else:
-                        _dia = _d
-            return df, pd.DataFrame(), pd.DataFrame(), {
-                "found": True, "message": None,
-                "path": fname, "sheet_name": sheet_name,
-                "header_row": 0, "dia_corte": _dia,
-                "all_plan_sheets": [sheet_name],
-            }
-        except Exception as e:
-            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
-                "found": False, "message": f"Error leyendo CSV: {e}"
-            }
-
-
 
 def load_claro_data():
     """
@@ -4449,32 +4396,38 @@ _uploaded_claro = st.sidebar.file_uploader(
 )
 
 if _uploaded_claro is not None:
-    # Store bytes so stream position is never exhausted on rerun
+    import io as _upio
+    # Read bytes ONCE immediately
     _uploaded_claro.seek(0)
+    _claro_bytes = _uploaded_claro.read()
+    _claro_name  = _uploaded_claro.name
+    st.session_state["claro_file_bytes"] = _claro_bytes
+    st.session_state["claro_file_name"]  = _claro_name
     st.session_state["claro_uploaded_file"] = _uploaded_claro
-    st.session_state["claro_file_bytes"] = _uploaded_claro.read()
-    st.session_state["claro_file_name"] = _uploaded_claro.name
-    _uploaded_claro.seek(0)
     try:
-        _xleng = "xlrd" if getattr(_uploaded_claro,"name","").lower().endswith(".xls") else "openpyxl"
-        _xl_prev = pd.ExcelFile(_uploaded_claro, engine=_xleng)
+        # Use BytesIO from stored bytes — never touch the original stream again
+        _buf = _upio.BytesIO(_claro_bytes)
+        _is_xls = _claro_bytes[:2] == bytes([0xD0, 0xCF])
+        _xleng  = "xlrd" if _is_xls else "openpyxl"
+        _xl_prev = pd.ExcelFile(_buf, engine=_xleng)
         _sheet_prev, _header_prev, _err_prev = _find_detail_sheet(_xl_prev)
-        _uploaded_claro.seek(0)
         if _err_prev:
             st.sidebar.error(f"⚠️ {_err_prev}")
         else:
-            _preview = pd.read_excel(_xl_prev, sheet_name=_sheet_prev, header=_header_prev, nrows=3)
+            _buf2 = _upio.BytesIO(_claro_bytes)
+            _preview = pd.read_excel(_buf2, sheet_name=_sheet_prev, header=_header_prev, nrows=3, engine=_xleng)
             _preview.columns = [str(c).strip() for c in _preview.columns]
-            _uploaded_claro.seek(0)
             _faltantes_c = [c for c in COLUMNAS_REQUERIDAS if c not in _preview.columns]
-            _all_plan_c  = _find_all_plan_sheets(_xl_prev)
+            _buf3 = _upio.BytesIO(_claro_bytes)
+            _xl_prev2 = pd.ExcelFile(_buf3, engine=_xleng)
+            _all_plan_c = _find_all_plan_sheets(_xl_prev2)
             if _faltantes_c:
                 st.sidebar.error(f"⚠️ Faltan columnas: {', '.join(_faltantes_c)}")
             else:
                 _meses_txt = f" · {len(_all_plan_c)} periodo(s)" if len(_all_plan_c) > 1 else f" · hoja: {_sheet_prev}"
-                st.sidebar.success(f"✅ {_uploaded_claro.name}{_meses_txt}")
+                st.sidebar.success(f"✅ {_claro_name}{_meses_txt}")
     except Exception as _e:
-        st.sidebar.error(f"Error: {_e}")
+        st.sidebar.error(f"Error leyendo archivo: {_e}")
 else:
     st.session_state.pop("claro_uploaded_file", None)
     st.session_state.pop("claro_file_bytes", None)
