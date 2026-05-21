@@ -3386,6 +3386,18 @@ def render_claro_view():
         # ══════════════════════════════════════════════════════════════
         _eje = "EJE ALTA TOTAL" if "EJE ALTA TOTAL" in df.columns else "EJEC ALTA NAT"
 
+        # DEBUG — mostrar estado real del df
+        st.markdown(
+            f"<div style='font-size:.68rem;color:var(--text-muted);background:var(--bg-sidebar);"
+            f"border:1px solid var(--border);border-radius:6px;padding:6px 10px;margin-bottom:8px;'>"
+            f"🔍 Debug: df={len(df)} filas · "
+            f"BARRIO={df['BARRIO'].notna().sum() if 'BARRIO' in df.columns else 'NO EXISTE'} vals · "
+            f"BARRIO dtype={df['BARRIO'].dtype if 'BARRIO' in df.columns else 'N/A'} · "
+            f"BARRIO sample={repr(str(df['BARRIO'].iloc[0]) if 'BARRIO' in df.columns and len(df)>0 else 'empty')}"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+
         def _clean(series):
             """Convert any column to clean string, empty → —"""
             return series.fillna("").astype(str).str.strip().apply(
@@ -6221,4 +6233,3 @@ with tab5:
             <div style="font-size:.84rem;color:var(--text-primary);line-height:1.7;">{_concl_mkt}</div>
         </div>
         """, unsafe_allow_html=True)
-
