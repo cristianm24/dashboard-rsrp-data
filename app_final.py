@@ -919,18 +919,26 @@ button, [role="button"], a, label { transition: var(--transition) !important; }
 #MainMenu { visibility: hidden; }
 footer { visibility: hidden; }
 [data-testid="stToolbar"] { display: none; }
-/* Keep header visible so sidebar collapse button works */
-header[data-testid="stHeader"] {
-    background: transparent !important;
-    height: 0 !important;
-    min-height: 0 !important;
-}
-/* But keep the sidebar collapse/expand button */
+
+/* Sidebar collapse/expand button — force always visible */
 [data-testid="stSidebarCollapsedControl"],
-[data-testid="collapsedControl"] {
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapseButton"],
+button[kind="header"],
+.stSidebarCollapsedControl,
+section[data-testid="stSidebar"] + div > button,
+div[data-testid="stSidebarCollapsedControl"] {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
+    z-index: 9999 !important;
+    pointer-events: all !important;
+}
+
+/* Keep header transparent but not hidden */
+header[data-testid="stHeader"] {
+    background: transparent !important;
+    box-shadow: none !important;
 }
 
 /* Separator */
@@ -1001,7 +1009,63 @@ hr { border: none; border-top: 1px solid var(--border) !important; margin: 16px 
 </style>
 """, unsafe_allow_html=True)
 
-# JS: force dataframe iframes to light theme (CSS can't cross iframe boundary)
+# JS: inject a floating sidebar toggle button that always works
+st.markdown("""
+<script>
+(function() {
+    function addSidebarBtn() {
+        if (document.getElementById('_sb_toggle_btn')) return;
+        var btn = document.createElement('button');
+        btn.id = '_sb_toggle_btn';
+        btn.innerHTML = '&#9776;';
+        btn.title = 'Abrir/cerrar sidebar';
+        btn.style.cssText = [
+            'position:fixed',
+            'top:12px',
+            'left:12px',
+            'z-index:99999',
+            'width:36px',
+            'height:36px',
+            'background:#E10600',
+            'color:white',
+            'border:none',
+            'border-radius:8px',
+            'font-size:18px',
+            'cursor:pointer',
+            'display:flex',
+            'align-items:center',
+            'justify-content:center',
+            'box-shadow:0 2px 8px rgba(0,0,0,0.2)',
+            'transition:all 0.2s ease'
+        ].join(';');
+        btn.onmouseover = function(){ this.style.background='#C00500'; this.style.transform='scale(1.05)'; };
+        btn.onmouseout  = function(){ this.style.background='#E10600'; this.style.transform='scale(1)'; };
+        btn.onclick = function() {
+            // Try Streamlit's native toggle first
+            var native = document.querySelector('[data-testid="stSidebarCollapsedControl"] button') ||
+                         document.querySelector('[data-testid="collapsedControl"] button') ||
+                         document.querySelector('button[kind="header"]');
+            if (native) { native.click(); return; }
+            // Fallback: toggle sidebar visibility directly
+            var sb = document.querySelector('[data-testid="stSidebar"]');
+            if (sb) {
+                sb.style.display = sb.style.display === 'none' ? '' : 'none';
+            }
+        };
+        document.body.appendChild(btn);
+    }
+    // Run after DOM loads
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', addSidebarBtn);
+    } else {
+        addSidebarBtn();
+    }
+    // Also run after Streamlit rerenders
+    setTimeout(addSidebarBtn, 500);
+    setTimeout(addSidebarBtn, 1500);
+})();
+</script>
+""", unsafe_allow_html=True)
 st.markdown("""
 <script>
 (function(){
