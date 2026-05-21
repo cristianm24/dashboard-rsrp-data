@@ -3520,8 +3520,8 @@ def render_claro_view():
             if not by_barrio_top.empty:
                 # Pre-compute semaforo color
                 by_barrio_top = by_barrio_top.copy()
-                by_barrio_top["color_sem"] = by_barrio_top["cumpl"].apply(
-                    lambda v: "#22C55E" if v >= 100 else ("#F59E0B" if v >= 70 else "#EF4444")
+                by_barrio_top["semaforo"] = by_barrio_top["cumpl"].apply(
+                    lambda v: "verde" if v >= 100 else ("amarillo" if v >= 70 else "rojo")
                 )
                 _tt_barrio = [
                     alt.Tooltip(f"{y_col}:N", title="Barrio" if y_col=="BARRIO" else y_col),
@@ -3537,11 +3537,11 @@ def render_claro_view():
                             axis=alt.Axis(labelColor="#374151", titleColor="#111827")),
                     y=alt.Y(f"{y_col}:N", sort="-x", title=None,
                             axis=alt.Axis(labelLimit=220, labelColor="#374151")),
-                    color=alt.condition(
-                        alt.datum.cumpl >= 100,
-                        alt.value("#22C55E"),
-                        alt.condition(alt.datum.cumpl >= 70, alt.value("#F59E0B"), alt.value("#EF4444"))
-                    ),
+                    color=alt.Color("semaforo:N",
+                        scale=alt.Scale(
+                            domain=["verde","amarillo","rojo"],
+                            range=["#22C55E","#F59E0B","#EF4444"]
+                        ), legend=None),
                     tooltip=_tt_barrio
                 ).properties(height=380)
                 st.altair_chart(style_chart(chart_circ), use_container_width=True, theme=None)
@@ -3612,17 +3612,19 @@ def render_claro_view():
             if not _bottom_bar.empty:
                 # Pre-compute color column — avoid transform_calculate which conflicts with configure_*
                 _bottom_bar = _bottom_bar.copy()
-                _bottom_bar["color_bar"] = _bottom_bar["cumpl"].apply(
-                    lambda v: "#F59E0B" if v >= 70 else "#EF4444"
+                _bottom_bar["semaforo_bar"] = _bottom_bar["cumpl"].apply(
+                    lambda v: "amarillo" if v >= 70 else "rojo"
                 )
                 chart_bar_brecha = alt.Chart(_bottom_bar).mark_bar(
                     cornerRadiusTopLeft=5, cornerRadiusTopRight=5
                 ).encode(
                     x=alt.X("brecha:Q", title="Altas pendientes"),
                     y=alt.Y("BARRIO:N", sort="-x", title=None, axis=alt.Axis(labelLimit=200)),
-                    color=alt.condition(
-                        alt.datum.cumpl >= 70, alt.value("#F59E0B"), alt.value("#EF4444")
-                    ),
+                    color=alt.Color("semaforo_bar:N",
+                        scale=alt.Scale(
+                            domain=["amarillo","rojo"],
+                            range=["#F59E0B","#EF4444"]
+                        ), legend=None),
                     tooltip=[
                         alt.Tooltip("BARRIO:N", title="Barrio"),
                         alt.Tooltip("pdvs:Q", title="PDVs"),
@@ -3683,8 +3685,8 @@ def render_claro_view():
                 pdvs=("ID","count"), ejec_nat=("EJEC ALTA NAT","sum"), meta_nat=("META ALTA NAT (>$2000)","sum"),
             ).reset_index()
             by_tipo["cumpl"] = (by_tipo["ejec_nat"]/by_tipo["meta_nat"].replace(0,np.nan)*100).fillna(0)
-            by_tipo["color_tip"] = by_tipo["cumpl"].apply(
-                lambda v: "#22C55E" if v >= 100 else ("#F59E0B" if v >= 70 else "#EF4444")
+            by_tipo["semaforo_tip"] = by_tipo["cumpl"].apply(
+                lambda v: "verde" if v >= 100 else ("amarillo" if v >= 70 else "rojo")
             )
             st.markdown('<div class="section-card"><div class="section-title">Cumplimiento por tipología de PDV</div><div class="section-subtitle">A = mayor potencial · D = menor · color = semáforo de cumplimiento</div>', unsafe_allow_html=True)
             if not by_tipo.empty:
@@ -3693,11 +3695,11 @@ def render_claro_view():
                 ).encode(
                     x=alt.X("TIPOLOGIA:N", title=None, axis=alt.Axis(labelColor="#374151")),
                     y=alt.Y("ejec_nat:Q", title="Altas nat.", axis=alt.Axis(labelColor="#374151", titleColor="#111827")),
-                    color=alt.condition(
-                        alt.datum.cumpl >= 100,
-                        alt.value("#22C55E"),
-                        alt.condition(alt.datum.cumpl >= 70, alt.value("#F59E0B"), alt.value("#EF4444"))
-                    ),
+                    color=alt.Color("semaforo:N",
+                        scale=alt.Scale(
+                            domain=["verde","amarillo","rojo"],
+                            range=["#22C55E","#F59E0B","#EF4444"]
+                        ), legend=None),
                     tooltip=[alt.Tooltip("TIPOLOGIA:N"),alt.Tooltip("pdvs:Q",title="PDVs"),alt.Tooltip("ejec_nat:Q",format=",.0f"),alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %")]
                 ).properties(height=280)
                 st.altair_chart(style_chart(chart_tip), use_container_width=True, theme=None)
