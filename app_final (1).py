@@ -2557,15 +2557,39 @@ def load_claro_data_from_path(path):
 
 
 def load_claro_data_from_upload(uploaded_file):
-    """Carga desde archivo subido por el usuario."""
+    """Carga desde archivo subido por el usuario. Soporta xlsx y xls."""
+    import io as _io
     try:
         uploaded_file.seek(0)
-        xl = pd.ExcelFile(uploaded_file)
+        raw = uploaded_file.read()
+        uploaded_file.seek(0)
+        fname = getattr(uploaded_file, "name", "plan.xlsx").lower()
+
+        # Detect real format from magic bytes
+        is_xls  = raw[:2] == bytes([0xD0, 0xCF])   # OLE2 = .xls
+        is_xlsx = raw[:2] == bytes([0x50, 0x4B])    # ZIP  = .xlsx
+
+        buf = _io.BytesIO(raw)
+        if is_xls:
+            buf.name = fname.replace(".xlsx", ".xls") if ".xlsx" in fname else fname
+            xl = pd.ExcelFile(buf, engine="xlrd")
+        elif is_xlsx:
+            buf.name = fname
+            xl = pd.ExcelFile(buf, engine="openpyxl")
+        else:
+            # Try openpyxl first, then xlrd
+            try:
+                buf.name = fname
+                xl = pd.ExcelFile(buf, engine="openpyxl")
+            except Exception:
+                buf = _io.BytesIO(raw)
+                xl = pd.ExcelFile(buf, engine="xlrd")
     except Exception as e:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
-            "found": False, "message": f"No se pudo abrir el archivo: {e}"
+            "found": False,
+            "message": f"No se pudo abrir el archivo Excel: {e}. Asegúrate de que sea un archivo .xlsx o .xls válido."
         }
-    return _load_from_xl(xl, uploaded_file.name)
+    return _load_from_xl(xl, getattr(uploaded_file, "name", "plan.xlsx"))
 
 
 def load_claro_data():
@@ -2578,8 +2602,8 @@ def load_claro_data():
     file_name  = st.session_state.get("claro_file_name", "plan.xlsx")
     if file_bytes is not None:
         try:
-            import io
-            buf = io.BytesIO(file_bytes)
+            import io as _io2
+            buf = _io2.BytesIO(file_bytes)
             buf.name = file_name
             return load_claro_data_from_upload(buf)
         except Exception as e:
@@ -6261,4 +6285,3 @@ with tab5:
             <div style="font-size:.84rem;color:var(--text-primary);line-height:1.7;">{_concl_mkt}</div>
         </div>
         """, unsafe_allow_html=True)
-
