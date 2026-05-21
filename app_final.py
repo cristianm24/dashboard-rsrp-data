@@ -3424,8 +3424,12 @@ def render_claro_view():
             st.markdown('</div>', unsafe_allow_html=True)
 
         with c3b:
-            barrio_col_exists   = "BARRIO"   in df.columns and df["BARRIO"].notna().sum() > 0
-            circuito_col_exists = "CIRCUITO" in df.columns and df["CIRCUITO"].notna().sum() > 0
+            # Robust check: count non-null, non-empty, non-"nan" string values
+            def _col_has_data(df_, col):
+                if col not in df_.columns: return False
+                return df_[col].apply(lambda x: bool(x and str(x).strip() not in ("","nan","None","<NA>","NaN")) if x is not None and x is not pd.NA else False).sum() > 0
+            barrio_col_exists   = _col_has_data(df, "BARRIO")
+            circuito_col_exists = _col_has_data(df, "CIRCUITO")
             # Use best available grouping
             if barrio_col_exists:
                 group_cols_circ = ["BARRIO"] + (["CIRCUITO"] if circuito_col_exists else [])
@@ -3437,8 +3441,10 @@ def render_claro_view():
             _eje_col = "EJE ALTA TOTAL" if "EJE ALTA TOTAL" in df.columns else "EJEC ALTA NAT"
 
             if barrio_col_exists:
+                # Filter out bad BARRIO values before groupby
+                _df_barrio = df[df["BARRIO"].apply(lambda x: bool(x and str(x).strip() not in ("","nan","None","<NA>","NaN")) if x is not None and x is not pd.NA else False)].copy()
                 # Group directly by BARRIO — single clean groupby
-                by_barrio_top = df.groupby("BARRIO").agg(
+                by_barrio_top = _df_barrio.groupby("BARRIO").agg(
                     pdvs=("ID","count"),
                     meta_nat=("META ALTA NAT (>$2000)","sum"),
                     ejec_nat=("EJEC ALTA NAT","sum"),
@@ -3447,8 +3453,8 @@ def render_claro_view():
                 ).reset_index()
                 by_barrio_top["cumpl"] = (by_barrio_top["ejec_nat"]/by_barrio_top["meta_nat"].replace(0,np.nan)*100).fillna(0)
                 if circuito_col_exists:
-                    _cpb = df.groupby("BARRIO")["CIRCUITO"].apply(
-                        lambda x: ", ".join(sorted(set(str(v) for v in x.dropna())))
+                    _cpb = _df_barrio.groupby("BARRIO")["CIRCUITO"].apply(
+                        lambda x: ", ".join(sorted(set(str(v) for v in x.dropna() if str(v).strip() not in ("","nan"))))
                     ).reset_index()
                     _cpb.columns = ["BARRIO","circuitos_lista"]
                     by_barrio_top = by_barrio_top.merge(_cpb, on="BARRIO", how="left")
@@ -3500,10 +3506,14 @@ def render_claro_view():
                             axis=alt.Axis(labelColor="#374151", titleColor="#111827")),
                     y=alt.Y(f"{y_col}:N", sort="-x", title=None,
                             axis=alt.Axis(labelLimit=220, labelColor="#374151")),
-                    color=alt.Color("color_sem:N", scale=None, legend=None),
+                    color=alt.Color("color_sem:N",
+                        scale=alt.Scale(
+                            domain=["#22C55E","#F59E0B","#EF4444"],
+                            range=["#22C55E","#F59E0B","#EF4444"]
+                        ), legend=None),
                     tooltip=_tt_barrio
-                ).properties(height=380, background="white").configure_view(strokeOpacity=0)
-                st.altair_chart(chart_circ, use_container_width=True, theme=None)
+                ).properties(height=380)
+                st.altair_chart(style_chart(chart_circ), use_container_width=True, theme=None)
                 if y_col == "BARRIO" and "circuitos_lista" in by_barrio_top.columns:
                     for _, row_b in by_barrio_top.head(6).iterrows():
                         circs = row_b.get("circuitos_lista","")
@@ -3531,8 +3541,9 @@ def render_claro_view():
         _bottom_as = (by_as_c3[by_as_c3["meta_nat"] >= _meta_min_threshold]
                       .sort_values("cumpl").head(15))
 
-        # Barrios con mayor brecha
-        by_bar_c3 = df.groupby("BARRIO").agg(
+        # Barrios con mayor brecha — filter bad values first
+        _df_bar_clean = df[df["BARRIO"].apply(lambda x: bool(x and str(x).strip() not in ("","nan","None","<NA>","NaN")) if x is not None and x is not pd.NA else False)].copy()
+        by_bar_c3 = _df_bar_clean.groupby("BARRIO").agg(
             pdvs=("ID","count"), meta_nat=("META ALTA NAT (>$2000)","sum"),
             ejec_nat=("EJEC ALTA NAT","sum"), cuota_alta=("CUOTA DE ALTA","mean"),
         ).reset_index()
@@ -3577,18 +3588,20 @@ def render_claro_view():
                 chart_bar_brecha = alt.Chart(_bottom_bar).mark_bar(
                     cornerRadiusTopLeft=5, cornerRadiusTopRight=5
                 ).encode(
-                    x=alt.X("brecha:Q", title="Altas pendientes", axis=alt.Axis(labelColor="#374151", titleColor="#111827")),
-                    y=alt.Y("BARRIO:N", sort="-x", title=None, axis=alt.Axis(labelLimit=200, labelColor="#374151")),
-                    color=alt.Color("color_bar:N", scale=None, legend=None),
+                    x=alt.X("brecha:Q", title="Altas pendientes"),
+                    y=alt.Y("BARRIO:N", sort="-x", title=None, axis=alt.Axis(labelLimit=200)),
+                    color=alt.condition(
+                        alt.datum.cumpl >= 70, alt.value("#F59E0B"), alt.value("#EF4444")
+                    ),
                     tooltip=[
                         alt.Tooltip("BARRIO:N", title="Barrio"),
                         alt.Tooltip("pdvs:Q", title="PDVs"),
-                        alt.Tooltip("brecha:Q", format=",.0f", title="Brecha altas"),
+                        alt.Tooltip("brecha:Q", format=",.0f", title="Brecha"),
                         alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %"),
                         alt.Tooltip("cuota_alta:Q", format=".1f", title="Cuota alta %"),
                     ]
-                ).properties(height=360, background="white").configure_view(strokeOpacity=0)
-                st.altair_chart(chart_bar_brecha, use_container_width=True, theme=None)
+                ).properties(height=360)
+                st.altair_chart(style_chart(chart_bar_brecha), use_container_width=True, theme=None)
             st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">🟡 Amarillo = cumpl 70-99% (recuperable) · 🔴 Rojo = &lt;70% (crítico)</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -3610,8 +3623,8 @@ def render_claro_view():
                     alt.Tooltip("cuota_alta:Q", format=".1f", title="Cuota alta %"),
                     alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. meta %"),
                 ]
-            ).properties(height=400, background="white").configure_view(strokeOpacity=0)
-            st.altair_chart(chart_baja_cuota, use_container_width=True, theme=None)
+            ).properties(height=400)
+            st.altair_chart(style_chart(chart_baja_cuota), use_container_width=True, theme=None)
         st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">Ordenado de menor a mayor cuota · barrios al inicio de la lista son los de mayor oportunidad competitiva</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -3650,10 +3663,14 @@ def render_claro_view():
                 ).encode(
                     x=alt.X("TIPOLOGIA:N", title=None, axis=alt.Axis(labelColor="#374151")),
                     y=alt.Y("ejec_nat:Q", title="Altas nat.", axis=alt.Axis(labelColor="#374151", titleColor="#111827")),
-                    color=alt.Color("color_tip:N", scale=None, legend=None),
+                    color=alt.condition(
+                        alt.datum.cumpl >= 100,
+                        alt.value("#22C55E"),
+                        alt.condition(alt.datum.cumpl >= 70, alt.value("#F59E0B"), alt.value("#EF4444"))
+                    ),
                     tooltip=[alt.Tooltip("TIPOLOGIA:N"),alt.Tooltip("pdvs:Q",title="PDVs"),alt.Tooltip("ejec_nat:Q",format=",.0f"),alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %")]
-                ).properties(height=280, background="white").configure_view(strokeOpacity=0)
-                st.altair_chart(chart_tip, use_container_width=True, theme=None)
+                ).properties(height=280)
+                st.altair_chart(style_chart(chart_tip), use_container_width=True, theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── Sección 3: Rutas críticas ─────────────────────────────────────────
