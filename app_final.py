@@ -236,10 +236,23 @@ h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-weight: 800; }
 
 /* File uploaders */
 [data-testid="stFileUploader"] {
-    background: var(--bg);
+    background: white !important;
     border: 1.5px dashed var(--border) !important;
     border-radius: var(--radius-sm) !important;
     transition: var(--transition) !important;
+}
+[data-testid="stFileUploader"] > div {
+    background: white !important;
+}
+[data-testid="stFileUploader"] section {
+    background: white !important;
+    border: none !important;
+}
+/* Uploaded file chip */
+[data-testid="stFileUploaderFile"],
+[data-testid="stFileUploaderDropzone"] {
+    background: white !important;
+    color: var(--text-primary) !important;
 }
 [data-testid="stFileUploader"]:hover {
     border-color: var(--accent) !important;
@@ -262,13 +275,23 @@ h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-weight: 800; }
 }
 
 /* Selectbox */
-[data-testid="stSelectbox"] > div > div {
-    background: var(--bg-card) !important;
+[data-testid="stSelectbox"] > div > div,
+[data-testid="stMultiSelect"] > div > div,
+[data-baseweb="select"] > div,
+[data-baseweb="select"] [role="listbox"] {
+    background: white !important;
     border: 1px solid var(--border) !important;
     border-radius: var(--radius-sm) !important;
     color: var(--text-primary) !important;
     transition: var(--transition) !important;
 }
+[data-baseweb="select"] * { color: var(--text-primary) !important; background: transparent; }
+[data-baseweb="popover"] { background: white !important; }
+[data-baseweb="menu"] { background: white !important; }
+[data-baseweb="menu"] li { color: var(--text-primary) !important; }
+[data-baseweb="menu"] li:hover { background: var(--accent-soft) !important; }
+[data-testid="stSidebar"] [data-baseweb="select"] > div { background: white !important; }
+[data-testid="stSidebar"] [data-testid="stMultiSelect"] > div { background: white !important; }
 [data-testid="stSelectbox"] > div > div:hover {
     border-color: var(--accent) !important;
 }
@@ -283,13 +306,17 @@ h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-weight: 800; }
 [data-testid="stTabs"] [data-baseweb="tab"] {
     background: transparent !important;
     border: none !important;
-    color: var(--text-muted) !important;
+    color: var(--text-secondary) !important;
     font-weight: 700 !important;
     font-size: .82rem !important;
     padding: 10px 16px !important;
     border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important;
     transition: var(--transition) !important;
     position: relative;
+}
+[data-testid="stTabs"] [data-baseweb="tab"] p,
+[data-testid="stTabs"] [data-baseweb="tab"] span {
+    color: inherit !important;
 }
 [data-testid="stTabs"] [data-baseweb="tab"]:hover {
     color: var(--text-primary) !important;
@@ -303,6 +330,89 @@ h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-weight: 800; }
 [data-testid="stTabs"] [data-baseweb="tab-panel"] {
     background: var(--bg) !important;
     padding-top: 16px !important;
+}
+
+/* ── Sidebar filters — all dropdowns white ───────────── */
+[data-testid="stSidebar"] [data-baseweb="select"] > div,
+[data-testid="stSidebar"] [data-baseweb="select"] > div > div,
+[data-testid="stSidebar"] [class*="ValueContainer"],
+[data-testid="stSidebar"] [class*="control"],
+[data-testid="stSidebar"] [class*="Container"] {
+    background: white !important;
+    color: var(--text-primary) !important;
+}
+[data-testid="stSidebar"] input,
+[data-testid="stSidebar"] textarea {
+    background: white !important;
+    color: var(--text-primary) !important;
+}
+[data-testid="stSidebar"] [class*="placeholder"],
+[data-testid="stSidebar"] [class*="Placeholder"] {
+    color: var(--text-muted) !important;
+}
+/* Dropdown option lists — anywhere in the app */
+[data-baseweb="popover"],
+[data-baseweb="popover"] > div,
+[data-baseweb="menu"],
+ul[data-baseweb="menu"],
+li[role="option"] {
+    background: white !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-sm) !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+li[role="option"]:hover,
+[data-baseweb="menu"] li:hover {
+    background: var(--accent-soft) !important;
+    color: var(--accent) !important;
+}
+/* Multiselect tags */
+[data-baseweb="tag"] {
+    background: var(--accent-soft) !important;
+    border: 1px solid var(--accent-mid) !important;
+    color: var(--accent) !important;
+    border-radius: 99px !important;
+}
+[data-baseweb="tag"] span { color: var(--accent) !important; }
+[data-baseweb="tag"] button { color: var(--accent) !important; opacity:.7; }
+
+/* ── Dataframe — force light theme ──────────────────── */
+[data-testid="stDataFrame"],
+[data-testid="stDataFrame"] > div,
+[data-testid="stDataFrame"] iframe { background: white !important; }
+.dvn-scroller { background: white !important; }
+.ch-cell, .ch-header, .ch-row { background: white !important; color: var(--text-primary) !important; }
+
+/* ── File uploader chip (uploaded file shown dark) ───── */
+[data-testid="stFileUploaderFile"],
+[data-testid="stFileUploaderFileName"],
+[data-testid="stFileUploadedFileDeleteBtn"],
+[data-testid="stFileUploader"] [data-testid="stMarkdownContainer"],
+[data-testid="stFileUploader"] small,
+[data-testid="stFileUploader"] p {
+    color: var(--text-primary) !important;
+}
+[data-testid="stFileUploaderFile"] {
+    background: var(--bg-sidebar) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-sm) !important;
+}
+/* The dark chip with file name */
+[data-testid="stFileUploader"] [kind="secondary"],
+[data-testid="stFileUploader"] section > div {
+    background: white !important;
+    color: var(--text-primary) !important;
+}
+/* Override any dark background on uploaded file display */
+[data-testid="stSidebar"] [data-testid="stFileUploader"] * {
+    background-color: transparent !important;
+    color: var(--text-primary) !important;
+}
+[data-testid="stSidebar"] [data-testid="stFileUploader"] > div > div {
+    background-color: white !important;
+    border: 1.5px dashed var(--border) !important;
+    border-radius: var(--radius-sm) !important;
 }
 
 /* Dataframe */
@@ -718,6 +828,33 @@ button, [role="button"], a, label { transition: var(--transition) !important; }
     animation: fadeDown 0.2s ease both !important;
 }
 
+/* ── Icon animations ─────────────────────────────────── */
+@keyframes iconPulse {
+    0%,100% { transform:scale(1); opacity:.85; }
+    50%     { transform:scale(1.18); opacity:1; }
+}
+@keyframes iconBounce {
+    0%,100% { transform:translateY(0); }
+    40%     { transform:translateY(-2.5px); }
+    70%     { transform:translateY(-1px); }
+}
+@keyframes iconSlide {
+    0%,100% { transform:translateX(0); opacity:.8; }
+    50%     { transform:translateX(2.5px); opacity:1; }
+}
+@keyframes iconSpin {
+    from { transform:rotate(0deg); }
+    to   { transform:rotate(360deg); }
+}
+@keyframes iconFade {
+    0%,100% { opacity:.6; }
+    50%     { opacity:1; }
+}
+@keyframes iconGrow {
+    0%,100% { transform:scaleY(1); transform-origin:bottom; }
+    50%     { transform:scaleY(1.1); transform-origin:bottom; }
+}
+
 /* Stagger children inside section cards */
 .section-card > *:nth-child(1) { animation: fadeUp .20s ease both; }
 .section-card > *:nth-child(2) { animation: fadeUp .27s ease both; }
@@ -783,7 +920,95 @@ button, [role="button"], a, label { transition: var(--transition) !important; }
 
 /* Separator */
 hr { border: none; border-top: 1px solid var(--border) !important; margin: 16px 0 !important; }
+
+/* ── Dataframe light theme ───────────────────────────── */
+/* Streamlit uses a Glide grid inside an iframe — target the container */
+[data-testid="stDataFrame"] > div {
+    background: white !important;
+    border-radius: var(--radius-sm) !important;
+    border: 1px solid var(--border) !important;
+    overflow: hidden !important;
+}
+/* The actual grid container */
+.stDataFrame, .stDataFrame > div, .stDataFrame iframe {
+    background: white !important;
+}
+/* Column headers visible in shadow DOM via CSS vars */
+[data-testid="stDataFrame"] {
+    --rdg-background-color: white;
+    --rdg-header-background-color: #F1F3F8;
+    --rdg-row-hover-background-color: #F8F9FC;
+    --rdg-border-color: #E4E8F0;
+    --rdg-color: #0F172A;
+    --rdg-header-color: #475569;
+    --rdg-selection-color: rgba(225,6,0,0.08);
+    background: white !important;
+}
+
+/* ── Force all text visible ──────────────────────────── */
+/* Any remaining dark text on light bg */
+[data-testid="stMarkdownContainer"] *:not(code):not(pre) {
+    color: var(--text-primary) !important;
+}
+.kpi-label, .kpi-sub, .section-subtitle, .sidebar-sub,
+.sidebar-section-sub, .compact-context-label, .compact-context-sub,
+.hero-subtitle { color: var(--text-secondary) !important; }
+
+/* ── Altair chart container — white bg ───────────────── */
+[data-testid="stArrowVegaLiteChart"] {
+    background: white !important;
+    border-radius: var(--radius-md) !important;
+    padding: 8px !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+[data-testid="stArrowVegaLiteChart"] canvas {
+    background: white !important;
+}
+
+/* ── Professional micro-animations ──────────────────── */
+/* Smooth chart entrance */
+[data-testid="stArrowVegaLiteChart"] {
+    animation: fadeUp 0.4s cubic-bezier(0.4,0,0.2,1) both;
+}
+/* Dataframe entrance */
+[data-testid="stDataFrame"] {
+    animation: fadeUp 0.35s ease both;
+}
+/* Stagger chart and table entrances */
+[data-testid="column"]:nth-child(1) > div > [data-testid="stArrowVegaLiteChart"] { animation-delay: .05s; }
+[data-testid="column"]:nth-child(2) > div > [data-testid="stArrowVegaLiteChart"] { animation-delay: .10s; }
+[data-testid="column"]:nth-child(3) > div > [data-testid="stArrowVegaLiteChart"] { animation-delay: .15s; }
+
+/* Smooth metric value entrance with spring */
+[data-testid="stMetricValue"] {
+    animation: springIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+}
 </style>
+""", unsafe_allow_html=True)
+
+# JS: force dataframe iframes to light theme (CSS can't cross iframe boundary)
+st.markdown("""
+<script>
+(function(){
+    function fixIframes(){
+        document.querySelectorAll('iframe').forEach(function(fr){
+            try{
+                var d=fr.contentDocument||fr.contentWindow.document;
+                if(!d||d.querySelector('#_st_light')) return;
+                var s=d.createElement('style'); s.id='_st_light';
+                s.textContent='body,html{background:#fff!important;color:#0F172A!important}'
+                    +'[class*="rdg"]{background:#fff!important;color:#0F172A!important}'
+                    +'[class*="header"]{background:#F1F3F8!important;color:#475569!important}'
+                    +'[class*="cell"]{background:#fff!important;color:#0F172A!important;border-color:#E4E8F0!important}'
+                    +'[class*="row"]:hover [class*="cell"]{background:#F8F9FC!important}';
+                d.head.appendChild(s);
+            }catch(e){}
+        });
+    }
+    fixIframes();
+    new MutationObserver(fixIframes).observe(document.body,{childList:true,subtree:true});
+})();
+</script>
 """, unsafe_allow_html=True)
 
 
@@ -1037,22 +1262,43 @@ def executive_map():
     '''
 
 def icon_svg(name="spark", size=14):
-    icons = {
-        "spark": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg>',
-        "signal": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h2"/><path d="M8 15h2"/><path d="M12 12h2"/><path d="M16 9h2"/><path d="M20 6h.01"/></svg>',
-        "shield": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-2.9 7.7-7 9-4.1-1.3-7-4.5-7-9V6l7-3z"/></svg>',
-        "users": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="3"/><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 4.13a3 3 0 0 1 0 5.74"/></svg>',
-        "map": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>',
-        "trend": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 7-8"/><path d="M14 7h6v6"/></svg>',
-        "briefcase": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg>',
-        "target": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>',
-        "chart": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="5"/><rect x="12" y="8" width="3" height="9"/><rect x="17" y="5" width="3" height="12"/></svg>',
-        "filter": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>',
-        "table": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M9 4v16"/><path d="M15 4v16"/></svg>',
-        "eye": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>'
+    """Compact animated SVG icons with CSS keyframe animations."""
+    c = str(size)
+    anim = {
+        "spark":     "iconPulse 2s ease-in-out infinite",
+        "signal":    "iconBounce 1.5s ease-in-out infinite",
+        "trend":     "iconSlide 2s ease-in-out infinite",
+        "users":     "iconFade 2.5s ease-in-out infinite",
+        "target":    "iconSpin 3s linear infinite",
+        "chart":     "iconGrow 2s ease-in-out infinite",
+        "filter":    "iconPulse 2s ease-in-out infinite",
+        "eye":       "iconFade 2s ease-in-out infinite",
+        "map":       "iconBounce 2s ease-in-out infinite",
+        "shield":    "iconPulse 3s ease-in-out infinite",
+        "table":     "iconFade 2s ease-in-out infinite",
+        "briefcase": "iconBounce 2s ease-in-out infinite",
     }
-    svg = icons.get(name, icons["spark"])
-    return f'<span class="icon-inline" style="width:{size}px;height:{size}px;">{svg}</span>'
+    svgs = {
+        "spark":     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg>',
+        "signal":    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 18h2"/><path d="M8 15h2"/><path d="M12 12h2"/><path d="M16 9h2"/><path d="M20 6h.01"/></svg>',
+        "trend":     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 7-8"/><path d="M14 7h6v6"/></svg>',
+        "users":     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="3"/><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 4.13a3 3 0 0 1 0 5.74"/></svg>',
+        "target":    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>',
+        "chart":     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="5"/><rect x="12" y="8" width="3" height="9"/><rect x="17" y="5" width="3" height="12"/></svg>',
+        "filter":    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>',
+        "eye":       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+        "map":       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>',
+        "shield":    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l7 3v6c0 4.5-2.9 7.7-7 9-4.1-1.3-7-4.5-7-9V6l7-3z"/></svg>',
+        "table":     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16M15 4v16"/></svg>',
+        "briefcase": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18"/></svg>',
+    }
+    svg  = svgs.get(name, svgs["spark"])
+    ani  = anim.get(name, "iconPulse 2s ease-in-out infinite")
+    return (
+        f'<span style="display:inline-flex;align-items:center;justify-content:center;'
+        f'width:{c}px;height:{c}px;flex-shrink:0;vertical-align:middle;'
+        f'animation:{ani};">{svg}</span>'
+    )
 
 # =========================================================
 # INSIGHT EJECUTIVO / CEO
@@ -1075,6 +1321,61 @@ def safe_round_columns(df_in, cols, decimals=1):
         if col in df_out.columns:
             df_out[col] = pd.to_numeric(df_out[col], errors="coerce").round(decimals)
     return df_out
+
+
+def show_table(df, height=None, key=None):
+    """
+    Renders a dataframe as a styled HTML table that is always visible
+    regardless of Streamlit's iframe/theme issues.
+    """
+    if df is None or df.empty:
+        st.markdown(
+            "<div style='padding:20px;text-align:center;color:var(--text-muted);"
+            "font-size:.80rem;border:1px solid var(--border);border-radius:10px;'>"
+            "Sin datos disponibles para los filtros actuales.</div>",
+            unsafe_allow_html=True
+        )
+        return
+    # Cap at 300 rows max for HTML rendering
+    df = df.head(300)
+    # Build HTML table
+    cols = list(df.columns)
+    rows = df.values.tolist()
+    th_style = ("background:#F1F3F8;color:#475569;font-size:.72rem;font-weight:800;"
+                "text-transform:uppercase;letter-spacing:.3px;padding:8px 12px;"
+                "border-bottom:2px solid #E4E8F0;text-align:left;white-space:nowrap;")
+    td_style = ("color:#0F172A;font-size:.78rem;padding:7px 12px;"
+                "border-bottom:1px solid #F1F3F8;")
+    tr_alt   = "background:#F8F9FC;"
+    html = (
+        "<div style='overflow-x:auto;border:1px solid #E4E8F0;border-radius:10px;"
+        "box-shadow:0 1px 3px rgba(15,23,42,0.08);'>"
+        "<table style='width:100%;border-collapse:collapse;background:white;'>"
+        "<thead><tr>"
+    )
+    for c in cols:
+        html += f"<th style='{th_style}'>{c}</th>"
+    html += "</tr></thead><tbody>"
+    for i, row in enumerate(rows):
+        row_style = tr_alt if i % 2 == 1 else ""
+        html += f"<tr style='transition:background .15s;{row_style}'>"
+        for val in row:
+            try:
+                import pandas as _pd
+                if val is None or val is _pd.NA or (isinstance(val, float) and val != val):
+                    disp = "—"
+                elif isinstance(val, (int, np.integer)):
+                    disp = f"{int(val):,}"
+                elif isinstance(val, (float, np.floating)):
+                    disp = f"{int(val):,}" if val == int(val) else f"{val:,.1f}"
+                else:
+                    disp = str(val)
+            except Exception:
+                disp = str(val) if val is not None else "—"
+            html += f"<td style='{td_style}'>{disp}</td>"
+        html += "</tr>"
+    html += "</tbody></table></div>"
+    st.markdown(html, unsafe_allow_html=True)
 
 def classify_rsrp(x):
     if pd.isna(x):
@@ -1145,26 +1446,35 @@ def score_label(score):
 
 
 def style_chart(chart):
+    """Apply light theme. Uses configure_ which works with theme=None."""
     try:
-        return (
-            chart.properties(background="transparent")
-            .configure_view(strokeOpacity=0)
-            .configure_axis(
-                domainColor="rgba(255,255,255,0.18)",
-                tickColor="rgba(255,255,255,0.18)",
-                gridColor="rgba(255,255,255,0.10)",
-                labelColor="#CBD5E1",
-                titleColor="#F8FAFC"
-            )
-            .configure_legend(
-                titleColor="#CBD5E1",
-                labelColor="#CBD5E1",
-                symbolStrokeColor="rgba(255,255,255,0.15)"
-            )
-            .configure_title(color="#F8FAFC")
+        c = chart.properties(background="white")
+        c = c.configure_view(strokeOpacity=0, fill="white")
+        c = c.configure_axis(
+            labelColor="#374151",
+            titleColor="#111827",
+            gridColor="#F3F4F6",
+            domainColor="#D1D5DB",
+            tickColor="#D1D5DB",
+            labelFontSize=11,
+            titleFontSize=11,
         )
+        c = c.configure_legend(
+            labelColor="#374151",
+            titleColor="#111827",
+            fillColor="white",
+            strokeColor="#E5E7EB",
+            labelFontSize=11,
+            titleFontSize=11,
+        )
+        c = c.configure_text(color="#111827")
+        c = c.configure_title(color="#111827")
+        return c
     except Exception:
-        return chart
+        try:
+            return chart.properties(background="white")
+        except Exception:
+            return chart
 
 
 def prepare_variation_display(df_in, label_col, top_n=24):
@@ -2050,7 +2360,8 @@ def _scan_all_sheets(xl):
 
 def _find_detail_sheet(xl):
     """
-    Detecta la hoja principal. Retorna (sheet_name, header_row, None) o (None, 0, error_msg).
+    Detecta la hoja principal — por defecto la ÚLTIMA hoja válida (más reciente).
+    Retorna (sheet_name, header_row, None) o (None, 0, error_msg).
     """
     scan = _scan_all_sheets(xl)
     if not scan["plan"]:
@@ -2059,7 +2370,10 @@ def _find_detail_sheet(xl):
             f"Hojas disponibles: {', '.join(xl.sheet_names)}. "
             f"Se necesitan columnas como: {', '.join(COLUMNAS_REQUERIDAS[:4])}..."
         )
-    best = scan["plan"][0]
+    # Sort by original sheet order and pick the last one (most recent month)
+    sheet_order = {s: i for i, s in enumerate(xl.sheet_names)}
+    sorted_plan = sorted(scan["plan"], key=lambda x: sheet_order.get(x["sheet"], 0))
+    best = sorted_plan[-1]  # last = most recent
     return best["sheet"], best["header_row"], None
 
 
@@ -2405,6 +2719,7 @@ def render_instructivo():
         unsafe_allow_html=True
     )
 
+def render_claro_view():
     """Renderiza la vista completa de Claro — Plan y Ejecución de Agentes."""
 
     df_det, df_cierre, df_plan, info = load_claro_data()
@@ -2450,21 +2765,14 @@ def render_instructivo():
                 cut = day
         return max(cut, 7)  # at least week 1
 
-    # Use current date + sheet name to determine if month is truly closed
-    _dia_c_calc    = _compute_cut_day(df_det)
-    _MES_CERRADO   = _is_month_closed(_selected_sheet, _dia_c_calc)
-    _dia_c         = 30 if _MES_CERRADO else _dia_c_calc
-    _estado_mes    = "· Mes cerrado ✓" if _MES_CERRADO else f"· Día {_dia_c} (en curso)"
-
     def _reload_sheet(sheet_name):
         """Load a specific sheet from the uploaded or disk file."""
         src = st.session_state.get("claro_uploaded_file") or find_existing_file(CLARO_FILE_CANDIDATES)
         if src is None:
-            return df_det, _dia_c
+            return df_det, _compute_cut_day(df_det)
         if hasattr(src, "seek"):
             src.seek(0)
         xl2 = pd.ExcelFile(src)
-        # Find correct header row for this sheet
         header_row = 0
         for hr in [0, 1, 4, 5]:
             try:
@@ -2481,38 +2789,46 @@ def render_instructivo():
         new_df = pd.read_excel(xl2, sheet_name=sheet_name, header=header_row)
         new_df.columns = [str(c).strip() for c in new_df.columns]
         new_df, _, _ = _process_claro_df(new_df)
-        new_cut = _compute_cut_day(new_df)
-        return new_df, new_cut
+        return new_df, _compute_cut_day(new_df)
 
-    # Multi-sheet selector
+    # ── Multi-sheet selector ─────────────────────────────────────────────────
+    # Default: last sheet in the list (most recent month)
     _selected_sheet = _sheet_used
+
     if len(_all_plan) > 1:
         st.sidebar.markdown(
-            f'<div class="sidebar-block">'
-            f'<div class="sidebar-kicker">{icon_svg("trend",12)} Periodos disponibles</div>'
-            f'<div class="sidebar-title">Selecciona el mes</div>'
-            f'<div class="sidebar-sub">El archivo tiene <b>{len(_all_plan)}</b> periodos. '
-            f'Elige cuál analizar.</div>',
+            "<div style='margin-bottom:6px;'>"
+            f"<div style='font-size:.66rem;font-weight:900;color:var(--text-muted);"
+            f"text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;'>"
+            f"Periodo ({len(_all_plan)} meses disponibles)</div>",
             unsafe_allow_html=True
         )
         _selected_sheet = st.sidebar.selectbox(
             "Mes a analizar",
             options=_all_plan,
-            index=len(_all_plan) - 1,  # default to LAST sheet (most recent month)
+            index=len(_all_plan) - 1,   # last = most recent
             key="claro_sheet_sel",
             label_visibility="collapsed"
         )
         st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
-        # Reload if different from initial load
+        # Reload if user picked a different sheet than what was initially loaded
         if _selected_sheet != _sheet_used:
-            df_det, _dia_c = _reload_sheet(_selected_sheet)
+            df_det, _dia_c_raw = _reload_sheet(_selected_sheet)
             _n_pdvs = len(df_det)
             _n_ags  = df_det["AGENTE"].nunique() if "AGENTE" in df_det.columns else 0
         else:
-            _dia_c = _compute_cut_day(df_det)
+            _dia_c_raw = _compute_cut_day(df_det)
+    else:
+        _dia_c_raw = _compute_cut_day(df_det)
 
-    _mes_cerrado_label = "Mes cerrado ✓" if _dia_c >= 30 else f"Corte día {_dia_c} (en curso)"
+    # Now compute cut day and month-closed status with the CORRECT selected sheet
+    _selected_sheet_safe = _selected_sheet if _selected_sheet else "PERIODO"
+    _MES_CERRADO  = _is_month_closed(_selected_sheet_safe, _dia_c_raw)
+    _dia_c        = 30 if _MES_CERRADO else _dia_c_raw
+    _estado_mes   = "· Mes cerrado ✓" if _MES_CERRADO else f"· Día {_dia_c} (en curso)"
+
+    _mes_cerrado_label = "Mes cerrado ✓" if _MES_CERRADO else f"Corte día {_dia_c} (en curso)"
     _archivo_label = (
         f'<div style="font-size:.68rem;color:var(--text-muted);margin-top:4px;">'
         f'{os.path.basename(str(info.get("path","")))} · '
@@ -2661,7 +2977,7 @@ def render_instructivo():
     top_asesor_val = int(top_asesor_s.max()) if not top_asesor_s.empty else 0
 
     # Dynamic period label from selected sheet + cut day
-    _periodo_label = _selected_sheet if _selected_sheet else "Periodo actual"
+    _periodo_label = _selected_sheet_safe
     _estado_mes    = "· Mes cerrado ✓" if _dia_c >= 30 else f"· Día {_dia_c} (en curso)"
     st.markdown(f"""
     <div class="header-shell">
@@ -2768,7 +3084,7 @@ def render_instructivo():
         def _sc(v): return "#22C55E" if v >= 100 else "#F59E0B" if v >= 70 else "#EF4444"
         def _bar(pct, color):
             w = min(max(pct, 0), 100)
-            return f'<div style="width:100%;height:6px;background:rgba(255,255,255,0.08);border-radius:99px;margin-top:6px;overflow:hidden;"><div style="width:{w}%;height:100%;background:{color};border-radius:99px;"></div></div>'
+            return f'<div style="width:100%;height:6px;background:var(--border);border-radius:99px;margin-top:6px;overflow:hidden;"><div style="width:{w}%;height:100%;background:{color};border-radius:99px;transition:width 0.8s cubic-bezier(0.4,0,0.2,1);"></div></div>'
 
         _c_banner  = _sc(_valor_banner)
         _titulo_banner = f"Resultado final · {_periodo_label}" if _MES_CERRADO_BANNER else f"Proyección al cierre · {_periodo_label} · Día {_DIA_CORTE} de {_DIAS_MES}"
@@ -2792,7 +3108,7 @@ def render_instructivo():
                 {_bar(_valor_banner, _c_banner)}
                 <div style="font-size:.70rem;color:var(--text-muted);margin-top:4px;">Total: <b style="color:var(--text-primary);">{fmt_int(_ejec_total)}</b> de <b>{fmt_int(_meta_total)}</b> altas (orgánicas + inducidas)</div>
             </div>
-            <div style="width:1px;height:100px;background:rgba(255,255,255,0.08);flex-shrink:0;"></div>
+            <div style="width:1px;height:100px;background:var(--bg);flex-shrink:0;"></div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;flex:1;">
                 <div>
                     <div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;">{_lbl_nat}</div>
@@ -2956,13 +3272,13 @@ def render_instructivo():
             w     = min(max(p, 0), 100)
             _brch = fmt_int(row["brecha"])
             st.markdown(f"""
-            <div style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:10px 14px;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:10px 14px;margin-bottom:6px;">
                 <div style="display:flex;align-items:center;gap:8px;width:180px;flex-shrink:0;">
                     <span style="width:10px;height:10px;border-radius:50%;background:{ag_c};display:inline-block;flex-shrink:0;"></span>
                     <span style="font-size:.80rem;font-weight:800;color:var(--text-primary);">{row["AGENTE"]}</span>
                 </div>
                 <div style="flex:1;min-width:0;">
-                    <div style="width:100%;height:8px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
+                    <div style="width:100%;height:8px;background:var(--bg);border-radius:99px;overflow:hidden;">
                         <div style="width:{w}%;height:100%;background:{cp};border-radius:99px;"></div>
                     </div>
                 </div>
@@ -3019,10 +3335,15 @@ def render_instructivo():
 
         # ── Tabla resumen compacta ────────────────────────────────────────────
         st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:12px 0 6px 0;">Detalle completo por agente</div>', unsafe_allow_html=True)
-        show_ag = safe_round_columns(by_ag_full[["AGENTE","pdvs","meta_nat","ejec_nat","cumpl_nat","proy_nat","brecha","cuota_alta"]].copy(),
-            ["meta_nat","ejec_nat","cumpl_nat","proy_nat","brecha","cuota_alta"])
-        show_ag.columns = ["Agente","PDVs","Meta","Ejecutado","Cumpl. %","Cumpl. total %","Brecha","Cuota Alta %"]
-        st.dataframe(show_ag, use_container_width=True, height=240)
+        _show_ag_cols = ["AGENTE","pdvs","meta_nat","ejec_nat","cumpl_nat","brecha","cuota_alta"]
+        _show_ag_cols = [c for c in _show_ag_cols if c in by_ag_full.columns]
+        show_ag = safe_round_columns(by_ag_full[_show_ag_cols].copy(),
+            ["meta_nat","ejec_nat","cumpl_nat","brecha","cuota_alta"])
+        _col_rename = {"AGENTE":"Agente","pdvs":"PDVs","meta_nat":"Meta",
+                       "ejec_nat":"Ejecutado","cumpl_nat":"Cumpl. Org. %",
+                       "brecha":"Brecha","cuota_alta":"Cuota Alta %"}
+        show_ag = show_ag.rename(columns={k:v for k,v in _col_rename.items() if k in show_ag.columns})
+        show_table(show_ag, height=240)
 
 
     # -------------------------------------------------------
@@ -3045,7 +3366,7 @@ def render_instructivo():
         def _sc3(v): return "#22C55E" if v >= 100 else "#F59E0B" if v >= 70 else "#EF4444"
         def _bar3(pct, color):
             w = min(max(pct, 0), 100)
-            return f'<div style="width:100%;height:5px;background:rgba(255,255,255,0.07);border-radius:99px;margin-top:5px;overflow:hidden;"><div style="width:{w}%;height:100%;background:{color};border-radius:99px;"></div></div>'
+            return f'<div style="width:100%;height:5px;background:var(--bg);border-radius:99px;margin-top:5px;overflow:hidden;"><div style="width:{w}%;height:100%;background:{color};border-radius:99px;"></div></div>'
 
         # ── 4 KPIs protagonistas ──────────────────────────────────────────────
         h1c3, h2c3, h3c3, h4c3 = st.columns(4, gap="medium")
@@ -3103,48 +3424,91 @@ def render_instructivo():
             st.markdown('</div>', unsafe_allow_html=True)
 
         with c3b:
-            barrio_col_exists   = "BARRIO"   in df.columns
-            circuito_col_exists = "CIRCUITO" in df.columns
-            group_cols_circ = [c for c in ["BARRIO","CIRCUITO"] if c in df.columns] or ["AGENTE"]
-            by_barrio = df.groupby(group_cols_circ).agg(
-                pdvs=("ID","count"), meta_nat=("META ALTA NAT (>$2000)","sum"),
-                ejec_nat=("EJEC ALTA NAT","sum"), ejec_total=("EJE ALTA TOTAL","sum") if "EJE ALTA TOTAL" in df.columns else ("EJEC ALTA NAT","sum"),
-                cuota_alta=("CUOTA DE ALTA","mean"),
-            ).reset_index()
-            by_barrio["cumpl"] = (by_barrio["ejec_nat"]/by_barrio["meta_nat"].replace(0,np.nan)*100).fillna(0)
+            barrio_col_exists   = "BARRIO"   in df.columns and df["BARRIO"].notna().sum() > 0
+            circuito_col_exists = "CIRCUITO" in df.columns and df["CIRCUITO"].notna().sum() > 0
+            # Use best available grouping
+            if barrio_col_exists:
+                group_cols_circ = ["BARRIO"] + (["CIRCUITO"] if circuito_col_exists else [])
+            elif circuito_col_exists:
+                group_cols_circ = ["CIRCUITO"]
+            else:
+                group_cols_circ = ["AGENTE"]
+
+            _eje_col = "EJE ALTA TOTAL" if "EJE ALTA TOTAL" in df.columns else "EJEC ALTA NAT"
 
             if barrio_col_exists:
-                by_barrio_top = by_barrio.groupby("BARRIO").agg(
-                    ejec_total=("ejec_total","sum"), meta_nat=("meta_nat","sum"),
-                    ejec_nat=("ejec_nat","sum"), pdvs=("pdvs","sum"), cuota_alta=("cuota_alta","mean"),
+                # Group directly by BARRIO — single clean groupby
+                by_barrio_top = df.groupby("BARRIO").agg(
+                    pdvs=("ID","count"),
+                    meta_nat=("META ALTA NAT (>$2000)","sum"),
+                    ejec_nat=("EJEC ALTA NAT","sum"),
+                    ejec_total=(_eje_col,"sum"),
+                    cuota_alta=("CUOTA DE ALTA","mean"),
                 ).reset_index()
                 by_barrio_top["cumpl"] = (by_barrio_top["ejec_nat"]/by_barrio_top["meta_nat"].replace(0,np.nan)*100).fillna(0)
                 if circuito_col_exists:
-                    cpb = by_barrio.groupby("BARRIO")["CIRCUITO"].apply(lambda x: ", ".join(sorted(x.dropna().unique()))).reset_index()
-                    cpb.columns = ["BARRIO","circuitos_lista"]
-                    by_barrio_top = by_barrio_top.merge(cpb, on="BARRIO", how="left")
+                    _cpb = df.groupby("BARRIO")["CIRCUITO"].apply(
+                        lambda x: ", ".join(sorted(set(str(v) for v in x.dropna())))
+                    ).reset_index()
+                    _cpb.columns = ["BARRIO","circuitos_lista"]
+                    by_barrio_top = by_barrio_top.merge(_cpb, on="BARRIO", how="left")
                 else:
                     by_barrio_top["circuitos_lista"] = ""
-                by_barrio_top = by_barrio_top.sort_values("ejec_total", ascending=False).head(15)
-                y_col = "BARRIO"; tooltip_extra = [alt.Tooltip("circuitos_lista:N",title="Circuitos")]
-            else:
-                by_barrio_top = by_barrio.sort_values("ejec_total", ascending=False).head(15)
+                y_col = "BARRIO"
+                tooltip_extra = [alt.Tooltip("circuitos_lista:N",title="Circuitos")]
+            elif circuito_col_exists:
+                by_barrio_top = df.groupby("CIRCUITO").agg(
+                    pdvs=("ID","count"),
+                    meta_nat=("META ALTA NAT (>$2000)","sum"),
+                    ejec_nat=("EJEC ALTA NAT","sum"),
+                    ejec_total=(_eje_col,"sum"),
+                    cuota_alta=("CUOTA DE ALTA","mean"),
+                ).reset_index()
+                by_barrio_top["cumpl"] = (by_barrio_top["ejec_nat"]/by_barrio_top["meta_nat"].replace(0,np.nan)*100).fillna(0)
                 y_col = "CIRCUITO"; tooltip_extra = []
+            else:
+                by_barrio_top = df.groupby("AGENTE").agg(
+                    pdvs=("ID","count"),
+                    meta_nat=("META ALTA NAT (>$2000)","sum"),
+                    ejec_nat=("EJEC ALTA NAT","sum"),
+                    ejec_total=(_eje_col,"sum"),
+                    cuota_alta=("CUOTA DE ALTA","mean"),
+                ).reset_index()
+                by_barrio_top["cumpl"] = (by_barrio_top["ejec_nat"]/by_barrio_top["meta_nat"].replace(0,np.nan)*100).fillna(0)
+                y_col = "AGENTE"; tooltip_extra = []
+
+            by_barrio_top = by_barrio_top.sort_values("ejec_total", ascending=False).head(15)
 
             st.markdown('<div class="section-card"><div class="section-title">Top barrios por ejecución</div><div class="section-subtitle">🟢 ≥100% meta · 🟡 70–99% · 🔴 &lt;70% · pasa el mouse para ver circuitos</div>', unsafe_allow_html=True)
-            chart_circ = alt.Chart(by_barrio_top).transform_calculate(
-                color_semaforo="datum.cumpl >= 100 ? '#22C55E' : datum.cumpl >= 70 ? '#F59E0B' : '#EF4444'"
-            ).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
-                x=alt.X("ejec_total:Q",title="Altas totales"),
-                y=alt.Y(f"{y_col}:N",sort="-x",title=None,axis=alt.Axis(labelLimit=220)),
-                color=alt.Color("color_semaforo:N",scale=None,legend=None),
-                tooltip=[alt.Tooltip(f"{y_col}:N",title="Barrio" if y_col=="BARRIO" else "Circuito"),alt.Tooltip("pdvs:Q",title="PDVs"),alt.Tooltip("ejec_total:Q",format=",.0f",title="Ejec. total"),alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %"),alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %")]+tooltip_extra
-            ).properties(height=360)
-            st.altair_chart(style_chart(chart_circ), use_container_width=True, theme=None)
-            if barrio_col_exists and circuito_col_exists and not by_barrio_top.empty:
-                for _, row_b in by_barrio_top.head(6).iterrows():
-                    circs = row_b.get("circuitos_lista","")
-                    st.markdown(f'<div style="font-size:.72rem;color:var(--text-primary);margin-bottom:2px;"><b>{row_b["BARRIO"]}</b> <span style="color:var(--text-muted);">— {circs}</span></div>', unsafe_allow_html=True)
+            if not by_barrio_top.empty:
+                # Pre-compute semaforo color
+                by_barrio_top = by_barrio_top.copy()
+                by_barrio_top["color_sem"] = by_barrio_top["cumpl"].apply(
+                    lambda v: "#22C55E" if v >= 100 else ("#F59E0B" if v >= 70 else "#EF4444")
+                )
+                _tt_barrio = [
+                    alt.Tooltip(f"{y_col}:N", title="Barrio" if y_col=="BARRIO" else y_col),
+                    alt.Tooltip("pdvs:Q", title="PDVs"),
+                    alt.Tooltip("ejec_total:Q", format=",.0f", title="Ejec. total"),
+                    alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %"),
+                    alt.Tooltip("cuota_alta:Q", format=".1f", title="Cuota alta %"),
+                ] + tooltip_extra
+                chart_circ = alt.Chart(by_barrio_top).mark_bar(
+                    cornerRadiusTopLeft=5, cornerRadiusTopRight=5
+                ).encode(
+                    x=alt.X("ejec_total:Q", title="Altas totales",
+                            axis=alt.Axis(labelColor="#374151", titleColor="#111827")),
+                    y=alt.Y(f"{y_col}:N", sort="-x", title=None,
+                            axis=alt.Axis(labelLimit=220, labelColor="#374151")),
+                    color=alt.Color("color_sem:N", scale=None, legend=None),
+                    tooltip=_tt_barrio
+                ).properties(height=380, background="white").configure_view(strokeOpacity=0)
+                st.altair_chart(chart_circ, use_container_width=True, theme=None)
+                if y_col == "BARRIO" and "circuitos_lista" in by_barrio_top.columns:
+                    for _, row_b in by_barrio_top.head(6).iterrows():
+                        circs = row_b.get("circuitos_lista","")
+                        if circs:
+                            st.markdown(f'<div style="font-size:.70rem;color:var(--text-primary);margin-bottom:2px;"><b>{row_b["BARRIO"]}</b> <span style="color:var(--text-muted);">— {circs}</span></div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── Sección 5: Capacidad de mejora — asesores, barrios, cuota alta ───
@@ -3203,41 +3567,52 @@ def render_instructivo():
             st.markdown('</div>', unsafe_allow_html=True)
 
         with cm2:
-            st.markdown('<div class="section-card"><div class="section-title">Barrios con mayor brecha de altas</div><div class="section-subtitle">Los barrios donde más altas se pierden vs la meta. No necesariamente los de menor cumplimiento — sino los de mayor volumen de oportunidad sin capturar.</div>', unsafe_allow_html=True)
-            chart_bar_brecha = alt.Chart(_bottom_bar).transform_calculate(
-                color_c="datum.cumpl >= 70 ? '#F59E0B' : '#EF4444'"
-            ).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
-                x=alt.X("brecha:Q",title="Altas pendientes"),
-                y=alt.Y("BARRIO:N",sort="-x",title=None,axis=alt.Axis(labelLimit=200)),
-                color=alt.Color("color_c:N",scale=None,legend=None),
-                tooltip=[
-                    alt.Tooltip("BARRIO:N",title="Barrio"),
-                    alt.Tooltip("pdvs:Q",title="PDVs"),
-                    alt.Tooltip("brecha:Q",format=",.0f",title="Brecha altas"),
-                    alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %"),
-                    alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %"),
-                ]
-            ).properties(height=340)
-            st.altair_chart(style_chart(chart_bar_brecha), use_container_width=True, theme=None)
+            st.markdown('<div class="section-card"><div class="section-title">Barrios con mayor brecha de altas</div><div class="section-subtitle">Los barrios donde más altas se pierden vs la meta — mayor volumen de oportunidad sin capturar</div>', unsafe_allow_html=True)
+            if not _bottom_bar.empty:
+                # Pre-compute color column — avoid transform_calculate which conflicts with configure_*
+                _bottom_bar = _bottom_bar.copy()
+                _bottom_bar["color_bar"] = _bottom_bar["cumpl"].apply(
+                    lambda v: "#F59E0B" if v >= 70 else "#EF4444"
+                )
+                chart_bar_brecha = alt.Chart(_bottom_bar).mark_bar(
+                    cornerRadiusTopLeft=5, cornerRadiusTopRight=5
+                ).encode(
+                    x=alt.X("brecha:Q", title="Altas pendientes", axis=alt.Axis(labelColor="#374151", titleColor="#111827")),
+                    y=alt.Y("BARRIO:N", sort="-x", title=None, axis=alt.Axis(labelLimit=200, labelColor="#374151")),
+                    color=alt.Color("color_bar:N", scale=None, legend=None),
+                    tooltip=[
+                        alt.Tooltip("BARRIO:N", title="Barrio"),
+                        alt.Tooltip("pdvs:Q", title="PDVs"),
+                        alt.Tooltip("brecha:Q", format=",.0f", title="Brecha altas"),
+                        alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %"),
+                        alt.Tooltip("cuota_alta:Q", format=".1f", title="Cuota alta %"),
+                    ]
+                ).properties(height=360, background="white").configure_view(strokeOpacity=0)
+                st.altair_chart(chart_bar_brecha, use_container_width=True, theme=None)
             st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">🟡 Amarillo = cumpl 70-99% (recuperable) · 🔴 Rojo = &lt;70% (crítico)</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # Barrios con menor cuota de alta — oportunidad competitiva
-        st.markdown('<div class="section-card" style="margin-top:8px;"><div class="section-title">Barrios con menor cuota de altas Claro — mayor potencial competitivo</div><div class="section-subtitle">Barrios donde Claro tiene menor participación en ventas nuevas vs la competencia. Bajo porcentaje = mucho espacio para crecer sin necesidad de más PDVs · mínimo 5 PDVs por barrio</div>', unsafe_allow_html=True)
-        chart_baja_cuota = alt.Chart(_baja_cuota_bar).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5,color="#38BDF8").encode(
-            x=alt.X("cuota_alta:Q",title="Cuota de altas Claro (%)"),
-            y=alt.Y("BARRIO:N",sort="x",title=None,axis=alt.Axis(labelLimit=220)),
-            tooltip=[
-                alt.Tooltip("BARRIO:N",title="Barrio"),
-                alt.Tooltip("pdvs:Q",title="PDVs"),
-                alt.Tooltip("cuota_alta:Q",format=".1f",title="Cuota alta %"),
-                alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. meta %"),
-                alt.Tooltip("brecha:Q",format=",.0f",title="Brecha altas"),
-            ]
-        ).properties(height=340)
-        r50_bq = alt.Chart(pd.DataFrame({"x":[50]})).mark_rule(color="#22C55E",strokeDash=[5,3],strokeWidth=1.5).encode(x="x:Q")
-        st.altair_chart(style_chart(chart_baja_cuota+r50_bq), use_container_width=True, theme=None)
-        st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">Ordenado de menor a mayor cuota · línea verde = 50% (paridad con competencia) · barrios a la izquierda de la línea son los de mayor oportunidad</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-card" style="margin-top:8px;"><div class="section-title">Barrios con menor cuota de altas Claro — mayor potencial competitivo</div><div class="section-subtitle">Barrios donde Claro tiene menor participación en ventas nuevas vs la competencia · mínimo 5 PDVs por barrio</div>', unsafe_allow_html=True)
+        if not _baja_cuota_bar.empty:
+            _baja_cuota_plot = _baja_cuota_bar[_baja_cuota_bar["cuota_alta"].notna()].copy()
+            # Use layer with explicit background — avoid + operator with configure_*
+            chart_baja_cuota = alt.Chart(_baja_cuota_plot).mark_bar(
+                cornerRadiusTopLeft=5, cornerRadiusTopRight=5, color="#2563EB"
+            ).encode(
+                x=alt.X("cuota_alta:Q", title="Cuota de altas Claro (%)",
+                        axis=alt.Axis(labelColor="#374151", titleColor="#111827")),
+                y=alt.Y("BARRIO:N", sort="x", title=None,
+                        axis=alt.Axis(labelLimit=240, labelColor="#374151")),
+                tooltip=[
+                    alt.Tooltip("BARRIO:N", title="Barrio"),
+                    alt.Tooltip("pdvs:Q", title="PDVs"),
+                    alt.Tooltip("cuota_alta:Q", format=".1f", title="Cuota alta %"),
+                    alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. meta %"),
+                ]
+            ).properties(height=400, background="white").configure_view(strokeOpacity=0)
+            st.altair_chart(chart_baja_cuota, use_container_width=True, theme=None)
+        st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">Ordenado de menor a mayor cuota · barrios al inicio de la lista son los de mayor oportunidad competitiva</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     # -------------------------------------------------------
@@ -3265,17 +3640,20 @@ def render_instructivo():
                 pdvs=("ID","count"), ejec_nat=("EJEC ALTA NAT","sum"), meta_nat=("META ALTA NAT (>$2000)","sum"),
             ).reset_index()
             by_tipo["cumpl"] = (by_tipo["ejec_nat"]/by_tipo["meta_nat"].replace(0,np.nan)*100).fillna(0)
+            by_tipo["color_tip"] = by_tipo["cumpl"].apply(
+                lambda v: "#22C55E" if v >= 100 else ("#F59E0B" if v >= 70 else "#EF4444")
+            )
             st.markdown('<div class="section-card"><div class="section-title">Cumplimiento por tipología de PDV</div><div class="section-subtitle">A = mayor potencial · D = menor · color = semáforo de cumplimiento</div>', unsafe_allow_html=True)
             if not by_tipo.empty:
-                chart_tip = alt.Chart(by_tipo).transform_calculate(
-                    color_semaforo="datum.cumpl >= 100 ? '#22C55E' : datum.cumpl >= 70 ? '#F59E0B' : '#EF4444'"
-                ).mark_bar(cornerRadiusTopLeft=6,cornerRadiusTopRight=6).encode(
-                    x=alt.X("TIPOLOGIA:N",title=None),
-                    y=alt.Y("ejec_nat:Q",title="Altas nat."),
-                    color=alt.Color("color_semaforo:N",scale=None,legend=None),
+                chart_tip = alt.Chart(by_tipo).mark_bar(
+                    cornerRadiusTopLeft=6, cornerRadiusTopRight=6
+                ).encode(
+                    x=alt.X("TIPOLOGIA:N", title=None, axis=alt.Axis(labelColor="#374151")),
+                    y=alt.Y("ejec_nat:Q", title="Altas nat.", axis=alt.Axis(labelColor="#374151", titleColor="#111827")),
+                    color=alt.Color("color_tip:N", scale=None, legend=None),
                     tooltip=[alt.Tooltip("TIPOLOGIA:N"),alt.Tooltip("pdvs:Q",title="PDVs"),alt.Tooltip("ejec_nat:Q",format=",.0f"),alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %")]
-                ).properties(height=280)
-                st.altair_chart(style_chart(chart_tip), use_container_width=True, theme=None)
+                ).properties(height=280, background="white").configure_view(strokeOpacity=0)
+                st.altair_chart(chart_tip, use_container_width=True, theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ── Sección 3: Rutas críticas ─────────────────────────────────────────
@@ -3297,7 +3675,7 @@ def render_instructivo():
                 show_ruta_cols = [c for c in ruta_rename.keys() if c in ruta_opp.columns]
                 show_ruta = safe_round_columns(ruta_opp[show_ruta_cols].copy(), ["meta_total","ejec_total","cumpl_ruta","brecha","pct_pdvs_criticos"])
                 show_ruta = show_ruta.rename(columns={k:v for k,v in ruta_rename.items() if k in show_ruta.columns})
-                st.dataframe(show_ruta, use_container_width=True, height=280)
+                show_table(show_ruta, height=280)
                 st.markdown(f'<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">{len(ruta_opp)} rutas con cumplimiento &lt;70% · ordenadas por mayor brecha</div>', unsafe_allow_html=True)
             else:
                 st.success("✅ No hay rutas con cumplimiento por debajo del 70%.")
@@ -3316,7 +3694,7 @@ def render_instructivo():
             show_opp2 = safe_round_columns(show_opp2, ["META ALTA NAT (>$2000)","EJEC ALTA NAT","cumpl_pdv"])
             rename_opp2 = {"META ALTA NAT (>$2000)":"Meta","EJEC ALTA NAT":"Ejecutado","cumpl_pdv":"Cumpl. %","ID":"ID PDV","AGENTE":"Agente","ASESOR":"Asesor","CIRCUITO":"Circuito","CLASIFICACION":"Clasificación","CATEGORIA":"Categoría","BARRIO":"Barrio","ZONA":"Zona","RUTA":"Ruta"}
             show_opp2 = show_opp2.rename(columns={k:v for k,v in rename_opp2.items() if k in show_opp2.columns})
-            st.dataframe(show_opp2, use_container_width=True, height=300)
+            show_table(show_opp2, height=300)
             st.markdown(f'<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">{len(df_opp_show2)} PDVs · ordenados por mayor meta · usa filtros del sidebar para enfocar</div>', unsafe_allow_html=True)
         else:
             st.success("✅ No hay PDVs con cumplimiento por debajo del 70%.")
@@ -3349,6 +3727,8 @@ def render_instructivo():
                 unsafe_allow_html=True
             )
         else:
+            _mejor_s      = max(_semanas_con_datos, key=lambda s: s_totals[s]) if _semanas_con_datos else "S1"
+            _peor_s       = min(_semanas_con_datos, key=lambda s: s_totals[s]) if _semanas_con_datos else "S4"
             _tendencia_c4 = _s_list[2] >= _s_list[1] >= _s_list[0]
             _var_s2s1     = ((s_totals["S2"]-s_totals["S1"])/s_totals["S1"]*100) if s_totals["S1"]>0 else 0
             _var_s3s2     = ((s_totals["S3"]-s_totals["S2"])/s_totals["S2"]*100) if s_totals["S2"]>0 else 0
@@ -3362,17 +3742,17 @@ def render_instructivo():
             <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:24px;padding:20px 28px;margin-bottom:16px;">
                 <div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:14px;">Evolución semanal · {_periodo_label}</div>
                 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;">
-                    <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
+                    <div style="text-align:center;padding:0 12px;border-right:1px solid var(--border);">
                         <div style="font-size:.68rem;font-weight:900;color:var(--text-muted);margin-bottom:4px;">SEMANA 1</div>
                         <div style="font-size:2rem;font-weight:950;color:var(--text-primary);">{fmt_int(s_totals["S1"])}</div>
                         <div style="font-size:.72rem;color:var(--text-muted);margin-top:2px;">altas</div>
                     </div>
-                    <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
+                    <div style="text-align:center;padding:0 12px;border-right:1px solid var(--border);">
                         <div style="font-size:.68rem;font-weight:900;color:var(--text-muted);margin-bottom:4px;">SEMANA 2</div>
                         <div style="font-size:2rem;font-weight:950;color:var(--text-primary);">{fmt_int(s_totals["S2"])}</div>
                         <div style="font-size:.72rem;color:{_sc4(_var_s2s1)};margin-top:2px;">{_arrow(_var_s2s1)} {abs(_var_s2s1):.0f}% vs S1</div>
                     </div>
-                    <div style="text-align:center;padding:0 12px;border-right:1px solid rgba(255,255,255,0.07);">
+                    <div style="text-align:center;padding:0 12px;border-right:1px solid var(--border);">
                         <div style="font-size:.68rem;font-weight:900;color:var(--text-muted);margin-bottom:4px;">SEMANA 3</div>
                         <div style="font-size:2rem;font-weight:950;color:var(--text-primary);">{fmt_int(s_totals["S3"])}</div>
                         <div style="font-size:.72rem;color:{_sc4(_var_s3s2)};margin-top:2px;">{_arrow(_var_s3s2)} {abs(_var_s3s2):.0f}% vs S2</div>
@@ -3383,7 +3763,7 @@ def render_instructivo():
                         <div style="font-size:.72rem;color:{_sc4(_var_s4s3)};margin-top:2px;">{_arrow(_var_s4s3)} {abs(_var_s4s3):.0f}% vs S3</div>
                     </div>
                 </div>
-                <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:10px;">
+                <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;">
                     <span style="font-size:.82rem;font-weight:800;color:{"#22C55E" if _tendencia_c4 else "#EF4444"};"> {"▲ Tendencia positiva — el ritmo crece semana a semana" if _tendencia_c4 else f"▼ Tendencia a la baja — {_mejor_s} fue el pico, {_peor_s} el punto más bajo"}</span>
                 </div>
             </div>
@@ -3614,7 +3994,7 @@ def render_instructivo():
                             <span style="font-size:.66rem;background:{_color}22;border:1px solid {_color}44;border-radius:6px;padding:1px 6px;color:{_color};">{_band}</span>
                         </span>
                     </div>
-                    <div style="width:100%;height:10px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden;">
+                    <div style="width:100%;height:10px;background:var(--bg);border-radius:99px;overflow:hidden;">
                         <div style="width:{_bar_w}%;height:100%;background:{_color};border-radius:99px;"></div>
                     </div>
                     <div style="font-size:.67rem;color:var(--text-muted);margin-top:2px;">{_pdvs:,} PDVs medidos · {_crit_p:.1f}% en señal crítica</div>
@@ -3625,7 +4005,7 @@ def render_instructivo():
                 <div class="section-title">RSRP medio por agente</div>
                 <div class="section-subtitle">Barra más larga = peor señal · 🟡 Aceptable (-90 a -100 dBm) · 🔴 Crítica (&lt;-100 dBm)</div>
                 <div style="margin-top:12px;">{rows_html}</div>
-                <div style="font-size:.68rem;color:var(--text-muted);margin-top:8px;border-top:1px solid rgba(255,255,255,0.06);padding-top:6px;">
+                <div style="font-size:.68rem;color:var(--text-muted);margin-top:8px;border-top:1px solid var(--border);padding-top:6px;">
                     La barra representa la posición relativa entre agentes — no el valor absoluto.
                     El número a la derecha es el RSRP real en dBm.
                 </div>
@@ -3754,7 +4134,7 @@ def render_instructivo():
                 ["rsrp_medio","pct_criticos","cuota_alta","cuota_mkt","cumpl","proy","brecha"]
             )
             _show_mej.columns = ["Agente","PDVs","RSRP medio","% PDVs críticos","Cuota alta %","Cuota mkt %","Cumpl. %","Cumpl. total %","Brecha"]
-            st.dataframe(_show_mej, use_container_width=True, height=260)
+            show_table(_show_mej, height=260)
             st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">El agente arriba de la tabla tiene menor cuota de altas — es donde hay más potencial de captación por ganar · combina con la señal para priorizar</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -3776,12 +4156,28 @@ def render_instructivo():
                 meta=("META_n5","sum"), ejec=("EJEC_n5","sum"),
             ).reset_index()
             _circ5b["brecha"] = _circ5b["meta"] - _circ5b["ejec"]
-            _circ5b = _circ5b[(_circ5b["cuota_alta"]<50) | (_circ5b["cumpl"]<70)].sort_values(["pdvs_criticos","brecha"],ascending=[False,False]).head(20)
+            # Filter: show rows with low cuota OR low cumplimiento OR high brecha
+            # fillna(100) so NaN cuota doesn't filter everything out
+            _cuota_ok = _circ5b["cuota_alta"].fillna(100) < 50
+            _cumpl_ok = _circ5b["cumpl"] < 70
+            _circ5b = _circ5b[_cuota_ok | _cumpl_ok].sort_values(
+                ["pdvs_criticos","brecha"], ascending=[False,False]
+            ).head(20)
+            if _circ5b.empty:
+                # Show all if filter is too strict
+                _circ5b = _circ5b = _df_opp5b[_df_opp5b["META_n5"]>0].groupby(_group5b).agg(
+                    pdvs=("ID","count"), rsrp_medio=("RSRP_n5","mean"),
+                    cuota_alta=("CUOTA_ALTA_n5","mean"), cumpl=("cumpl_5","mean"),
+                    pdvs_criticos=("banda5", lambda x: (x=="Crítica (<-100)").sum()),
+                    meta=("META_n5","sum"), ejec=("EJEC_n5","sum"),
+                ).reset_index()
+                _circ5b["brecha"] = _circ5b["meta"] - _circ5b["ejec"]
+                _circ5b = _circ5b.sort_values("brecha", ascending=False).head(20)
             _rn5b = {"BARRIO":"Barrio","CIRCUITO":"Circuito","AGENTE":"Agente","pdvs":"PDVs","rsrp_medio":"RSRP medio","cuota_alta":"Cuota alta %","cumpl":"Cumpl. %","pdvs_criticos":"PDVs críticos","meta":"Meta","ejec":"Ejecutado","brecha":"Brecha"}
             _sc5b = [c for c in _rn5b.keys() if c in _circ5b.columns]
             _show5b = safe_round_columns(_circ5b[_sc5b].copy(),["rsrp_medio","cuota_alta","cumpl","brecha"])
             _show5b = _show5b.rename(columns={k:v for k,v in _rn5b.items() if k in _show5b.columns})
-            st.dataframe(_show5b, use_container_width=True, height=300)
+            show_table(_show5b, height=300)
             st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">Filtrados por cuota &lt;50% o cumplimiento &lt;70% · ordenados por PDVs críticos y brecha · incluye barrio para gestión en campo</div>', unsafe_allow_html=True)
 
 
@@ -5029,7 +5425,7 @@ st.markdown(f"""
 def _sc_op(v): return "#22C55E" if v>=100 else "#F59E0B" if v>=70 else "#EF4444"
 def _bar_op(pct, color):
     w = min(max(float(pct),0),100)
-    return f'<div style="width:100%;height:5px;background:rgba(255,255,255,0.07);border-radius:99px;margin-top:5px;overflow:hidden;"><div style="width:{w}%;height:100%;background:{color};border-radius:99px;"></div></div>'
+    return f'<div style="width:100%;height:5px;background:var(--bg);border-radius:99px;margin-top:5px;overflow:hidden;"><div style="width:{w}%;height:100%;background:{color};border-radius:99px;"></div></div>'
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "Resumen",
@@ -5067,10 +5463,10 @@ with tab1:
                 <div style="font-size:.82rem;color:var(--text-muted);">{_t1msg}</div>
             </div>
         </div>
-        <div style="width:100%;height:6px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden;margin-bottom:20px;">
+        <div style="width:100%;height:6px;background:var(--bg);border-radius:99px;overflow:hidden;margin-bottom:20px;">
             <div style="width:{max(0,min(100,(110+_t1m)/20*100)):.1f}%;height:100%;background:{_t1c};border-radius:99px;"></div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.07);">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding-top:16px;border-top:1px solid var(--border);">
             <div>
                 <div style="font-size:.62rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Códigos postales críticos</div>
                 <div style="font-size:1.8rem;font-weight:900;color:{_t1cp_c};">{fmt_int(cp_critical_count)}</div>
@@ -5125,7 +5521,7 @@ with tab1:
                         <span style="font-size:.76rem;font-weight:800;color:var(--text-primary);">{rr["Categoria"]}</span>
                         <span style="font-size:.85rem;font-weight:900;color:{_cc};">{_ww:.1f}%</span>
                     </div>
-                    <div style="width:100%;height:7px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden;">
+                    <div style="width:100%;height:7px;background:var(--bg);border-radius:99px;overflow:hidden;">
                         <div style="width:{_ww:.1f}%;height:100%;background:{_cc};border-radius:99px;"></div>
                     </div>
                     <div style="font-size:.65rem;color:var(--text-muted);margin-top:2px;">{int(rr["Cantidad"]):,} mediciones</div>
@@ -5136,9 +5532,9 @@ with tab1:
     if _biz1:
         st.markdown("""
         <div style="display:flex;align-items:center;gap:10px;margin:20px 0 10px 0;">
-            <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
+            <div style="flex:1;height:1px;background:var(--bg);"></div>
             <div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;padding:0 12px;">Posición comercial</div>
-            <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
+            <div style="flex:1;height:1px;background:var(--bg);"></div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -5259,13 +5655,13 @@ with tab2:
         _cc  = "#EF4444" if _cri>30 else "#F59E0B" if _cri>10 else "#22C55E"
         _pos = idx_op + 1
         st.markdown(f"""
-        <div style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:10px 14px;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:10px 14px;margin-bottom:6px;">
             <div style="width:24px;text-align:center;font-size:.80rem;font-weight:900;color:var(--text-muted);flex-shrink:0;">#{_pos}</div>
             <div style="width:150px;flex-shrink:0;display:flex;align-items:center;gap:7px;">
                 <span style="width:9px;height:9px;border-radius:50%;background:{_oc};display:inline-block;flex-shrink:0;"></span>
                 <span style="font-size:.80rem;font-weight:800;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{ro["Operador"]}</span>
             </div>
-            <div style="flex:1;min-width:0;"><div style="width:100%;height:8px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;"><div style="width:{_ww}%;height:100%;background:{_mc};border-radius:99px;opacity:.85;"></div></div></div>
+            <div style="flex:1;min-width:0;"><div style="width:100%;height:8px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:{_ww}%;height:100%;background:{_mc};border-radius:99px;opacity:.85;"></div></div></div>
             <div style="width:90px;text-align:right;font-size:.95rem;font-weight:900;color:{_mc};flex-shrink:0;">{_med:.1f} dBm</div>
             <div style="width:95px;text-align:right;font-size:.72rem;color:var(--text-muted);flex-shrink:0;">Buena+: <b style="color:#22C55E;">{_bun:.1f}%</b></div>
             <div style="width:85px;text-align:right;font-size:.72rem;color:var(--text-muted);flex-shrink:0;">Aceptable: <b>{_ace:.1f}%</b></div>
@@ -5306,7 +5702,7 @@ with tab2:
     with st.expander("Ver tabla completa"):
         _et = safe_round_columns(_ops[["Operador","RSRP_mediana","RSRP_promedio","Excelente","Buena","Aceptable","Critica","Buena_o_mejor","Observaciones","Codigos"]].copy(),["RSRP_mediana","RSRP_promedio","Excelente","Buena","Aceptable","Critica","Buena_o_mejor"])
         _et.columns = ["Operador","Mediana (dBm)","Promedio (dBm)","% Excelente","% Buena","% Aceptable","% Crítica","% Buena+","Observaciones","CP cubiertos"]
-        st.dataframe(_et, use_container_width=True, height=260)
+        show_table(_et, height=260)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB 3 — TERRITORIO
@@ -5332,7 +5728,7 @@ with tab3:
                 <div style="font-size:.76rem;color:var(--text-muted);margin-top:3px;">{fmt_pct(_wz_pct)} señal crítica · Mediana {fmt_dBm(_wz_med)} · Op. débil: {_wz_op}</div>
                 {_bar_op(_wz_pct,"#EF4444")}
             </div>
-            <div style="height:60px;background:rgba(255,255,255,0.07);"></div>
+            <div style="height:60px;background:var(--bg);"></div>
             <div>
                 <div style="font-size:.62rem;font-weight:900;color:#86EFAC;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px;">Zona de mayor solidez</div>
                 <div style="font-size:1.5rem;font-weight:900;color:#22C55E;">{_bz_cp}</div>
@@ -5386,7 +5782,7 @@ with tab3:
                         <span style="font-size:.74rem;color:var(--text-primary);font-weight:700;">{rn["Rango"]} crítica</span>
                         <span style="font-size:.82rem;font-weight:900;color:{_rcc};">{int(rn["CP"])} CP</span>
                     </div>
-                    <div style="width:100%;height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
+                    <div style="width:100%;height:6px;background:var(--bg);border-radius:99px;overflow:hidden;">
                         <div style="width:{_rpct:.1f}%;height:100%;background:{_rcc};border-radius:99px;"></div>
                     </div>
                 </div>""", unsafe_allow_html=True)
@@ -5398,7 +5794,7 @@ with tab3:
             _sc = [c for c in ["Codigo_postal","LOCALIDAD","RSRP_mediana","Pct_critica","Pct_buena_o_mejor","Operador_mas_debil"] if c in top_zones.columns]
             _tz = safe_round_columns(top_zones[_sc].head(10).copy(),["RSRP_mediana","Pct_critica","Pct_buena_o_mejor"])
             _tz.columns = [{"Codigo_postal":"CP","LOCALIDAD":"Localidad","RSRP_mediana":"Mediana","Pct_critica":"% Crit.","Pct_buena_o_mejor":"% Buena+","Operador_mas_debil":"Op. débil"}.get(c,c) for c in _tz.columns]
-            st.dataframe(_tz, use_container_width=True, height=280)
+            show_table(_tz, height=280)
         st.markdown('</div>', unsafe_allow_html=True)
 
     # ── Conclusión ────────────────────────────────────────────────────────────
@@ -5436,7 +5832,7 @@ with tab4:
                 <div style="font-size:.76rem;color:var(--text-muted);">{nivel_temporal_variacion} · {fmt_int(len(variation_cp)) if not variation_cp.empty else "N/D"} CP con datos en ambos periodos</div>
             </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.07);">
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;padding-top:12px;border-top:1px solid var(--border);">
             <div>
                 <div style="font-size:.62rem;font-weight:900;color:#86EFAC;text-transform:uppercase;margin-bottom:3px;">CP con mayor mejora</div>
                 <div style="font-size:1.5rem;font-weight:900;color:#22C55E;">{fmt_var_dBm(mayor_mejora["Variacion_RSRP"]) if mayor_mejora is not None else "N/D"}</div>
@@ -5490,7 +5886,7 @@ with tab4:
             st.markdown(f'<div class="section-card"><div class="section-title">Top 10 — mayor mejora</div><div class="section-subtitle">CP donde la señal mejoró más entre {_pi4} y {_pf4}</div>', unsafe_allow_html=True)
             if not variation_cp.empty:
                 mj = safe_round_columns(variation_cp.sort_values("Variacion_RSRP",ascending=False).head(10).copy(),["RSRP_inicial","RSRP_final","Variacion_RSRP"])
-                st.dataframe(mj, use_container_width=True, height=280)
+                show_table(mj, height=280)
             else:
                 st.info("Sin datos.")
             st.markdown('</div>', unsafe_allow_html=True)
@@ -5498,7 +5894,7 @@ with tab4:
             st.markdown(f'<div class="section-card"><div class="section-title">Top 10 — mayor deterioro</div><div class="section-subtitle">CP donde la señal empeoró más — prioridad de revisión de red</div>', unsafe_allow_html=True)
             if not variation_cp.empty:
                 dt = safe_round_columns(variation_cp.sort_values("Variacion_RSRP",ascending=True).head(10).copy(),["RSRP_inicial","RSRP_final","Variacion_RSRP"])
-                st.dataframe(dt, use_container_width=True, height=280)
+                show_table(dt, height=280)
             else:
                 st.info("Sin datos.")
             st.markdown('</div>', unsafe_allow_html=True)
@@ -5589,19 +5985,19 @@ with tab5:
                 _df5 = _av5-_mv5
                 _dc5 = "#22C55E" if _df5>=0 else "#EF4444"
                 st.markdown(f"""
-                <div style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:9px 14px;margin-bottom:6px;">
+                <div style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:9px 14px;margin-bottom:6px;">
                     <div style="width:150px;flex-shrink:0;display:flex;align-items:center;gap:7px;">
                         <span style="width:9px;height:9px;border-radius:50%;background:{_oc5};display:inline-block;flex-shrink:0;"></span>
                         <span style="font-size:.78rem;font-weight:800;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{rr["Operador"]}</span>
                     </div>
                     <div style="flex:1;min-width:0;">
                         <div style="font-size:.60rem;color:var(--text-muted);margin-bottom:1px;">Mercado</div>
-                        <div style="width:100%;height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;"><div style="width:{min(_mv5,100):.1f}%;height:100%;background:{_oc5};border-radius:99px;opacity:.65;"></div></div>
+                        <div style="width:100%;height:6px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:{min(_mv5,100):.1f}%;height:100%;background:{_oc5};border-radius:99px;opacity:.65;"></div></div>
                     </div>
                     <div style="width:46px;text-align:right;font-size:.90rem;font-weight:900;color:{_oc5};flex-shrink:0;">{_mv5:.1f}%</div>
                     <div style="flex:1;min-width:0;">
                         <div style="font-size:.60rem;color:var(--text-muted);margin-bottom:1px;">Captación</div>
-                        <div style="width:100%;height:6px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;"><div style="width:{min(_av5,100):.1f}%;height:100%;background:{_oc5};border-radius:99px;opacity:.92;"></div></div>
+                        <div style="width:100%;height:6px;background:var(--bg);border-radius:99px;overflow:hidden;"><div style="width:{min(_av5,100):.1f}%;height:100%;background:{_oc5};border-radius:99px;opacity:.92;"></div></div>
                     </div>
                     <div style="width:46px;text-align:right;font-size:.90rem;font-weight:900;color:{_oc5};flex-shrink:0;">{_av5:.1f}%</div>
                     <div style="width:120px;text-align:right;font-size:.72rem;color:{_dc5};flex-shrink:0;font-weight:800;">{"▲ ganando" if _df5>=0 else "▼ perdiendo"} {abs(_df5):.1f} pp</div>
@@ -5647,9 +6043,9 @@ with tab5:
         if not territorial_cross.empty:
             st.markdown("""
             <div style="display:flex;align-items:center;gap:10px;margin:20px 0 10px 0;">
-                <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
+                <div style="flex:1;height:1px;background:var(--bg);"></div>
                 <div style="font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;padding:0 12px;">Comparativo directo entre dos operadores — CP a CP</div>
-                <div style="flex:1;height:1px;background:rgba(255,255,255,0.08);"></div>
+                <div style="flex:1;height:1px;background:var(--bg);"></div>
             </div>
             """, unsafe_allow_html=True)
             st.markdown('<div style="font-size:.74rem;color:var(--text-muted);margin-bottom:10px;">Selecciona dos operadores para ver CP a CP en qué zonas el segundo le está ganando al primero en mercado, captación o señal — incluso si el primero es globalmente dominante.</div>', unsafe_allow_html=True)
@@ -5770,7 +6166,7 @@ with tab5:
                     if not opp_cuota.empty:
                         st.markdown(f'<div style="font-size:.74rem;color:var(--text-muted);margin:8px 0;">Zonas donde {_op_b} tiene mayor cuota de mercado que {_op_a}. Ordenadas por mayor ventaja del competidor.</div>', unsafe_allow_html=True)
                         _d1 = _build_display_cols(opp_cuota.head(25), _col_a_cuota, _col_b_cuota, _col_a_rsrp, _col_b_rsrp, "gap_cuota")
-                        st.dataframe(_d1, use_container_width=True, height=340)
+                        show_table(_d1, height=340)
                         st.markdown(f'<div style="font-size:.66rem;color:var(--text-muted);margin-top:3px;">{_n_cuota} CP donde {_op_b} supera a {_op_a} en cuota de mercado</div>', unsafe_allow_html=True)
                     else:
                         st.success(f"✅ {_op_a} supera a {_op_b} en cuota de mercado en todos los CP compartidos.")
@@ -5779,7 +6175,7 @@ with tab5:
                     if not opp_rsrp.empty:
                         st.markdown(f'<div style="font-size:.74rem;color:var(--text-muted);margin:8px 0;">Zonas donde {_op_b} tiene señal RSRP más de 3 dBm mejor que {_op_a}. Estas zonas son riesgo futuro aunque hoy {_op_a} tenga mercado.</div>', unsafe_allow_html=True)
                         _d2 = _build_display_cols(opp_rsrp.head(25), _col_a_cuota, _col_b_cuota, _col_a_rsrp, _col_b_rsrp, "gap_rsrp")
-                        st.dataframe(_d2, use_container_width=True, height=340)
+                        show_table(_d2, height=340)
                         st.markdown(f'<div style="font-size:.66rem;color:var(--text-muted);margin-top:3px;">{_n_rsrp} CP donde {_op_b} tiene ventaja de señal superior a 3 dBm</div>', unsafe_allow_html=True)
                     else:
                         st.success(f"✅ {_op_a} tiene igual o mejor señal que {_op_b} en todos los CP compartidos.")
@@ -5788,7 +6184,7 @@ with tab5:
                     if not opp_altas.empty:
                         st.markdown(f'<div style="font-size:.74rem;color:var(--text-muted);margin:8px 0;">Zonas donde {_op_b} capta más altas que {_op_a}. Captación = clientes nuevos que se van con el competidor.</div>', unsafe_allow_html=True)
                         _d3 = _build_display_cols(opp_altas.head(25), _col_a_cuota, _col_b_cuota, _col_a_rsrp, _col_b_rsrp, "gap_altas", [_col_a_altas, _col_b_altas])
-                        st.dataframe(_d3, use_container_width=True, height=340)
+                        show_table(_d3, height=340)
                         st.markdown(f'<div style="font-size:.66rem;color:var(--text-muted);margin-top:3px;">{_n_altas} CP donde {_op_b} capta más clientes nuevos que {_op_a}</div>', unsafe_allow_html=True)
                     else:
                         st.success(f"✅ {_op_a} capta más altas que {_op_b} en todos los CP compartidos.")
