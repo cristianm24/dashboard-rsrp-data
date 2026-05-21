@@ -23,6 +23,8 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+
+
 # =========================================================
 # RUTAS Y CONFIGURACION
 # =========================================================
@@ -154,7 +156,20 @@ h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-weight: 800; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
 
-/* ── Sidebar ─────────────────────────────────────────── */
+/* ── Sidebar toggle — absolutely always visible ──────── */
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="stSidebarCollapsedControl"] *,
+button[data-testid="stSidebarCollapsedControl"],
+div[data-testid="stSidebarCollapsedControl"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: all !important;
+    position: fixed !important;
+    z-index: 999999 !important;
+}
+
+/* ── Sidebar itself ──────────────────────────────────── */
 [data-testid="stSidebar"] {
     background: var(--bg-sidebar) !important;
     border-right: 1px solid var(--border) !important;
@@ -336,8 +351,7 @@ h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-weight: 800; }
 [data-testid="stSidebar"] [data-baseweb="select"] > div,
 [data-testid="stSidebar"] [data-baseweb="select"] > div > div,
 [data-testid="stSidebar"] [class*="ValueContainer"],
-[data-testid="stSidebar"] [class*="control"],
-[data-testid="stSidebar"] [class*="Container"] {
+[data-testid="stSidebar"] [class*="control"] {
     background: white !important;
     color: var(--text-primary) !important;
 }
