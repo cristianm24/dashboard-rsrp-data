@@ -3458,7 +3458,11 @@ def render_claro_view():
             # Robust check: count non-null, non-empty, non-"nan" string values
             def _col_has_data(df_, col):
                 if col not in df_.columns: return False
-                return df_[col].apply(lambda x: bool(x and str(x).strip() not in ("","nan","None","<NA>","NaN")) if x is not None and x is not pd.NA else False).sum() > 0
+                try:
+                    s = df_[col].fillna("").astype(str).str.strip()
+                    return (s != "").sum() > 0
+                except Exception:
+                    return False
             barrio_col_exists   = _col_has_data(df, "BARRIO")
             circuito_col_exists = _col_has_data(df, "CIRCUITO")
             # Use best available grouping
@@ -3473,7 +3477,7 @@ def render_claro_view():
 
             if barrio_col_exists:
                 # Filter out bad BARRIO values before groupby
-                _df_barrio = df[df["BARRIO"].apply(lambda x: bool(x and str(x).strip() not in ("","nan","None","<NA>","NaN")) if x is not None and x is not pd.NA else False)].copy()
+                _df_barrio = df[df["BARRIO"].fillna("").astype(str).str.strip() != ""].copy()
                 # Group directly by BARRIO — single clean groupby
                 by_barrio_top = _df_barrio.groupby("BARRIO").agg(
                     pdvs=("ID","count"),
@@ -3573,7 +3577,7 @@ def render_claro_view():
                       .sort_values("cumpl").head(15))
 
         # Barrios con mayor brecha — filter bad values first
-        _df_bar_clean = df[df["BARRIO"].apply(lambda x: bool(x and str(x).strip() not in ("","nan","None","<NA>","NaN")) if x is not None and x is not pd.NA else False)].copy()
+        _df_bar_clean = df[df["BARRIO"].fillna("").astype(str).str.strip() != ""].copy()
         by_bar_c3 = _df_bar_clean.groupby("BARRIO").agg(
             pdvs=("ID","count"), meta_nat=("META ALTA NAT (>$2000)","sum"),
             ejec_nat=("EJEC ALTA NAT","sum"), cuota_alta=("CUOTA DE ALTA","mean"),
@@ -3710,7 +3714,11 @@ def render_claro_view():
         if "RUTA" in df.columns:
             df_ruta_opp = df[df["META ALTA NAT (>$2000)"] > 0].copy()
             df_ruta_opp["cumpl_pdv"] = (df_ruta_opp["EJEC ALTA NAT"] / df_ruta_opp["META ALTA NAT (>$2000)"] * 100).fillna(0)
-            ruta_group_cols = [c for c in ["RUTA","AGENTE","BARRIO"] if c in df_ruta_opp.columns]
+            # Fill NA before groupby so rows aren't dropped
+            for _rc in ["RUTA","AGENTE","BARRIO"]:
+                if _rc in df_ruta_opp.columns:
+                    df_ruta_opp[_rc] = df_ruta_opp[_rc].fillna("").astype(str).str.strip()
+            ruta_group_cols = [c for c in ["RUTA","AGENTE"] if c in df_ruta_opp.columns]
             ruta_opp = df_ruta_opp.groupby(ruta_group_cols).agg(
                 pdvs_totales=("ID","count"), pdvs_criticos=("cumpl_pdv", lambda x: (x < 70).sum()),
                 meta_total=("META ALTA NAT (>$2000)","sum"), ejec_total=("EJEC ALTA NAT","sum"),
@@ -3732,10 +3740,14 @@ def render_claro_view():
             st.info("No se encontró la columna RUTA en los datos.")
 
         # ── Sección 4: PDVs individuales ──────────────────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Los 30 PDVs con mayor meta y menor cumplimiento</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Top 10 PDVs con mayor meta y menor cumplimiento</div>', unsafe_allow_html=True)
         df_opp2 = df[df["META ALTA NAT (>$2000)"] > 0].copy()
         df_opp2["cumpl_pdv"] = (df_opp2["EJEC ALTA NAT"] / df_opp2["META ALTA NAT (>$2000)"] * 100).fillna(0)
-        df_opp_show2 = df_opp2[df_opp2["cumpl_pdv"] < 70].sort_values("META ALTA NAT (>$2000)", ascending=False).head(30)
+        # Fill string columns so they show real values not NaN
+        for _col_fill in ["BARRIO","CIRCUITO","ZONA","RUTA","CLASIFICACION","ASESOR"]:
+            if _col_fill in df_opp2.columns:
+                df_opp2[_col_fill] = df_opp2[_col_fill].fillna("").astype(str).str.strip().replace("", "—")
+        df_opp_show2 = df_opp2[df_opp2["cumpl_pdv"] < 70].sort_values("META ALTA NAT (>$2000)", ascending=False).head(10)
         if not df_opp_show2.empty:
             extra_cols2 = [c for c in ["BARRIO","ZONA","RUTA"] if c in df_opp_show2.columns]
             cols_show2 = [c for c in ["ID","AGENTE","ASESOR","CIRCUITO"]+extra_cols2+["CLASIFICACION","CATEGORIA","META ALTA NAT (>$2000)","EJEC ALTA NAT","cumpl_pdv"] if c in df_opp_show2.columns]
