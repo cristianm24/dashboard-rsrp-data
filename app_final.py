@@ -3381,395 +3381,288 @@ def render_claro_view():
     # TAB C3 — ¿DÓNDE ESTÁ LA BRECHA?
     # -------------------------------------------------------
     with tc3:
-        # ── Cálculos protagonistas ────────────────────────────────────────────
-        df_opp_c3 = df[df["META ALTA NAT (>$2000)"] > 0].copy()
-        df_opp_c3["cumpl_pdv"] = (df_opp_c3["EJEC ALTA NAT"] / df_opp_c3["META ALTA NAT (>$2000)"] * 100).fillna(0)
-        _n_pdvs_brecha   = int((df_opp_c3["cumpl_pdv"] < 70).sum())
-        _n_pdvs_total_c3 = len(df_opp_c3)
-        _pct_brecha_c3   = (_n_pdvs_brecha / _n_pdvs_total_c3 * 100) if _n_pdvs_total_c3 > 0 else 0
-        _brecha_altas_c3 = int((df_opp_c3["META ALTA NAT (>$2000)"] - df_opp_c3["EJEC ALTA NAT"]).clip(lower=0).sum())
-        _df_bajo70       = df_opp_c3[df_opp_c3["cumpl_pdv"] < 70]
-        _agente_mas_brecha = (_df_bajo70.groupby("AGENTE").size().idxmax() if not _df_bajo70.empty else "N/D")
-        _top_asesor_c3s  = df.groupby("ASESOR")[("EJE ALTA TOTAL" if "EJE ALTA TOTAL" in df.columns else "EJEC ALTA NAT")].sum()
-        _top_asesor_c3   = _top_asesor_c3s.idxmax() if not _top_asesor_c3s.empty else "N/D"
-        _top_asesor_c3v  = int(_top_asesor_c3s.max()) if not _top_asesor_c3s.empty else 0
+        # ══════════════════════════════════════════════════════════════
+        # HELPERS — defined here to avoid scope issues
+        # ══════════════════════════════════════════════════════════════
+        _eje = "EJE ALTA TOTAL" if "EJE ALTA TOTAL" in df.columns else "EJEC ALTA NAT"
 
-        def _sc3(v): return "#22C55E" if v >= 100 else "#F59E0B" if v >= 70 else "#EF4444"
-        def _bar3(pct, color):
-            w = min(max(pct, 0), 100)
-            return f'<div style="width:100%;height:5px;background:var(--bg);border-radius:99px;margin-top:5px;overflow:hidden;"><div style="width:{w}%;height:100%;background:{color};border-radius:99px;"></div></div>'
+        def _clean(series):
+            """Convert any column to clean string, empty → —"""
+            return series.fillna("").astype(str).str.strip().apply(
+                lambda x: "—" if x in ("", "nan", "None", "<NA>", "NaN") else x
+            )
 
-        # ── 4 KPIs protagonistas ──────────────────────────────────────────────
-        h1c3, h2c3, h3c3, h4c3 = st.columns(4, gap="medium")
+        def _has(col):
+            """True if col has at least one real value after cleaning"""
+            if col not in df.columns: return False
+            return (_clean(df[col]) != "—").sum() > 0
+
+        # ── KPI strip ────────────────────────────────────────────────
+        _meta_c3   = pd.to_numeric(df["META ALTA NAT (>$2000)"], errors="coerce").sum()
+        _ejec_c3   = pd.to_numeric(df["EJEC ALTA NAT"], errors="coerce").sum()
+        _brecha_c3 = _meta_c3 - _ejec_c3
+        _pct_crit_c3 = (df["EJEC ALTA NAT"] < df["META ALTA NAT (>$2000)"]).sum() / max(len(df),1) * 100
+
+        _top_asesor_c3_df = df.groupby("ASESOR")["EJEC ALTA NAT"].sum().reset_index().sort_values("EJEC ALTA NAT", ascending=False)
+        _top_asesor_c3    = _top_asesor_c3_df.iloc[0]["ASESOR"] if not _top_asesor_c3_df.empty else "—"
+        _top_asesor_c3v   = _top_asesor_c3_df.iloc[0]["EJEC ALTA NAT"] if not _top_asesor_c3_df.empty else 0
+
+        h1c3, h2c3, h3c3, h4c3 = st.columns(4)
         with h1c3:
-            _cc = _sc3(100 - _pct_brecha_c3)
-            st.markdown(f"""
-            <div class="card" style="min-height:0;">
-                <div class="kpi-label">PDVs con brecha activa</div>
-                <div class="kpi-value" style="color:{_cc};">{fmt_int(_n_pdvs_brecha)}</div>
-                <div class="kpi-sub">{_pct_brecha_c3:.0f}% del portafolio · cumplimiento &lt;70%</div>
-                {_bar3(100-_pct_brecha_c3, _cc)}
-            </div>""", unsafe_allow_html=True)
+            st.markdown(f'''<div class="card" style="min-height:0;">
+                <div class="kpi-label">Brecha total altas</div>
+                <div class="kpi-value" style="color:#EF4444;">{fmt_int(_brecha_c3)}</div>
+                <div class="kpi-sub">altas que faltan para cumplir la meta</div>
+            </div>''', unsafe_allow_html=True)
         with h2c3:
-            st.markdown(f"""
-            <div class="card" style="min-height:0;">
-                <div class="kpi-label">Altas en juego</div>
-                <div class="kpi-value" style="color:#F59E0B;">{fmt_int(_brecha_altas_c3)}</div>
-                <div class="kpi-sub">Total de altas pendientes en PDVs con brecha</div>
-            </div>""", unsafe_allow_html=True)
+            st.markdown(f'''<div class="card" style="min-height:0;">
+                <div class="kpi-label">PDVs sin cumplir meta</div>
+                <div class="kpi-value" style="color:#F59E0B;">{_pct_crit_c3:.1f}%</div>
+                <div class="kpi-sub">del universo de PDVs</div>
+            </div>''', unsafe_allow_html=True)
         with h3c3:
-            st.markdown(f"""
-            <div class="card" style="min-height:0;">
-                <div class="kpi-label">Agente con más PDVs en riesgo</div>
-                <div class="kpi-value" style="font-size:1.1rem;color:#EF4444;">{_agente_mas_brecha}</div>
-                <div class="kpi-sub">Mayor concentración de PDVs &lt;70%</div>
-            </div>""", unsafe_allow_html=True)
+            st.markdown(f'''<div class="card" style="min-height:0;">
+                <div class="kpi-label">Meta total</div>
+                <div class="kpi-value">{fmt_int(_meta_c3)}</div>
+                <div class="kpi-sub">altas orgánicas planificadas</div>
+            </div>''', unsafe_allow_html=True)
         with h4c3:
-            st.markdown(f"""
-            <div class="card" style="min-height:0;">
+            st.markdown(f'''<div class="card" style="min-height:0;">
                 <div class="kpi-label">Asesor líder</div>
                 <div class="kpi-value" style="font-size:1.1rem;color:#22C55E;">{_top_asesor_c3}</div>
-                <div class="kpi-sub">{fmt_int(_top_asesor_c3v)} altas totales vendidas</div>
-            </div>""", unsafe_allow_html=True)
+                <div class="kpi-sub">{fmt_int(_top_asesor_c3v)} altas vendidas</div>
+            </div>''', unsafe_allow_html=True)
 
-        # ── Sección 1: Top asesores + Top barrios ─────────────────────────────
+        # ── Sección 1: Asesores + Barrios ────────────────────────────
         st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">¿Quién vende más y dónde?</div>', unsafe_allow_html=True)
         c3a, c3b = st.columns(2, gap="large")
 
-        by_asesor = df.groupby(["ASESOR","AGENTE"]).agg(
-            pdvs=("ID","count"), meta_nat=("META ALTA NAT (>$2000)","sum"),
-            ejec_nat=("EJEC ALTA NAT","sum"), ejec_total=("EJE ALTA TOTAL","sum") if "EJE ALTA TOTAL" in df.columns else ("EJEC ALTA NAT","sum"),
+        # Chart: Top asesores
+        _df_as = df.copy()
+        _df_as["ASESOR"] = _clean(_df_as["ASESOR"])
+        _df_as["AGENTE"] = _clean(_df_as["AGENTE"])
+        by_asesor = _df_as[_df_as["ASESOR"] != "—"].groupby(["ASESOR","AGENTE"]).agg(
+            pdvs=("ID","count"),
+            meta_nat=("META ALTA NAT (>$2000)","sum"),
+            ejec_nat=("EJEC ALTA NAT","sum"),
+            ejec_total=(_eje,"sum"),
         ).reset_index()
         by_asesor["cumpl"] = (by_asesor["ejec_nat"]/by_asesor["meta_nat"].replace(0,np.nan)*100).fillna(0)
-        by_asesor = by_asesor.sort_values("ejec_total", ascending=False).head(20)
+        by_asesor = by_asesor.sort_values("ejec_total", ascending=False).head(15)
 
         with c3a:
-            st.markdown('<div class="section-card"><div class="section-title">Top 15 asesores por altas vendidas</div><div class="section-subtitle">Color = agente al que pertenece · barra = altas totales (orgánicas + inducidas)</div>', unsafe_allow_html=True)
-            chart_asesor = alt.Chart(by_asesor.head(15)).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
-                x=alt.X("ejec_total:Q",title="Altas totales"),
-                y=alt.Y("ASESOR:N",sort="-x",title=None,axis=alt.Axis(labelLimit=200)),
-                color=alt.Color("AGENTE:N",scale=alt.Scale(domain=list(AGENTE_COLORS.keys()),range=list(AGENTE_COLORS.values())),legend=alt.Legend(title="Agente")),
-                tooltip=[alt.Tooltip("ASESOR:N"),alt.Tooltip("AGENTE:N"),alt.Tooltip("ejec_total:Q",format=",.0f",title="Altas totales"),alt.Tooltip("ejec_nat:Q",format=",.0f",title="Altas orgánicas"),alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %"),alt.Tooltip("pdvs:Q",title="PDVs")]
-            ).properties(height=360)
-            st.altair_chart(style_chart(chart_asesor), use_container_width=True, theme=None)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        with c3b:
-            # Robust check: count non-null, non-empty, non-"nan" string values
-            def _col_has_data(df_, col):
-                if col not in df_.columns: return False
-                try:
-                    s = df_[col].fillna("").astype(str).str.strip()
-                    return (s != "").sum() > 0
-                except Exception:
-                    return False
-            barrio_col_exists   = _col_has_data(df, "BARRIO")
-            circuito_col_exists = _col_has_data(df, "CIRCUITO")
-            # Use best available grouping
-            if barrio_col_exists:
-                group_cols_circ = ["BARRIO"] + (["CIRCUITO"] if circuito_col_exists else [])
-            elif circuito_col_exists:
-                group_cols_circ = ["CIRCUITO"]
-            else:
-                group_cols_circ = ["AGENTE"]
-
-            _eje_col = "EJE ALTA TOTAL" if "EJE ALTA TOTAL" in df.columns else "EJEC ALTA NAT"
-
-            if barrio_col_exists:
-                # Filter out bad BARRIO values before groupby
-                _df_barrio = df[df["BARRIO"].fillna("").astype(str).str.strip() != ""].copy()
-                # Group directly by BARRIO — single clean groupby
-                by_barrio_top = _df_barrio.groupby("BARRIO").agg(
-                    pdvs=("ID","count"),
-                    meta_nat=("META ALTA NAT (>$2000)","sum"),
-                    ejec_nat=("EJEC ALTA NAT","sum"),
-                    ejec_total=(_eje_col,"sum"),
-                    cuota_alta=("CUOTA DE ALTA","mean"),
-                ).reset_index()
-                by_barrio_top["cumpl"] = (by_barrio_top["ejec_nat"]/by_barrio_top["meta_nat"].replace(0,np.nan)*100).fillna(0)
-                if circuito_col_exists:
-                    _cpb = _df_barrio.groupby("BARRIO")["CIRCUITO"].apply(
-                        lambda x: ", ".join(sorted(set(str(v) for v in x.dropna() if str(v).strip() not in ("","nan"))))
-                    ).reset_index()
-                    _cpb.columns = ["BARRIO","circuitos_lista"]
-                    by_barrio_top = by_barrio_top.merge(_cpb, on="BARRIO", how="left")
-                else:
-                    by_barrio_top["circuitos_lista"] = ""
-                y_col = "BARRIO"
-                tooltip_extra = [alt.Tooltip("circuitos_lista:N",title="Circuitos")]
-            elif circuito_col_exists:
-                by_barrio_top = df.groupby("CIRCUITO").agg(
-                    pdvs=("ID","count"),
-                    meta_nat=("META ALTA NAT (>$2000)","sum"),
-                    ejec_nat=("EJEC ALTA NAT","sum"),
-                    ejec_total=(_eje_col,"sum"),
-                    cuota_alta=("CUOTA DE ALTA","mean"),
-                ).reset_index()
-                by_barrio_top["cumpl"] = (by_barrio_top["ejec_nat"]/by_barrio_top["meta_nat"].replace(0,np.nan)*100).fillna(0)
-                y_col = "CIRCUITO"; tooltip_extra = []
-            else:
-                by_barrio_top = df.groupby("AGENTE").agg(
-                    pdvs=("ID","count"),
-                    meta_nat=("META ALTA NAT (>$2000)","sum"),
-                    ejec_nat=("EJEC ALTA NAT","sum"),
-                    ejec_total=(_eje_col,"sum"),
-                    cuota_alta=("CUOTA DE ALTA","mean"),
-                ).reset_index()
-                by_barrio_top["cumpl"] = (by_barrio_top["ejec_nat"]/by_barrio_top["meta_nat"].replace(0,np.nan)*100).fillna(0)
-                y_col = "AGENTE"; tooltip_extra = []
-
-            by_barrio_top = by_barrio_top.sort_values("ejec_total", ascending=False).head(15)
-
-            st.markdown('<div class="section-card"><div class="section-title">Top barrios por ejecución</div><div class="section-subtitle">🟢 ≥100% meta · 🟡 70–99% · 🔴 &lt;70% · pasa el mouse para ver circuitos</div>', unsafe_allow_html=True)
-            if not by_barrio_top.empty:
-                # Pre-compute semaforo color
-                by_barrio_top = by_barrio_top.copy()
-                by_barrio_top["semaforo"] = by_barrio_top["cumpl"].apply(
-                    lambda v: "verde" if v >= 100 else ("amarillo" if v >= 70 else "rojo")
-                )
-                _tt_barrio = [
-                    alt.Tooltip(f"{y_col}:N", title="Barrio" if y_col=="BARRIO" else y_col),
-                    alt.Tooltip("pdvs:Q", title="PDVs"),
-                    alt.Tooltip("ejec_total:Q", format=",.0f", title="Ejec. total"),
-                    alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %"),
-                    alt.Tooltip("cuota_alta:Q", format=".1f", title="Cuota alta %"),
-                ] + tooltip_extra
-                chart_circ = alt.Chart(by_barrio_top).mark_bar(
+            st.markdown('<div class="section-card"><div class="section-title">Top 15 asesores por altas vendidas</div><div class="section-subtitle">Color = agente · barra = altas totales</div>', unsafe_allow_html=True)
+            if not by_asesor.empty:
+                chart_as = alt.Chart(by_asesor).mark_bar(
                     cornerRadiusTopLeft=5, cornerRadiusTopRight=5
                 ).encode(
-                    x=alt.X("ejec_total:Q", title="Altas totales",
-                            axis=alt.Axis(labelColor="#374151", titleColor="#111827")),
-                    y=alt.Y(f"{y_col}:N", sort="-x", title=None,
-                            axis=alt.Axis(labelLimit=220, labelColor="#374151")),
+                    x=alt.X("ejec_total:Q", title="Altas totales"),
+                    y=alt.Y("ASESOR:N", sort="-x", title=None, axis=alt.Axis(labelLimit=200)),
+                    color=alt.Color("AGENTE:N",
+                        scale=alt.Scale(domain=list(AGENTE_COLORS.keys()), range=list(AGENTE_COLORS.values())),
+                        legend=alt.Legend(title="Agente")),
+                    tooltip=[alt.Tooltip("ASESOR:N"), alt.Tooltip("AGENTE:N"),
+                             alt.Tooltip("ejec_total:Q", format=",.0f", title="Altas"),
+                             alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %")]
+                ).properties(height=360)
+                st.altair_chart(style_chart(chart_as), use_container_width=True, theme=None)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        # Chart: Top barrios por ejecución
+        with c3b:
+            st.markdown('<div class="section-card"><div class="section-title">Top barrios por ejecución</div><div class="section-subtitle">🟢 ≥100% meta · 🟡 70–99% · 🔴 &lt;70%</div>', unsafe_allow_html=True)
+            # Build clean barrio dataframe
+            _df_b = df.copy()
+            _df_b["BARRIO"] = _clean(_df_b["BARRIO"])
+            _df_b = _df_b[_df_b["BARRIO"] != "—"]
+            if _df_b.empty:
+                # fallback to AGENTE if no barrio data
+                _df_b = df.copy()
+                _df_b["BARRIO"] = _df_b["AGENTE"].astype(str)
+                _y_col = "AGENTE"
+            else:
+                _y_col = "BARRIO"
+            by_top_c3b = _df_b.groupby(_y_col).agg(
+                pdvs=("ID","count"),
+                meta_nat=("META ALTA NAT (>$2000)","sum"),
+                ejec_nat=("EJEC ALTA NAT","sum"),
+                ejec_total=(_eje,"sum"),
+                cuota_alta=("CUOTA DE ALTA","mean"),
+            ).reset_index()
+            by_top_c3b["cumpl"] = (by_top_c3b["ejec_nat"]/by_top_c3b["meta_nat"].replace(0,np.nan)*100).fillna(0)
+            by_top_c3b["semaforo"] = by_top_c3b["cumpl"].apply(
+                lambda v: "verde" if v >= 100 else ("amarillo" if v >= 70 else "rojo")
+            )
+            by_top_c3b = by_top_c3b.sort_values("ejec_total", ascending=False).head(15)
+            if not by_top_c3b.empty:
+                chart_top = alt.Chart(by_top_c3b).mark_bar(
+                    cornerRadiusTopLeft=5, cornerRadiusTopRight=5
+                ).encode(
+                    x=alt.X("ejec_total:Q", title="Altas totales"),
+                    y=alt.Y(f"{_y_col}:N", sort="-x", title=None, axis=alt.Axis(labelLimit=220)),
                     color=alt.Color("semaforo:N",
                         scale=alt.Scale(
                             domain=["verde","amarillo","rojo"],
                             range=["#22C55E","#F59E0B","#EF4444"]
                         ), legend=None),
-                    tooltip=_tt_barrio
-                ).properties(height=380)
-                st.altair_chart(style_chart(chart_circ), use_container_width=True, theme=None)
-                if y_col == "BARRIO" and "circuitos_lista" in by_barrio_top.columns:
-                    for _, row_b in by_barrio_top.head(6).iterrows():
-                        circs = row_b.get("circuitos_lista","")
-                        if circs:
-                            st.markdown(f'<div style="font-size:.70rem;color:var(--text-primary);margin-bottom:2px;"><b>{row_b["BARRIO"]}</b> <span style="color:var(--text-muted);">— {circs}</span></div>', unsafe_allow_html=True)
+                    tooltip=[
+                        alt.Tooltip(f"{_y_col}:N", title=_y_col.title()),
+                        alt.Tooltip("pdvs:Q", title="PDVs"),
+                        alt.Tooltip("ejec_total:Q", format=",.0f", title="Altas"),
+                        alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %"),
+                    ]
+                ).properties(height=360)
+                st.altair_chart(style_chart(chart_top), use_container_width=True, theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── Sección 5: Capacidad de mejora — asesores, barrios, cuota alta ───
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:20px 0 8px 0;">Capacidad de mejora — ¿dónde hay más potencial sin aprovechar?</div>', unsafe_allow_html=True)
+        # ── Sección 2: Barrios con mayor brecha ───────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:20px 0 8px 0;">¿Dónde hay más potencial sin aprovechar?</div>', unsafe_allow_html=True)
+        cm1, cm2 = st.columns(2, gap="large")
 
-        _DIA_C3=28; _MES_C3=30; _F_C3=_MES_C3/_DIA_C3
-
-        # Asesores con menor cumplimiento (meta > umbral mínimo para que sea relevante)
-        by_as_c3 = df.groupby(["ASESOR","AGENTE"]).agg(
-            pdvs=("ID","count"), meta_nat=("META ALTA NAT (>$2000)","sum"),
-            ejec_nat=("EJEC ALTA NAT","sum"), ejec_total=("EJE ALTA TOTAL","sum") if "EJE ALTA TOTAL" in df.columns else ("EJEC ALTA NAT","sum"),
+        # Build clean barrio aggregation
+        _df_bc = df.copy()
+        _df_bc["BARRIO"] = _clean(_df_bc["BARRIO"])
+        _df_bc = _df_bc[_df_bc["BARRIO"] != "—"]
+        by_bar = _df_bc.groupby("BARRIO").agg(
+            pdvs=("ID","count"),
+            meta_nat=("META ALTA NAT (>$2000)","sum"),
+            ejec_nat=("EJEC ALTA NAT","sum"),
             cuota_alta=("CUOTA DE ALTA","mean"),
         ).reset_index()
-        by_as_c3["cumpl"]  = (by_as_c3["ejec_nat"]/by_as_c3["meta_nat"].replace(0,np.nan)*100).fillna(0)
-        by_as_c3["brecha"] = by_as_c3["meta_nat"] - by_as_c3["ejec_nat"]
-        by_as_c3["proy"]   = by_as_c3["cumpl"]  # mes cerrado — proyección = cumplimiento real
-        # Umbral mínimo de meta para que sea relevante (median de meta para filtrar los muy pequeños)
-        _meta_min_threshold = by_as_c3[by_as_c3["meta_nat"]>0]["meta_nat"].quantile(0.40)
-        # Bottom performers = menor cumplimiento entre los que tienen meta significativa
-        _bottom_as = (by_as_c3[by_as_c3["meta_nat"] >= _meta_min_threshold]
-                      .sort_values("cumpl").head(15))
+        by_bar["cumpl"]  = (by_bar["ejec_nat"]/by_bar["meta_nat"].replace(0,np.nan)*100).fillna(0)
+        by_bar["brecha"] = by_bar["meta_nat"] - by_bar["ejec_nat"]
 
-        # Barrios con mayor brecha — filter bad values first
-        _df_bar_clean = df[df["BARRIO"].fillna("").astype(str).str.strip() != ""].copy()
-        by_bar_c3 = _df_bar_clean.groupby("BARRIO").agg(
-            pdvs=("ID","count"), meta_nat=("META ALTA NAT (>$2000)","sum"),
-            ejec_nat=("EJEC ALTA NAT","sum"), cuota_alta=("CUOTA DE ALTA","mean"),
-        ).reset_index()
-        by_bar_c3["cumpl"]  = (by_bar_c3["ejec_nat"]/by_bar_c3["meta_nat"].replace(0,np.nan)*100).fillna(0)
-        by_bar_c3["brecha"] = by_bar_c3["meta_nat"] - by_bar_c3["ejec_nat"]
-        _bottom_bar = by_bar_c3[by_bar_c3["meta_nat"]>0].sort_values("brecha",ascending=False).head(20)
-
-        # Barrios con menor cuota de alta (potencial competitivo)
-        _baja_cuota_bar = by_bar_c3[by_bar_c3["pdvs"]>=5].sort_values("cuota_alta").head(20)
-
-        cm1, cm2 = st.columns(2, gap="large")
         with cm1:
-            st.markdown('<div class="section-card"><div class="section-title">Asesores con menor cumplimiento de meta</div><div class="section-subtitle">Los que más necesitan intervención — menor % de cumplimiento entre asesores con meta significativa · color = agente al que pertenecen</div>', unsafe_allow_html=True)
-            chart_as_brecha = alt.Chart(_bottom_as).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
-                x=alt.X("cumpl:Q", title="Cumplimiento de meta (%)"),
-                y=alt.Y("ASESOR:N", sort="x", title=None, axis=alt.Axis(labelLimit=200)),
-                color=alt.Color("AGENTE:N",scale=alt.Scale(domain=list(AGENTE_COLORS.keys()),range=list(AGENTE_COLORS.values())),legend=alt.Legend(title="Agente")),
-                tooltip=[
-                    alt.Tooltip("ASESOR:N",       title="Asesor"),
-                    alt.Tooltip("AGENTE:N",        title="Agente"),
-                    alt.Tooltip("cumpl:Q",         format=".1f", title="Cumpl. %"),
-                    alt.Tooltip("brecha:Q",        format=",.0f", title="Altas pendientes"),
-                    alt.Tooltip("ejec_nat:Q",      format=",.0f", title="Altas ejecutadas"),
-                    alt.Tooltip("cuota_alta:Q",    format=".1f", title="Cuota alta %"),
-                    alt.Tooltip("pdvs:Q",          title="PDVs"),
-                ]
-            ).properties(height=340)
-            _rule_70 = alt.Chart(pd.DataFrame({"x":[70]})).mark_rule(color="#EF4444",strokeDash=[5,3],strokeWidth=1.5).encode(x="x:Q")
-            st.altair_chart(style_chart(chart_as_brecha + _rule_70), use_container_width=True, theme=None)
-            st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">Línea 🔴 = 70% de cumplimiento (umbral de alerta) · los asesores a la izquierda de la línea necesitan intervención inmediata</div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        with cm2:
-            st.markdown('<div class="section-card"><div class="section-title">Barrios con mayor brecha de altas</div><div class="section-subtitle">Los barrios donde más altas se pierden vs la meta — mayor volumen de oportunidad sin capturar</div>', unsafe_allow_html=True)
-            if not _bottom_bar.empty:
-                # Pre-compute color column — avoid transform_calculate which conflicts with configure_*
-                _bottom_bar = _bottom_bar.copy()
-                _bottom_bar["semaforo_bar"] = _bottom_bar["cumpl"].apply(
-                    lambda v: "amarillo" if v >= 70 else "rojo"
-                )
-                chart_bar_brecha = alt.Chart(_bottom_bar).mark_bar(
+            st.markdown('<div class="section-card"><div class="section-title">Barrios con mayor brecha de altas</div><div class="section-subtitle">Barrios donde más altas se pierden vs la meta</div>', unsafe_allow_html=True)
+            _bot_bar = by_bar[by_bar["meta_nat"] > 0].sort_values("brecha", ascending=False).head(20)
+            _bot_bar = _bot_bar.copy()
+            _bot_bar["semaforo_bar"] = _bot_bar["cumpl"].apply(lambda v: "amarillo" if v >= 70 else "rojo")
+            if not _bot_bar.empty:
+                chart_brecha_bar = alt.Chart(_bot_bar).mark_bar(
                     cornerRadiusTopLeft=5, cornerRadiusTopRight=5
                 ).encode(
                     x=alt.X("brecha:Q", title="Altas pendientes"),
                     y=alt.Y("BARRIO:N", sort="-x", title=None, axis=alt.Axis(labelLimit=200)),
                     color=alt.Color("semaforo_bar:N",
-                        scale=alt.Scale(
-                            domain=["amarillo","rojo"],
-                            range=["#F59E0B","#EF4444"]
-                        ), legend=None),
-                    tooltip=[
-                        alt.Tooltip("BARRIO:N", title="Barrio"),
-                        alt.Tooltip("pdvs:Q", title="PDVs"),
-                        alt.Tooltip("brecha:Q", format=",.0f", title="Brecha"),
-                        alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %"),
-                        alt.Tooltip("cuota_alta:Q", format=".1f", title="Cuota alta %"),
-                    ]
+                        scale=alt.Scale(domain=["amarillo","rojo"], range=["#F59E0B","#EF4444"]),
+                        legend=None),
+                    tooltip=[alt.Tooltip("BARRIO:N"), alt.Tooltip("pdvs:Q", title="PDVs"),
+                             alt.Tooltip("brecha:Q", format=",.0f", title="Brecha"),
+                             alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %")]
                 ).properties(height=360)
-                st.altair_chart(style_chart(chart_bar_brecha), use_container_width=True, theme=None)
-            st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">🟡 Amarillo = cumpl 70-99% (recuperable) · 🔴 Rojo = &lt;70% (crítico)</div>', unsafe_allow_html=True)
+                st.altair_chart(style_chart(chart_brecha_bar), use_container_width=True, theme=None)
+            st.markdown('🟡 Amarillo = 70–99% · 🔴 Rojo = &lt;70%', unsafe_allow_html=False)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # Barrios con menor cuota de alta — oportunidad competitiva
-        st.markdown('<div class="section-card" style="margin-top:8px;"><div class="section-title">Barrios con menor cuota de altas Claro — mayor potencial competitivo</div><div class="section-subtitle">Barrios donde Claro tiene menor participación en ventas nuevas vs la competencia · mínimo 5 PDVs por barrio</div>', unsafe_allow_html=True)
-        if not _baja_cuota_bar.empty:
-            _baja_cuota_plot = _baja_cuota_bar[_baja_cuota_bar["cuota_alta"].notna()].copy()
-            # Use layer with explicit background — avoid + operator with configure_*
-            chart_baja_cuota = alt.Chart(_baja_cuota_plot).mark_bar(
-                cornerRadiusTopLeft=5, cornerRadiusTopRight=5, color="#2563EB"
-            ).encode(
-                x=alt.X("cuota_alta:Q", title="Cuota de altas Claro (%)",
-                        axis=alt.Axis(labelColor="#374151", titleColor="#111827")),
-                y=alt.Y("BARRIO:N", sort="x", title=None,
-                        axis=alt.Axis(labelLimit=240, labelColor="#374151")),
-                tooltip=[
-                    alt.Tooltip("BARRIO:N", title="Barrio"),
-                    alt.Tooltip("pdvs:Q", title="PDVs"),
-                    alt.Tooltip("cuota_alta:Q", format=".1f", title="Cuota alta %"),
-                    alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. meta %"),
-                ]
-            ).properties(height=400)
-            st.altair_chart(style_chart(chart_baja_cuota), use_container_width=True, theme=None)
-        st.markdown('<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">Ordenado de menor a mayor cuota · barrios al inicio de la lista son los de mayor oportunidad competitiva</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        with cm2:
+            st.markdown('<div class="section-card"><div class="section-title">Barrios con menor cuota de altas Claro</div><div class="section-subtitle">Barrios donde Claro tiene menos participación — mayor potencial competitivo · mínimo 5 PDVs</div>', unsafe_allow_html=True)
+            _baja = by_bar[by_bar["pdvs"] >= 5].sort_values("cuota_alta").head(20)
+            _baja = _baja[_baja["cuota_alta"].notna()]
+            if not _baja.empty:
+                chart_cuota_bar = alt.Chart(_baja).mark_bar(
+                    cornerRadiusTopLeft=5, cornerRadiusTopRight=5, color="#2563EB"
+                ).encode(
+                    x=alt.X("cuota_alta:Q", title="Cuota altas Claro (%)"),
+                    y=alt.Y("BARRIO:N", sort="x", title=None, axis=alt.Axis(labelLimit=240)),
+                    tooltip=[alt.Tooltip("BARRIO:N"), alt.Tooltip("pdvs:Q", title="PDVs"),
+                             alt.Tooltip("cuota_alta:Q", format=".1f", title="Cuota alta %"),
+                             alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %")]
+                ).properties(height=380)
+                st.altair_chart(style_chart(chart_cuota_bar), use_container_width=True, theme=None)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-    # -------------------------------------------------------
+        # ── Sección 3: Tipo de PDV ────────────────────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:20px 0 8px 0;">¿En qué tipo de PDV está la brecha?</div>', unsafe_allow_html=True)
+        ct1, ct2 = st.columns(2, gap="large")
 
-
-        # ── Sección 2: Clasificación + Tipología ─────────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">¿En qué tipo de PDV está la brecha?</div>', unsafe_allow_html=True)
-        c3c, c3d = st.columns(2, gap="large")
-        with c3c:
-            by_clasif = df.groupby("CLASIFICACION").agg(
-                pdvs=("ID","count"), ejec_nat=("EJEC ALTA NAT","sum"), meta_nat=("META ALTA NAT (>$2000)","sum"),
+        with ct1:
+            st.markdown('<div class="section-card"><div class="section-title">Altas por clasificación de PDV</div><div class="section-subtitle">Tiendas, cigarrerías, papelerías, etc. · ordenadas por volumen</div>', unsafe_allow_html=True)
+            _df_cl = df.copy()
+            _df_cl["CLASIFICACION"] = _clean(_df_cl["CLASIFICACION"])
+            by_cl = _df_cl[_df_cl["CLASIFICACION"] != "—"].groupby("CLASIFICACION").agg(
+                pdvs=("ID","count"), ejec_nat=("EJEC ALTA NAT","sum"), meta_nat=("META ALTA NAT (>$2000)","sum")
             ).reset_index().sort_values("ejec_nat", ascending=False).head(12)
-            st.markdown('<div class="section-card"><div class="section-title">Altas por clasificación de PDV</div><div class="section-subtitle">Tiendas, cigarrerías, papelerías, etc. · ordenadas por volumen de altas</div>', unsafe_allow_html=True)
-            if not by_clasif.empty:
-                chart_cl = alt.Chart(by_clasif).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5).encode(
-                    x=alt.X("ejec_nat:Q",title="Altas nat."),
-                    y=alt.Y("CLASIFICACION:N",sort="-x",title=None,axis=alt.Axis(labelLimit=200)),
-                    color=alt.value("#38BDF8"),
-                    tooltip=[alt.Tooltip("CLASIFICACION:N"),alt.Tooltip("pdvs:Q",title="PDVs"),alt.Tooltip("ejec_nat:Q",format=",.0f")]
-                ).properties(height=280)
+            if not by_cl.empty:
+                chart_cl = alt.Chart(by_cl).mark_bar(cornerRadiusTopLeft=5,cornerRadiusTopRight=5,color="#E10600").encode(
+                    x=alt.X("ejec_nat:Q", title="Altas ejecutadas"),
+                    y=alt.Y("CLASIFICACION:N", sort="-x", title=None, axis=alt.Axis(labelLimit=260)),
+                    tooltip=[alt.Tooltip("CLASIFICACION:N"), alt.Tooltip("pdvs:Q", title="PDVs"),
+                             alt.Tooltip("ejec_nat:Q", format=",.0f", title="Altas")]
+                ).properties(height=300)
                 st.altair_chart(style_chart(chart_cl), use_container_width=True, theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
-        with c3d:
-            by_tipo = df.groupby("TIPOLOGIA").agg(
-                pdvs=("ID","count"), ejec_nat=("EJEC ALTA NAT","sum"), meta_nat=("META ALTA NAT (>$2000)","sum"),
+
+        with ct2:
+            st.markdown('<div class="section-card"><div class="section-title">Cumplimiento por tipología</div><div class="section-subtitle">A = mayor potencial · D = menor · color = semáforo</div>', unsafe_allow_html=True)
+            _df_tip = df.copy()
+            _df_tip["TIPOLOGIA"] = _clean(_df_tip["TIPOLOGIA"])
+            by_tip = _df_tip[_df_tip["TIPOLOGIA"] != "—"].groupby("TIPOLOGIA").agg(
+                pdvs=("ID","count"), ejec_nat=("EJEC ALTA NAT","sum"), meta_nat=("META ALTA NAT (>$2000)","sum")
             ).reset_index()
-            by_tipo["cumpl"] = (by_tipo["ejec_nat"]/by_tipo["meta_nat"].replace(0,np.nan)*100).fillna(0)
-            by_tipo["semaforo_tip"] = by_tipo["cumpl"].apply(
-                lambda v: "verde" if v >= 100 else ("amarillo" if v >= 70 else "rojo")
-            )
-            st.markdown('<div class="section-card"><div class="section-title">Cumplimiento por tipología de PDV</div><div class="section-subtitle">A = mayor potencial · D = menor · color = semáforo de cumplimiento</div>', unsafe_allow_html=True)
-            if not by_tipo.empty:
-                chart_tip = alt.Chart(by_tipo).mark_bar(
-                    cornerRadiusTopLeft=6, cornerRadiusTopRight=6
-                ).encode(
-                    x=alt.X("TIPOLOGIA:N", title=None, axis=alt.Axis(labelColor="#374151")),
-                    y=alt.Y("ejec_nat:Q", title="Altas nat.", axis=alt.Axis(labelColor="#374151", titleColor="#111827")),
-                    color=alt.Color("semaforo:N",
-                        scale=alt.Scale(
-                            domain=["verde","amarillo","rojo"],
-                            range=["#22C55E","#F59E0B","#EF4444"]
-                        ), legend=None),
-                    tooltip=[alt.Tooltip("TIPOLOGIA:N"),alt.Tooltip("pdvs:Q",title="PDVs"),alt.Tooltip("ejec_nat:Q",format=",.0f"),alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %")]
+            by_tip["cumpl"] = (by_tip["ejec_nat"]/by_tip["meta_nat"].replace(0,np.nan)*100).fillna(0)
+            by_tip["semaforo_tip"] = by_tip["cumpl"].apply(lambda v: "verde" if v>=100 else ("amarillo" if v>=70 else "rojo"))
+            if not by_tip.empty:
+                chart_tip = alt.Chart(by_tip).mark_bar(cornerRadiusTopLeft=6,cornerRadiusTopRight=6).encode(
+                    x=alt.X("TIPOLOGIA:N", title=None),
+                    y=alt.Y("ejec_nat:Q", title="Altas"),
+                    color=alt.Color("semaforo_tip:N",
+                        scale=alt.Scale(domain=["verde","amarillo","rojo"],range=["#22C55E","#F59E0B","#EF4444"]),
+                        legend=None),
+                    tooltip=[alt.Tooltip("TIPOLOGIA:N"), alt.Tooltip("pdvs:Q",title="PDVs"),
+                             alt.Tooltip("ejec_nat:Q",format=",.0f"), alt.Tooltip("cumpl:Q",format=".1f",title="Cumpl. %")]
                 ).properties(height=280)
                 st.altair_chart(style_chart(chart_tip), use_container_width=True, theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── Rutas críticas ─────────────────────────────────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Rutas que necesitan intervención inmediata</div>', unsafe_allow_html=True)
-        if "RUTA" in df.columns:
-            df_ruta_opp = df[df["META ALTA NAT (>$2000)"] > 0].copy()
-            df_ruta_opp["cumpl_pdv"] = (df_ruta_opp["EJEC ALTA NAT"] / df_ruta_opp["META ALTA NAT (>$2000)"] * 100).fillna(0)
-            # Fill NA before groupby so rows aren't dropped
-            for _rc in ["RUTA","AGENTE","BARRIO"]:
-                if _rc in df_ruta_opp.columns:
-                    df_ruta_opp[_rc] = df_ruta_opp[_rc].fillna("").astype(str).str.strip()
-            # Build barrio list per ruta
-            ruta_barrio = df_ruta_opp.groupby(["RUTA","AGENTE"])["BARRIO"].apply(
-                lambda x: ", ".join(sorted(set(v for v in x if v != "")))[:80]
+        # ── Sección 4: Rutas críticas ─────────────────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:20px 0 8px 0;">Rutas que necesitan intervención inmediata</div>', unsafe_allow_html=True)
+        _df_rt = df.copy()
+        for _c in ["RUTA","AGENTE","BARRIO","CIRCUITO"]:
+            if _c in _df_rt.columns:
+                _df_rt[_c] = _clean(_df_rt[_c])
+        _df_rt = _df_rt[_df_rt["META ALTA NAT (>$2000)"] > 0].copy()
+        _df_rt["cumpl_pdv"] = (_df_rt["EJEC ALTA NAT"] / _df_rt["META ALTA NAT (>$2000)"] * 100).fillna(0)
+
+        if "RUTA" in _df_rt.columns:
+            # Barrios per ruta
+            _ruta_barrios = _df_rt[_df_rt["BARRIO"] != "—"].groupby("RUTA")["BARRIO"].apply(
+                lambda x: ", ".join(sorted(set(x))[:5])
+            ).reset_index().rename(columns={"BARRIO":"Barrios"})
+
+            ruta_opp = _df_rt.groupby(["RUTA","AGENTE"]).agg(
+                PDVs=("ID","count"),
+                PDVs_crit=("cumpl_pdv", lambda x: (x < 70).sum()),
+                Meta=("META ALTA NAT (>$2000)","sum"),
+                Ejecutado=("EJEC ALTA NAT","sum"),
             ).reset_index()
-            ruta_barrio.columns = ["RUTA","AGENTE","BARRIOS"]
-            ruta_group_cols = [c for c in ["RUTA","AGENTE"] if c in df_ruta_opp.columns]
-            ruta_opp = df_ruta_opp.groupby(ruta_group_cols).agg(
-                pdvs_totales=("ID","count"), pdvs_criticos=("cumpl_pdv", lambda x: (x < 70).sum()),
-                meta_total=("META ALTA NAT (>$2000)","sum"), ejec_total=("EJEC ALTA NAT","sum"),
-            ).reset_index()
-            ruta_opp = ruta_opp.merge(ruta_barrio, on=ruta_group_cols, how="left")
-            ruta_opp["cumpl_ruta"]        = (ruta_opp["ejec_total"]/ruta_opp["meta_total"].replace(0,np.nan)*100).fillna(0)
-            ruta_opp["brecha"]            = ruta_opp["meta_total"] - ruta_opp["ejec_total"]
-            ruta_opp["pct_pdvs_criticos"] = (ruta_opp["pdvs_criticos"]/ruta_opp["pdvs_totales"].replace(0,np.nan)*100).fillna(0)
-            ruta_opp = ruta_opp[ruta_opp["cumpl_ruta"] < 70].sort_values("brecha", ascending=False).head(15)
+            ruta_opp = ruta_opp.merge(_ruta_barrios, on="RUTA", how="left")
+            ruta_opp["Barrios"] = ruta_opp["Barrios"].fillna("—")
+            ruta_opp["Cumpl. %"] = (ruta_opp["Ejecutado"]/ruta_opp["Meta"].replace(0,np.nan)*100).fillna(0).round(1)
+            ruta_opp["Brecha"]  = (ruta_opp["Meta"] - ruta_opp["Ejecutado"]).round(0)
+            ruta_opp = ruta_opp[ruta_opp["Cumpl. %"] < 70].sort_values("Brecha", ascending=False).head(15)
+            ruta_opp = ruta_opp.rename(columns={"RUTA":"Ruta","AGENTE":"Agente","PDVs_crit":"PDVs crit."})
+            show_cols_rt = [c for c in ["Ruta","Agente","Barrios","PDVs","PDVs crit.","Meta","Ejecutado","Cumpl. %","Brecha"] if c in ruta_opp.columns]
             if not ruta_opp.empty:
-                ruta_rename = {"RUTA":"Ruta","AGENTE":"Agente","BARRIOS":"Barrios","pdvs_totales":"PDVs","pdvs_criticos":"PDVs crit.","meta_total":"Meta","ejec_total":"Ejecutado","cumpl_ruta":"Cumpl. %","brecha":"Brecha","pct_pdvs_criticos":"% crit."}
-                show_ruta_cols = [c for c in ruta_rename.keys() if c in ruta_opp.columns]
-                show_ruta = safe_round_columns(ruta_opp[show_ruta_cols].copy(), ["meta_total","ejec_total","cumpl_ruta","brecha","pct_pdvs_criticos"])
-                show_ruta = show_ruta.rename(columns={k:v for k,v in ruta_rename.items() if k in show_ruta.columns})
-                show_table(show_ruta, height=320)
-                st.markdown(f'<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">{len(ruta_opp)} rutas con cumplimiento &lt;70% · ordenadas por mayor brecha</div>', unsafe_allow_html=True)
+                show_table(ruta_opp[show_cols_rt], height=320)
+                st.markdown(f'<div style="font-size:.72rem;color:var(--text-muted);">{len(ruta_opp)} rutas con cumplimiento &lt;70% · mayor brecha primero</div>', unsafe_allow_html=True)
             else:
                 st.success("✅ No hay rutas con cumplimiento por debajo del 70%.")
-        else:
-            st.info("No se encontró la columna RUTA en los datos.")
 
-        # ── Sección 4: PDVs individuales ──────────────────────────────────────
-        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px 0;">Top 10 PDVs con mayor meta y menor cumplimiento</div>', unsafe_allow_html=True)
-        df_opp2 = df[df["META ALTA NAT (>$2000)"] > 0].copy()
-        df_opp2["cumpl_pdv"] = (df_opp2["EJEC ALTA NAT"] / df_opp2["META ALTA NAT (>$2000)"] * 100).fillna(0)
-        # Fill string columns so they show real values not NaN
-        for _col_fill in ["BARRIO","CIRCUITO","ZONA","RUTA","CLASIFICACION","ASESOR"]:
-            if _col_fill in df_opp2.columns:
-                df_opp2[_col_fill] = df_opp2[_col_fill].fillna("").astype(str).str.strip().replace("", "—")
-        df_opp_show2 = df_opp2[df_opp2["cumpl_pdv"] < 70].sort_values("META ALTA NAT (>$2000)", ascending=False).head(10)
-        if not df_opp_show2.empty:
-            extra_cols2 = [c for c in ["BARRIO","ZONA","RUTA"] if c in df_opp_show2.columns]
-            cols_show2 = [c for c in ["ID","AGENTE","ASESOR","CIRCUITO"]+extra_cols2+["CLASIFICACION","CATEGORIA","META ALTA NAT (>$2000)","EJEC ALTA NAT","cumpl_pdv"] if c in df_opp_show2.columns]
-            show_opp2 = df_opp_show2[cols_show2].copy()
-            show_opp2 = safe_round_columns(show_opp2, ["META ALTA NAT (>$2000)","EJEC ALTA NAT","cumpl_pdv"])
-            rename_opp2 = {"META ALTA NAT (>$2000)":"Meta","EJEC ALTA NAT":"Ejecutado","cumpl_pdv":"Cumpl. %","ID":"ID PDV","AGENTE":"Agente","ASESOR":"Asesor","CIRCUITO":"Circuito","CLASIFICACION":"Clasificación","CATEGORIA":"Categoría","BARRIO":"Barrio","ZONA":"Zona","RUTA":"Ruta"}
-            show_opp2 = show_opp2.rename(columns={k:v for k,v in rename_opp2.items() if k in show_opp2.columns})
-            show_table(show_opp2, height=300)
-            st.markdown(f'<div style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">{len(df_opp_show2)} PDVs · ordenados por mayor meta · usa filtros del sidebar para enfocar</div>', unsafe_allow_html=True)
-        else:
-            st.success("✅ No hay PDVs con cumplimiento por debajo del 70%.")
+        # ── Sección 5: Top 10 PDVs ────────────────────────────────────
+        st.markdown('<div style="font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin:20px 0 8px 0;">Top 10 PDVs con mayor meta y menor cumplimiento</div>', unsafe_allow_html=True)
+        _df_pdv = df[df["META ALTA NAT (>$2000)"] > 0].copy()
+        _df_pdv["Cumpl. %"] = (_df_pdv["EJEC ALTA NAT"] / _df_pdv["META ALTA NAT (>$2000)"] * 100).fillna(0).round(1)
+        # Clean all display columns
+        for _c in ["BARRIO","CIRCUITO","ZONA","RUTA","CLASIFICACION","ASESOR","AGENTE","CATEGORIA"]:
+            if _c in _df_pdv.columns:
+                _df_pdv[_c] = _clean(_df_pdv[_c])
+        _df_pdv = _df_pdv[_df_pdv["Cumpl. %"] < 70].sort_values("META ALTA NAT (>$2000)", ascending=False).head(10)
+        _pdv_cols = [c for c in ["ID","AGENTE","ASESOR","CIRCUITO","BARRIO","ZONA","RUTA","CLASIFICACION","CATEGORIA","META ALTA NAT (>$2000)","EJEC ALTA NAT","Cumpl. %"] if c in _df_pdv.columns]
+        _pdv_rename = {"META ALTA NAT (>$2000)":"Meta","EJEC ALTA NAT":"Ejecutado","ID":"ID PDV","AGENTE":"Agente","ASESOR":"Asesor","CIRCUITO":"Circuito","BARRIO":"Barrio","ZONA":"Zona","RUTA":"Ruta","CLASIFICACION":"Clasificación","CATEGORIA":"Categoría"}
+        _pdv_show = _df_pdv[_pdv_cols].rename(columns={k:v for k,v in _pdv_rename.items() if k in _pdv_cols})
+        _pdv_show = safe_round_columns(_pdv_show, ["Meta","Ejecutado"])
+        show_table(_pdv_show, height=340)
 
-
-    # -------------------------------------------------------
-    # TAB C4 — ¿SUBE EL RITMO?
-    # -------------------------------------------------------
     with tc4:
         semanas      = ["S1","S2","S3","S4"]
         semanas_indu = ["S1.1","S2.1","S3.1","S4.1"]
