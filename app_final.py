@@ -20,7 +20,7 @@ import altair as alt
 st.set_page_config(
     page_title="Panel Ejecutivo de Desempeño de Red y Mercado",
     layout="wide",
-    initial_sidebar_state="auto",
+    initial_sidebar_state="expanded",
 )
 
 # =========================================================
@@ -915,6 +915,20 @@ button, [role="button"], a, label { transition: var(--transition) !important; }
 [data-testid="block-container"] { padding: 1.2rem 2rem 2rem !important; max-width: 1400px !important; }
 
 /* Hide Streamlit branding */
+/* Sidebar open button styling */
+div[data-testid="stButton"] > button[kind="primary"] {
+    background: #E10600 !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+    font-size: 14px !important;
+    min-height: 0 !important;
+    height: 32px !important;
+    width: 36px !important;
+    line-height: 1 !important;
+}
+
 /* Hide only branding — keep everything else visible */
 #MainMenu { visibility: hidden; }
 footer { visibility: hidden; }
