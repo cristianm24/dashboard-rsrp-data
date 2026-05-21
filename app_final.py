@@ -156,17 +156,34 @@ h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-weight: 800; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
 
-/* ── Sidebar toggle — absolutely always visible ──────── */
-[data-testid="stSidebarCollapsedControl"],
-[data-testid="stSidebarCollapsedControl"] *,
-button[data-testid="stSidebarCollapsedControl"],
-div[data-testid="stSidebarCollapsedControl"] {
+/* ── Sidebar toggle — always visible, styled red ──────── */
+[data-testid="stSidebarCollapsedControl"] {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
     pointer-events: all !important;
-    position: fixed !important;
     z-index: 999999 !important;
+}
+[data-testid="stSidebarCollapsedControl"] button {
+    background: #E10600 !important;
+    border-radius: 8px !important;
+    border: none !important;
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 2px 10px rgba(225,6,0,0.35) !important;
+    cursor: pointer !important;
+}
+[data-testid="stSidebarCollapsedControl"] button svg {
+    fill: white !important;
+    stroke: white !important;
+    color: white !important;
+}
+[data-testid="stSidebarCollapsedControl"] button:hover {
+    background: #C00500 !important;
+    transform: scale(1.05) !important;
 }
 
 /* ── Sidebar itself ──────────────────────────────────── */
@@ -951,30 +968,6 @@ footer { visibility: hidden; }
 header[data-testid="stHeader"] {
     background: transparent !important;
     box-shadow: none !important;
-}
-/* Always show sidebar collapse/expand button */
-[data-testid="stSidebarCollapsedControl"] {
-    display: block !important;
-    visibility: visible !important;
-    pointer-events: all !important;
-    z-index: 999990 !important;
-}
-[data-testid="stSidebarCollapsedControl"] button,
-[data-testid="stSidebarCollapseButton"] button {
-    background: #E10600 !important;
-    color: white !important;
-    border-radius: 8px !important;
-    border: none !important;
-    width: 2rem !important;
-    height: 2rem !important;
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-[data-testid="stSidebarCollapsedControl"] svg,
-[data-testid="stSidebarCollapseButton"] svg {
-    fill: white !important;
-    stroke: white !important;
 }
 
 /* Separator */
@@ -4276,44 +4269,6 @@ def render_claro_view():
 # =========================================================
 from datetime import date as _date
 import calendar as _calendar
-
-# ── BOTÓN PARA ABRIR SIDEBAR (siempre visible) ─────────────────────────────
-# Este botón usa st.markdown con un enlace que recarga la página
-# garantizando que el sidebar vuelva a aparecer
-_top_bar_left, _top_bar_right = st.columns([0.04, 0.96])
-with _top_bar_left:
-    if st.button("☰", key="_open_sidebar", help="Abrir / cerrar panel de configuración",
-                 use_container_width=True):
-        # Force a full page reload which resets sidebar state to expanded
-        st.markdown(
-            "<meta http-equiv='refresh' content='0'>",
-            unsafe_allow_html=True
-        )
-        st.stop()
-
-st.markdown("""
-<style>
-/* Make ☰ button always visible and well-styled */
-button[data-testid="baseButton-secondary"][key="_open_sidebar"],
-div[data-testid="column"]:first-child button {
-    background: #E10600 !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 8px !important;
-    font-size: 1rem !important;
-    padding: 0 !important;
-    min-height: 36px !important;
-    min-width: 36px !important;
-    width: 36px !important;
-    height: 36px !important;
-    position: fixed !important;
-    top: 10px !important;
-    left: 10px !important;
-    z-index: 9999999 !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
-}
-</style>
-""", unsafe_allow_html=True)
 
 # File availability — ONLY from user uploads in this session
 # Disk files are NEVER counted — they would show data the user didn't explicitly load
