@@ -1115,10 +1115,9 @@ def fmt_var_dBm(x):
     return f"{sign}{x:.1f} dBm"
 
 def _safe_agente(x):
-    """Returns True if x is a valid non-empty AGENTE name. Handles pd.NA safely."""
+    """Returns True if x is a valid non-empty AGENTE name."""
     try:
-        if x is None or x is pd.NA:
-            return False
+        if x is None or x is pd.NA: return False
         s = str(x).strip()
         return s not in ("", "nan", "None", "AGENTE", "<NA>", "NaN")
     except Exception:
@@ -2332,11 +2331,13 @@ def _process_claro_df(df_det):
         if c in df_det.columns:
             df_det[c] = pd.to_numeric(df_det[c], errors="coerce")
 
-    # Coerción string
+    # Coerción string — mantener valores reales, solo blanquear nulos verdaderos
     for c in ["AGENTE","CATEGORIA","TIPOLOGIA","CLASIFICACION","ZONA",
               "TIPO","ASESOR","RUTA","CIRCUITO","BARRIO"]:
         if c in df_det.columns:
-            df_det[c] = df_det[c].astype(str).str.strip().replace("nan", pd.NA)
+            df_det[c] = df_det[c].astype(str).str.strip()
+            # Replace literal "nan" string (from pandas NaN→str conversion) with empty
+            df_det[c] = df_det[c].replace({"nan":"", "None":"", "<NA>":"", "NaN":""})
 
     # Remove rows where AGENTE is null, empty, or looks like a header repeat
     if "AGENTE" in df_det.columns:
@@ -2875,7 +2876,7 @@ def render_claro_view():
         unsafe_allow_html=True
     )
 
-    def _opts(col): return sorted([x for x in df_det[col].dropna().unique() if str(x).strip() not in ("","nan")]) if col in df_det.columns else []
+    def _opts(col): return sorted([x for x in df_det[col].unique() if str(x).strip() not in ("","nan","None","<NA>","NaN")]) if col in df_det.columns else []
 
     agente_sel = st.sidebar.multiselect("Agente", options=_opts("AGENTE"), default=[], key="claro_agente_sel")
     cat_sel    = st.sidebar.multiselect("⭐ Categoría PDV", options=_opts("CATEGORIA"), default=[], key="claro_cat_sel",
@@ -3399,8 +3400,8 @@ def render_claro_view():
         )
 
         def _clean(series):
-            """Convert any column to clean string, empty → —"""
-            return series.fillna("").astype(str).str.strip().apply(
+            """Convert any column to clean string, empty/nan → —"""
+            return series.astype(str).str.strip().apply(
                 lambda x: "—" if x in ("", "nan", "None", "<NA>", "NaN") else x
             )
 
