@@ -915,8 +915,23 @@ button, [role="button"], a, label { transition: var(--transition) !important; }
 [data-testid="block-container"] { padding: 1.2rem 2rem 2rem !important; max-width: 1400px !important; }
 
 /* Hide Streamlit branding */
-#MainMenu, footer, header { visibility: hidden; }
+/* Hide Streamlit branding but keep sidebar toggle visible */
+#MainMenu { visibility: hidden; }
+footer { visibility: hidden; }
 [data-testid="stToolbar"] { display: none; }
+/* Keep header visible so sidebar collapse button works */
+header[data-testid="stHeader"] {
+    background: transparent !important;
+    height: 0 !important;
+    min-height: 0 !important;
+}
+/* But keep the sidebar collapse/expand button */
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
 
 /* Separator */
 hr { border: none; border-top: 1px solid var(--border) !important; margin: 16px 0 !important; }
