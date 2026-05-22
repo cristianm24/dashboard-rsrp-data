@@ -3073,12 +3073,19 @@ def render_claro_view():
     # FILTRADO
     # =========================================================
     df = df_det.copy()
-    # Force-clean string columns — handles pd.NA, 'nan', empty string, all null types
+    # Force-clean string columns — preserve real values, only blank out true nulls
     _str_cols = ["BARRIO","CIRCUITO","ZONA","RUTA","CLASIFICACION","ASESOR","CATEGORIA","TIPOLOGIA","TIPO"]
     for _sc in _str_cols:
         if _sc in df.columns:
-            df[_sc] = df[_sc].astype(object).fillna("").astype(str).str.strip()
-            df[_sc] = df[_sc].apply(lambda x: "" if x in ("nan","None","<NA>","NaN","none","null","NULL","nan ") else x)
+            # Use original Excel values if available — read directly from df_det before any conversion
+            _orig = df[_sc]
+            # Convert to string preserving real values
+            _s = _orig.apply(lambda x: 
+                "" if (x is None or x is pd.NA or (isinstance(x, float) and pd.isna(x)))
+                else str(x).strip()
+            )
+            # Only blank out values that are literal null strings
+            df[_sc] = _s.apply(lambda x: "" if x in ("nan","None","<NA>","NaN","none","null","NULL","nan ","NAN") else x)
     # Normalize column aliases that may differ between months
     _rename_aliases = {
         "EJEC ALTA TOTAL": "EJE ALTA TOTAL",
@@ -3564,14 +3571,17 @@ def render_claro_view():
 
         # Show which sheet is loaded and BARRIO status
         _b_sample = df['BARRIO'].iloc[0] if 'BARRIO' in df.columns and len(df)>0 else 'N/A'
+        _b_det_sample = df_det['BARRIO'].iloc[0] if 'BARRIO' in df_det.columns and len(df_det)>0 else 'N/A'
         _b_count = (df['BARRIO'].astype(str).str.strip().apply(lambda x: x not in ("","nan","None","<NA>","NaN"))).sum() if 'BARRIO' in df.columns else 0
+        _b_det_count = (df_det['BARRIO'].astype(str).str.strip().apply(lambda x: x not in ("","nan","None","<NA>","NaN"))).sum() if 'BARRIO' in df_det.columns else 0
         if _b_count == 0:
-            # Try to fix right here — convert empty to original value from df_det
-            if 'BARRIO' in df.columns:
-                _b_raw = df['BARRIO'].astype(object)
-                _b_str = _b_raw.apply(lambda x: str(x).strip() if x is not None else "")
-                _b_fixed = _b_str.apply(lambda x: "" if x in ("nan","None","<NA>","NaN","") else x)
-                st.warning(f"⚠️ BARRIO vacío · sample raw={repr(str(_b_sample))} · str sample={repr(_b_str.iloc[0])} · fixed sample={repr(_b_fixed.iloc[0])} · fixed non-empty={(_b_fixed!='').sum()}")
+            st.warning(
+                f"⚠️ BARRIO vacío · "
+                f"df[0]={repr(str(_b_sample))} · "
+                f"df_det[0]={repr(str(_b_det_sample))} · "
+                f"df_det non-empty={_b_det_count} · "
+                f"df non-empty={_b_count}"
+            )
 
         def _clean(series):
             """Convert any column to clean string, empty/nan → —"""
