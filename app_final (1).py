@@ -3128,8 +3128,8 @@ def render_claro_view():
     s3_total = pd.to_numeric(df["S3"], errors="coerce").sum() if "S3" in df.columns else 0
     s4_total = pd.to_numeric(df["S4"], errors="coerce").sum() if "S4" in df.columns else 0
 
-    cierre_altas    = df_cierre["MAR_ALTAS"].sum()
-    cierre_ingresos = df_cierre["MAR_INGRESOS"].sum()
+    cierre_altas    = df_cierre["MAR_ALTAS"].sum() if "MAR_ALTAS" in df_cierre.columns else 0
+    cierre_ingresos = df_cierre["MAR_INGRESOS"].sum() if "MAR_INGRESOS" in df_cierre.columns else 0
 
     def fmt_m(v):
         if pd.isna(v): return "N/D"
