@@ -4,4 +4,6 @@ numpy
 altair
 openpyxl
 xlsxwriter
-xlrd>=2.0.1
+xlrd
+msoffcrypto-tool
+python-calamine
