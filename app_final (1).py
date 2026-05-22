@@ -2916,6 +2916,20 @@ def render_claro_view():
         """, unsafe_allow_html=True)
         return
 
+    # Detect encrypted file — xlrd opens OLE2 encrypted files but all data is empty
+    _numeric_sum = 0
+    for _c in ["META ALTA NAT (>$2000)", "EJEC ALTA NAT"]:
+        if _c in df_det.columns:
+            _numeric_sum += pd.to_numeric(df_det[_c], errors="coerce").sum()
+    if _numeric_sum == 0 and len(df_det) > 100:
+        st.error(
+            "❌ El archivo está cifrado con protección empresarial y no puede leerse correctamente. "
+            "**Solución:** abre el archivo en Excel → selecciona toda la hoja (Ctrl+A) → "
+            "copia (Ctrl+C) → abre un libro nuevo en blanco → pega solo valores (Ctrl+Shift+V → Valores) → "
+            "guarda como .xlsx → sube ese archivo nuevo."
+        )
+        return
+
     # =========================================================
     # SIDEBAR CLARO: Filtros propios
     # =========================================================
@@ -3549,9 +3563,15 @@ def render_claro_view():
         _eje = "EJE ALTA TOTAL" if "EJE ALTA TOTAL" in df.columns else "EJEC ALTA NAT"
 
         # Show which sheet is loaded and BARRIO status
+        _b_sample = df['BARRIO'].iloc[0] if 'BARRIO' in df.columns and len(df)>0 else 'N/A'
         _b_count = (df['BARRIO'].astype(str).str.strip().apply(lambda x: x not in ("","nan","None","<NA>","NaN"))).sum() if 'BARRIO' in df.columns else 0
         if _b_count == 0:
-            st.warning(f"⚠️ BARRIO vacío en hoja '{_selected_sheet_safe}' · {len(df)} filas · columnas: {[c for c in ['BARRIO','CIRCUITO','ZONA','RUTA'] if c in df.columns]}")
+            # Try to fix right here — convert empty to original value from df_det
+            if 'BARRIO' in df.columns:
+                _b_raw = df['BARRIO'].astype(object)
+                _b_str = _b_raw.apply(lambda x: str(x).strip() if x is not None else "")
+                _b_fixed = _b_str.apply(lambda x: "" if x in ("nan","None","<NA>","NaN","") else x)
+                st.warning(f"⚠️ BARRIO vacío · sample raw={repr(str(_b_sample))} · str sample={repr(_b_str.iloc[0])} · fixed sample={repr(_b_fixed.iloc[0])} · fixed non-empty={(_b_fixed!='').sum()}")
 
         def _clean(series):
             """Convert any column to clean string, empty/nan → —"""
