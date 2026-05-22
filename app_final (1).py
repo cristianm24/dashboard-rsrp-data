@@ -2332,12 +2332,16 @@ def _process_claro_df(df_det):
             df_det[c] = pd.to_numeric(df_det[c], errors="coerce")
 
     # Coerción string — mantener valores reales, solo blanquear nulos verdaderos
+    _NULL_STRINGS = {"nan","none","<na>","nat","null","","nan "}
     for c in ["AGENTE","CATEGORIA","TIPOLOGIA","CLASIFICACION","ZONA",
               "TIPO","ASESOR","RUTA","CIRCUITO","BARRIO"]:
         if c in df_det.columns:
-            # Use object dtype explicitly to avoid pandas StringDtype with pd.NA
-            df_det[c] = df_det[c].astype(object).fillna("").astype(str).str.strip()
-            df_det[c] = df_det[c].replace({"nan":"", "None":"", "<NA>":"", "NaN":"", "nan ":"", " ":""})
+            def _clean_str(x, _ns=_NULL_STRINGS):
+                if x is None or x is pd.NA: return ""
+                if isinstance(x, float) and pd.isna(x): return ""
+                s = str(x).strip()
+                return "" if s.lower() in _ns else s
+            df_det[c] = df_det[c].apply(_clean_str)
 
     # Remove rows where AGENTE is null, empty, or looks like a header repeat
     if "AGENTE" in df_det.columns:
@@ -2450,10 +2454,15 @@ def _find_cierre_sheets(xl):
             df_det[c] = pd.to_numeric(df_det[c], errors="coerce")
 
     # Coerción string
+    _NULL_STRINGS2 = {"nan","none","<na>","nat","null","","nan "}
     for c in ["AGENTE","CATEGORIA","TIPOLOGIA","CLASIFICACION","ZONA","TIPO","ASESOR","RUTA","CIRCUITO","BARRIO"]:
         if c in df_det.columns:
-            df_det[c] = df_det[c].astype(object).fillna("").astype(str).str.strip()
-            df_det[c] = df_det[c].replace({"nan":"","None":"","<NA>":"","NaN":""})
+            def _cs2(x, _ns=_NULL_STRINGS2):
+                if x is None or x is pd.NA: return ""
+                if isinstance(x, float) and pd.isna(x): return ""
+                s = str(x).strip()
+                return "" if s.lower() in _ns else s
+            df_det[c] = df_det[c].apply(_cs2)
 
     return df_det, faltantes, nuevas
 
@@ -2681,7 +2690,15 @@ def load_claro_data_from_upload(uploaded_file):
 
         df = pd.read_excel(_io.BytesIO(raw), sheet_name=best_sheet, header=best_hr, engine=engine)
         df.columns = [str(c).strip() for c in df.columns]
+        # DEBUG: store raw BARRIO value before processing
+        _raw_barrio_sample = repr(df['BARRIO'].iloc[0]) if 'BARRIO' in df.columns and len(df)>0 else 'NO COL'
+        _raw_barrio_count = df['BARRIO'].notna().sum() if 'BARRIO' in df.columns else 0
         df, faltantes, _ = _process_claro_df(df)
+        _post_barrio_sample = repr(df['BARRIO'].iloc[0]) if 'BARRIO' in df.columns and len(df)>0 else 'NO COL'
+        _post_barrio_count = (df['BARRIO'] != '').sum() if 'BARRIO' in df.columns else 0
+        # Store debug info for display
+        import streamlit as _st_debug
+        _st_debug.session_state['_barrio_debug'] = f"sheet={best_sheet} · raw[0]={_raw_barrio_sample} · raw_notna={_raw_barrio_count} · post[0]={_post_barrio_sample} · post_nonempty={_post_barrio_count}"
         if faltantes:
             return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {"found":False,"message":f"Faltan columnas: {', '.join(faltantes)}"}
 
@@ -3073,19 +3090,14 @@ def render_claro_view():
     # FILTRADO
     # =========================================================
     df = df_det.copy()
-    # Force-clean string columns — preserve real values, only blank out true nulls
-    _str_cols = ["BARRIO","CIRCUITO","ZONA","RUTA","CLASIFICACION","ASESOR","CATEGORIA","TIPOLOGIA","TIPO"]
-    for _sc in _str_cols:
+    # Clean string columns — use apply to avoid pandas version differences with replace()
+    _RCV_NULL = {"nan","none","<na>","nat","null","","nan "}
+    for _sc in ["BARRIO","CIRCUITO","ZONA","RUTA","CLASIFICACION","ASESOR","CATEGORIA","TIPOLOGIA","TIPO"]:
         if _sc in df.columns:
-            # Use original Excel values if available — read directly from df_det before any conversion
-            _orig = df[_sc]
-            # Convert to string preserving real values
-            _s = _orig.apply(lambda x: 
+            df[_sc] = df[_sc].apply(lambda x, _ns=_RCV_NULL:
                 "" if (x is None or x is pd.NA or (isinstance(x, float) and pd.isna(x)))
-                else str(x).strip()
+                else ("" if str(x).strip().lower() in _ns else str(x).strip())
             )
-            # Only blank out values that are literal null strings
-            df[_sc] = _s.apply(lambda x: "" if x in ("nan","None","<NA>","NaN","none","null","NULL","nan ","NAN") else x)
     # Normalize column aliases that may differ between months
     _rename_aliases = {
         "EJEC ALTA TOTAL": "EJE ALTA TOTAL",
@@ -3575,13 +3587,8 @@ def render_claro_view():
         _b_count = (df['BARRIO'].astype(str).str.strip().apply(lambda x: x not in ("","nan","None","<NA>","NaN"))).sum() if 'BARRIO' in df.columns else 0
         _b_det_count = (df_det['BARRIO'].astype(str).str.strip().apply(lambda x: x not in ("","nan","None","<NA>","NaN"))).sum() if 'BARRIO' in df_det.columns else 0
         if _b_count == 0:
-            st.warning(
-                f"⚠️ BARRIO vacío · "
-                f"df[0]={repr(str(_b_sample))} · "
-                f"df_det[0]={repr(str(_b_det_sample))} · "
-                f"df_det non-empty={_b_det_count} · "
-                f"df non-empty={_b_count}"
-            )
+            _barrio_debug = st.session_state.get('_barrio_debug', 'no debug info')
+            st.warning(f"⚠️ BARRIO vacío · {_barrio_debug}")
 
         def _clean(series):
             """Convert any column to clean string, empty/nan → —"""
