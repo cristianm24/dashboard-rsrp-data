@@ -2600,13 +2600,62 @@ def load_claro_data_from_upload(uploaded_file):
         except Exception as e:
             return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {"found":False,"message":f"Error CSV: {e}"}
 
-    # ── Excel: detect format from magic bytes ────────────────────────
-    is_xls = raw[:2] == bytes([0xD0, 0xCF])
-    engine = "xlrd" if is_xls else "openpyxl"
+    # ── Excel: detect format and decrypt if needed ──────────────────
+    is_ole2 = raw[:8] == bytes.fromhex('d0cf11e0a1b11ae1')
     REQUIRED = ["AGENTE","ID","META ALTA NAT (>$2000)","EJEC ALTA NAT","CATEGORIA","ASESOR"]
 
+    # Step 1: Try to decrypt OLE2 encrypted packages (EncryptedPackage)
+    if is_ole2:
+        try:
+            import msoffcrypto
+            _f = _io.BytesIO(raw)
+            _office = msoffcrypto.OfficeFile(_f)
+            if _office.is_encrypted():
+                _dec = _io.BytesIO()
+                # Try empty password first (most enterprise files use no password)
+                try:
+                    _office.decrypt("", _dec)
+                except Exception:
+                    # Try without password argument
+                    _f.seek(0)
+                    _office2 = msoffcrypto.OfficeFile(_f)
+                    _office2.decrypt(_dec)
+                _dec.seek(0)
+                raw = _dec.read()
+                is_ole2 = raw[:2] == bytes([0xD0, 0xCF])
+        except ImportError:
+            pass
+        except Exception:
+            pass
+
+    # Step 2: Try all available engines
+    is_xls = raw[:2] == bytes([0xD0, 0xCF])
+    engines_to_try = ["xlrd","calamine","openpyxl"] if is_xls else ["openpyxl","calamine","xlrd"]
+
+    sheet_names = None
+    engine = None
+    last_error = None
+    for _eng in engines_to_try:
+        try:
+            sheet_names = pd.ExcelFile(_io.BytesIO(raw), engine=_eng).sheet_names
+            engine = _eng
+            break
+        except Exception as _e:
+            last_error = f"{_eng}: {_e}"
+
+    if sheet_names is None:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
+            "found": False,
+            "message": (
+                "El archivo está cifrado con protección empresarial. "
+                "Para abrirlo: en Excel ve a Archivo → Guardar una copia → "
+                "elige .xlsx → súbelo. "
+                f"({last_error})"
+            )
+        }
+
     try:
-        sheet_names = pd.ExcelFile(_io.BytesIO(raw), engine=engine).sheet_names
+        sheet_names = sheet_names
         best_sheet, best_hr, best_score = sheet_names[0], 0, 0
         all_plan = []
         sheet_order = {s:i for i,s in enumerate(sheet_names)}
