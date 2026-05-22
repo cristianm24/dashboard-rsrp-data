@@ -2336,12 +2336,17 @@ def _process_claro_df(df_det):
     for c in ["AGENTE","CATEGORIA","TIPOLOGIA","CLASIFICACION","ZONA",
               "TIPO","ASESOR","RUTA","CIRCUITO","BARRIO"]:
         if c in df_det.columns:
+            _before = str(df_det[c].iloc[0]) if len(df_det)>0 else "empty"
             def _clean_str(x, _ns=_NULL_STRINGS):
                 if x is None or x is pd.NA: return ""
                 if isinstance(x, float) and pd.isna(x): return ""
                 s = str(x).strip()
                 return "" if s.lower() in _ns else s
             df_det[c] = df_det[c].apply(_clean_str)
+            _after = str(df_det[c].iloc[0]) if len(df_det)>0 else "empty"
+            if c == "BARRIO":
+                import streamlit as _st2
+                _st2.session_state['_barrio_process_debug'] = f"BARRIO before_apply={repr(_before)} after_apply={repr(_after)}"
 
     # Remove rows where AGENTE is null, empty, or looks like a header repeat
     if "AGENTE" in df_det.columns:
@@ -3588,7 +3593,8 @@ def render_claro_view():
         _b_det_count = (df_det['BARRIO'].astype(str).str.strip().apply(lambda x: x not in ("","nan","None","<NA>","NaN"))).sum() if 'BARRIO' in df_det.columns else 0
         if _b_count == 0:
             _barrio_debug = st.session_state.get('_barrio_debug', 'no debug info')
-            st.warning(f"⚠️ BARRIO vacío · {_barrio_debug}")
+            _barrio_proc = st.session_state.get('_barrio_process_debug', 'no process debug')
+            st.warning(f"⚠️ {_barrio_debug} · {_barrio_proc}")
 
         def _clean(series):
             """Convert any column to clean string, empty/nan → —"""
