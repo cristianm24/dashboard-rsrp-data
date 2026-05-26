@@ -672,19 +672,21 @@ li[role="option"]:hover,
 
 /* Download button */
 [data-testid="stDownloadButton"] button {
-    background: var(--text-primary) !important;
+    background: var(--accent) !important;
     color: white !important;
+    -webkit-text-fill-color: white !important;
     border-radius: 10px !important;
     font-weight: 700 !important;
     font-size: .82rem !important;
     transition: var(--transition) !important;
     border: none !important;
     padding: 8px 18px !important;
+    box-shadow: 0 2px 8px rgba(225,6,0,0.20) !important;
 }
 [data-testid="stDownloadButton"] button:hover {
-    background: var(--accent) !important;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(225,6,0,0.25) !important;
+    background: #C00500 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 16px rgba(225,6,0,0.35) !important;
 }
 
 /* ── Cards & Components ───────────────────────────────── */
@@ -3620,6 +3622,29 @@ def render_claro_view():
     </div>
     """, unsafe_allow_html=True)
 
+    # ── Export button ─────────────────────────────────────────────────────────
+    try:
+        _export_df = df[[c for c in ["AGENTE","ASESOR","ID","CATEGORIA","TIPOLOGIA",
+            "CLASIFICACION","BARRIO","CIRCUITO","ZONA","RUTA",
+            "META ALTA NAT (>$2000)","EJEC ALTA NAT","EJE ALTA TOTAL",
+            "META ALTA INDU (=< $2.000)","EJEC ALTA INDU","CUOTA DE ALTA","S1","S2","S3","S4"]
+            if c in df.columns]].copy()
+        _export_df["CUMPL_NAT_%"] = (_export_df["EJEC ALTA NAT"] / _export_df["META ALTA NAT (>$2000)"].replace(0,np.nan) * 100).fillna(0).round(1)
+        import io as _io_exp
+        _buf = _io_exp.BytesIO()
+        with pd.ExcelWriter(_buf, engine="openpyxl") as _wr:
+            _export_df.to_excel(_wr, index=False, sheet_name=_periodo_label[:31])
+        _buf.seek(0)
+        st.download_button(
+            label="⬇ Exportar Excel",
+            data=_buf.getvalue(),
+            file_name=f"agentes_claro_{_periodo_label}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=False,
+        )
+    except Exception:
+        pass
+
     # ── Cálculos previos necesarios para el nav guide ─────────────────────────
     _DIA_CORTE_NAV = _dia_c; _DIAS_MES_NAV = 30; _FACTOR_NAV = 1.0 if _dia_c >= 30 else 30 / max(_dia_c, 1)
     _proy_global   = ((ejec_nat_total + ejec_indu_total) / (meta_nat_total + meta_indu_total) * 100) if (meta_nat_total + meta_indu_total) > 0 else 0
@@ -5322,7 +5347,7 @@ if _rsrp_available and not df_long.empty:
     df_f = df_long.loc[mask].copy()
     if solo_validos:
         df_f = df_f[df_f["Con_medicion"]].copy()
-    if df_f.empty and _rsrp_available:
+    if df_f.empty and _rsrp_available and not _vista_instructivo_sidebar:
         st.warning("No hay registros para la combinación de filtros seleccionada. Ajusta los filtros.")
         st.stop()
 
@@ -5804,7 +5829,7 @@ if _vista_claro:
 # =========================================================
 
 # Guard: require ALL 3 files to show Red y Mercado view
-if not _rsrp_available or not _market_uploaded or not _altas_uploaded:
+if (not _rsrp_available or not _market_uploaded or not _altas_uploaded) and not _vista_instructivo:
     _missing = []
     if not _rsrp_available:   _missing.append("📶 RSRP_COMPLETO.csv — señal por CP, operador y fecha")
     if not _market_uploaded:  _missing.append("📊 Cuota_mercado_completo.csv — cuota de mercado por CP")
