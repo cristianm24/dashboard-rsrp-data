@@ -4852,8 +4852,13 @@ try:
         market_info = {}
         altas_info = {}
         load_info = {"found": False, "message": "Sin archivo RSRP cargado."}
+except ZeroDivisionError as e:
+    import traceback as _tb
+    st.error(f"Error de división por cero al procesar los datos. Detalle técnico: {_tb.format_exc()[-300:]}")
+    st.stop()
 except Exception as e:
-    st.error(f"Error cargando los datos de red: {e}")
+    import traceback as _tb
+    st.error(f"Error cargando los datos de red: {e}\n\n{_tb.format_exc()[-500:]}")
     st.stop()
 
 
@@ -5483,10 +5488,15 @@ if _rsrp_available and not df_long.empty:
         df_f[df_f["Codigo_postal"].isin(top_zones["Codigo_postal"])] if not top_zones.empty else df_f.iloc[0:0]
     ).groupby(["Codigo_postal", "Operador"], as_index=False).agg(RSRP_mediana=("RSRP_valido", "median"))
 
-    trend_min = float(trend["RSRP_mediana"].min()) if not trend.empty else -125.0
-    trend_max = float(trend["RSRP_mediana"].max()) if not trend.empty else -60.0
-    y_min = max(-125, trend_min - 2)
-    y_max = min(-60, trend_max + 2)
+    trend_min = float(trend["RSRP_mediana"].min()) if not trend.empty and trend["RSRP_mediana"].notna().any() else -125.0
+    trend_max = float(trend["RSRP_mediana"].max()) if not trend.empty and trend["RSRP_mediana"].notna().any() else -60.0
+    if trend_min == trend_max:
+        trend_min -= 5
+        trend_max += 5
+    y_min = max(-130, trend_min - 2)
+    y_max = min(-55, trend_max + 2)
+    if y_min >= y_max:
+        y_min, y_max = -130, -55
 
     variation_result = compute_variation_tables(df_f, nivel_temporal_variacion)
     variation_operator = variation_result["variation_operator"].copy()
