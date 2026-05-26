@@ -5223,7 +5223,7 @@ if not _vista_claro_sidebar and _rsrp_available:
             st.checkbox(op, key=f"op_{op}")
     operadores_sel = [op for op in operator_cols if st.session_state.get(f"op_{op}", False)]
     st.sidebar.markdown('</div>', unsafe_allow_html=True)
-    if not operadores_sel:
+    if not operadores_sel and not _vista_instructivo_sidebar:
         st.warning("Debes seleccionar al menos un operador.")
         st.stop()
 
