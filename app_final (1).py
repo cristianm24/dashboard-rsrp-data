@@ -159,9 +159,13 @@ h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-weight: 800; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
 
-/* Force white text in REQUERIDO badges */
+/* Force white text in REQUERIDO badges and colored circles */
 span[style*="background:#E10600"],
-span[style*="background: #E10600"] {
+span[style*="background: #E10600"],
+span[style*="background:linear-gradient(135deg,#E10600"],
+span[style*="background:#2563EB"],
+span[style*="background:#16A34A"],
+span[style*="background:#7C3AED"] {
     color: #FFFFFF !important;
     -webkit-text-fill-color: #FFFFFF !important;
 }
@@ -190,6 +194,20 @@ span[style*="background: #E10600"] {
     padding: 1.2rem 1rem 1.5rem !important;
 }
 [data-testid="stSidebar"] * { color: var(--text-primary) !important; }
+/* Exception: spans with colored backgrounds keep white text */
+[data-testid="stSidebar"] span[style*="border-radius:99px"],
+[data-testid="stSidebar"] span[style*="border-radius:50%"] {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+/* Same for main content colored spans */
+.stMarkdown span[style*="border-radius:99px"],
+.stMarkdown span[style*="border-radius:50%"],
+.element-container span[style*="border-radius:99px"],
+.element-container span[style*="border-radius:50%"] {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
 
 /* Sidebar buttons - white background, red accent */
 [data-testid="stSidebar"] button[kind="secondary"],
@@ -3026,10 +3044,10 @@ def render_instructivo():
     """, unsafe_allow_html=True)
 
     # ── Shared helpers ─────────────────────────────────────────────────────────
-    _tag_req = ("<span style='background:#E10600;color:#FFFFFF !important;font-size:.55rem;font-weight:900;"
+    _tag_req = ("<span style='background:#E10600 !important;color:#FFFFFF !important;font-size:.55rem;font-weight:900;"
                 "padding:2px 9px;border-radius:99px;margin-left:7px;vertical-align:middle;"
                 "letter-spacing:.4px;text-transform:uppercase;box-shadow:0 2px 6px rgba(225,6,0,0.3);"
-                "-webkit-text-fill-color:#FFFFFF !important;'>"
+                "-webkit-text-fill-color:#FFFFFF !important;fill:white;'>"
                 "Requerido</span>")
 
     def _file_row(icon, name, tag_html, desc):
@@ -3051,7 +3069,8 @@ def render_instructivo():
         c = colors[(n-1) % len(colors)]
         return (
             f"<div style='display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;'>"
-            f"<span style='width:22px;height:22px;background:{c};color:white;"
+            f"<span style='width:22px;height:22px;background:{c};color:#FFFFFF !important;"
+            f"-webkit-text-fill-color:#FFFFFF !important;"
             f"font-size:.62rem;font-weight:900;border-radius:50%;display:inline-flex;"
             f"align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;"
             f"box-shadow:0 2px 6px {c}44;'>{n}</span>"
