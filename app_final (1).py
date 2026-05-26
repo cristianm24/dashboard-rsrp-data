@@ -80,14 +80,17 @@ QUALITY_COLORS = {
 }
 
 AGENTE_COLORS = {
-    "LIKE USME":        "#E10600",
-    "MI RED MOVIL":     "#38BDF8",
-    "ICELL R4":         "#22C55E",
+    "LIKE USME":       "#E10600",
+    "MI RED MOVIL":    "#38BDF8",
+    "MRM":             "#38BDF8",
+    "ICELL R4":        "#22C55E",
     "MAX EVOLUCION BOG":"#F59E0B",
-    "TEAM":             "#A855F7",
-    "LIKE ZONA SUR":    "#EF4444",
-    "MAX EVOLUCION ":   "#F97316",
-    "MAX EVOLUCION":    "#F97316",
+    "TEAM":            "#A855F7",
+    "LIKE ZONA SUR":   "#EF4444",
+    "LIKE SUR":        "#EF4444",
+    "MAX EVOLUCION ":  "#F97316",
+    "MAX EVOLUCION":   "#F97316",
+    "MAX BOGOTA":      "#FB923C",
 }
 
 CATEGORIA_COLORS = {
@@ -156,7 +159,12 @@ h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-weight: 800; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
 
-/* ── Sidebar: always expanded, collapse button hidden ─── */
+/* ── Hide Altair/Vega dark toolbar ───────────────────────────── */
+.vega-embed .vega-actions,
+.vega-embed summary,
+.vega-embed details {
+    display: none !important;
+}
 /* Hide the collapse button so sidebar can never be closed */
 [data-testid="stSidebarCollapseButton"] {
     display: none !important;
@@ -176,44 +184,182 @@ h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-weight: 800; }
 }
 [data-testid="stSidebar"] * { color: var(--text-primary) !important; }
 
+/* Sidebar buttons - white background, red accent */
+[data-testid="stSidebar"] button[kind="secondary"],
+[data-testid="stSidebar"] .stButton > button {
+    background: white !important;
+    color: var(--text-primary) !important;
+    border: 1.5px solid var(--border) !important;
+    border-radius: 8px !important;
+    font-size: .78rem !important;
+    font-weight: 600 !important;
+    transition: all .15s ease !important;
+    box-shadow: none !important;
+}
+[data-testid="stSidebar"] .stButton > button:hover {
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+    background: var(--accent-soft) !important;
+}
+
+/* Fix sidebar text wrapping */
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] .stMarkdown p,
+[data-testid="stSidebar"] .stMarkdown div {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+}
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+}
+
 /* Sidebar section blocks */
 .sidebar-section {
     background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    padding: 14px 16px;
-    margin-bottom: 10px;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
     transition: var(--transition);
+    box-shadow: 0 1px 3px rgba(15,23,42,0.04);
 }
 .sidebar-section:hover {
-    border-color: var(--border-hover);
-    box-shadow: var(--shadow-sm);
+    border-color: rgba(225,6,0,0.2);
+    box-shadow: 0 2px 8px rgba(225,6,0,0.06);
 }
 .sidebar-section-title {
-    font-size: .70rem;
+    font-size: .60rem;
     font-weight: 900;
     color: var(--text-muted) !important;
     text-transform: uppercase;
     letter-spacing: .5px;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 .sidebar-section-label {
-    font-size: .88rem;
+    font-size: .85rem;
     font-weight: 700;
     color: var(--text-primary) !important;
-    margin-bottom: 3px;
+    margin-bottom: 2px;
+    white-space: normal !important;
 }
 .sidebar-section-sub {
-    font-size: .73rem;
-    color: var(--text-secondary) !important;
-    line-height: 1.5;
+    font-size: .70rem;
+    color: var(--text-muted) !important;
+    line-height: 1.45;
+    white-space: normal !important;
 }
 
 /* Legacy sidebar-block compat */
-.sidebar-block { margin-bottom: 10px; }
-.sidebar-kicker { font-size:.68rem; font-weight:900; color:var(--text-muted)!important; text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; }
-.sidebar-title  { font-size:.88rem; font-weight:700; color:var(--text-primary)!important; margin-bottom:3px; }
-.sidebar-sub    { font-size:.73rem; color:var(--text-secondary)!important; line-height:1.5; margin-bottom:6px; }
+.sidebar-block { margin-bottom:14px; }
+
+/* ── Step headers (Paso 1, 2, 3) ────────────────────────────── */
+.sidebar-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: .60rem;
+    font-weight: 900;
+    color: var(--accent) !important;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    background: var(--accent-soft);
+    border: 1px solid rgba(225,6,0,0.15);
+    border-radius: 20px;
+    padding: 2px 8px;
+    margin-bottom: 6px;
+}
+.sidebar-title {
+    font-size: .92rem;
+    font-weight: 800;
+    color: var(--text-primary) !important;
+    margin-bottom: 3px;
+    line-height: 1.3;
+}
+.sidebar-sub {
+    font-size: .71rem;
+    color: var(--text-muted) !important;
+    line-height: 1.5;
+    margin-bottom: 10px;
+    white-space: normal !important;
+}
+
+/* ── Filter stage cards (mini chips inside step blocks) ──────── */
+.filter-stage {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+.filter-stage-card {
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 9px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.filter-stage-title {
+    font-size: .60rem;
+    font-weight: 800;
+    color: var(--accent) !important;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    margin-bottom: 1px;
+    white-space: nowrap;
+}
+.filter-stage-text {
+    font-size: .68rem;
+    color: var(--text-secondary) !important;
+    white-space: normal;
+    line-height: 1.3;
+}
+
+/* ── Divider ─────────────────────────────────────────────────── */
+[data-testid="stSidebar"] hr {
+    border: none !important;
+    border-top: 1px solid var(--border) !important;
+    margin: 10px 0 !important;
+}
+
+/* ── Sidebar widget labels ───────────────────────────────────── */
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+[data-testid="stSidebar"] label p {
+    font-size: .72rem !important;
+    font-weight: 700 !important;
+    color: var(--text-secondary) !important;
+    text-transform: uppercase !important;
+    letter-spacing: .3px !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+}
+
+/* ── Multiselect tags ────────────────────────────────────────── */
+[data-testid="stSidebar"] [data-baseweb="tag"] {
+    background: var(--accent-soft) !important;
+    border: 1px solid rgba(225,6,0,0.2) !important;
+    border-radius: 20px !important;
+}
+[data-testid="stSidebar"] [data-baseweb="tag"] span {
+    color: var(--accent) !important;
+    font-size: .70rem !important;
+    font-weight: 700 !important;
+}
+
+/* ── Slider ──────────────────────────────────────────────────── */
+[data-testid="stSidebar"] [data-testid="stSlider"] > div > div > div {
+    background: var(--accent) !important;
+}
+[data-testid="stSidebar"] [data-testid="stSlider"] [role="slider"] {
+    background: white !important;
+    border: 2px solid var(--accent) !important;
+    box-shadow: 0 0 0 3px var(--accent-soft) !important;
+}
 
 /* Radio buttons */
 [data-testid="stRadio"] label {
@@ -285,16 +431,38 @@ h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-weight: 800; }
     box-shadow: 0 4px 12px rgba(225,6,0,0.30) !important;
 }
 
-/* Selectbox */
+/* Selectbox — force white background everywhere including sidebar dropdowns */
 [data-testid="stSelectbox"] > div > div,
 [data-testid="stMultiSelect"] > div > div,
 [data-baseweb="select"] > div,
-[data-baseweb="select"] [role="listbox"] {
+[data-baseweb="select"] [role="listbox"],
+[data-baseweb="popover"] ul,
+[data-baseweb="popover"] li,
+[data-baseweb="menu"] ul,
+[data-baseweb="menu"] li,
+[role="listbox"],
+[role="option"] {
     background: white !important;
+    color: var(--text-primary) !important;
+}
+[data-testid="stSelectbox"] > div > div,
+[data-testid="stMultiSelect"] > div > div,
+[data-baseweb="select"] > div {
     border: 1px solid var(--border) !important;
     border-radius: var(--radius-sm) !important;
-    color: var(--text-primary) !important;
     transition: var(--transition) !important;
+}
+/* Selected option in dropdown */
+[role="option"][aria-selected="true"],
+[data-baseweb="menu"] [aria-selected="true"] {
+    background: var(--accent-soft) !important;
+    color: var(--accent) !important;
+}
+/* Hovered option */
+[role="option"]:hover,
+[data-baseweb="menu"] li:hover {
+    background: var(--bg-sidebar) !important;
+    color: var(--text-primary) !important;
 }
 [data-baseweb="select"] * { color: var(--text-primary) !important; background: transparent; }
 [data-baseweb="popover"] { background: white !important; }
@@ -1355,31 +1523,28 @@ def safe_round_columns(df_in, cols, decimals=1):
 
 def show_table(df, height=None, key=None):
     """
-    Renders a dataframe as a styled HTML table that is always visible
-    regardless of Streamlit's iframe/theme issues.
+    Renders a dataframe as a compact styled HTML table.
     """
     if df is None or df.empty:
         st.markdown(
-            "<div style='padding:20px;text-align:center;color:var(--text-muted);"
-            "font-size:.80rem;border:1px solid var(--border);border-radius:10px;'>"
+            "<div style='padding:16px;text-align:center;color:var(--text-muted);"
+            "font-size:.78rem;border:1px solid var(--border);border-radius:8px;'>"
             "Sin datos disponibles para los filtros actuales.</div>",
             unsafe_allow_html=True
         )
         return
-    # Cap at 300 rows max for HTML rendering
     df = df.head(300)
-    # Build HTML table
     cols = list(df.columns)
     rows = df.values.tolist()
-    th_style = ("background:#F1F3F8;color:#475569;font-size:.72rem;font-weight:800;"
-                "text-transform:uppercase;letter-spacing:.3px;padding:8px 12px;"
+    th_style = ("background:#F1F3F8;color:#64748B;font-size:.66rem;font-weight:700;"
+                "text-transform:uppercase;letter-spacing:.3px;padding:5px 10px;"
                 "border-bottom:2px solid #E4E8F0;text-align:left;white-space:nowrap;")
-    td_style = ("color:#0F172A;font-size:.78rem;padding:7px 12px;"
-                "border-bottom:1px solid #F1F3F8;")
-    tr_alt   = "background:#F8F9FC;"
+    td_style = ("color:#0F172A;font-size:.73rem;padding:4px 10px;"
+                "border-bottom:1px solid #F1F3F8;white-space:nowrap;")
+    tr_alt = "background:#F8F9FC;"
     html = (
-        "<div style='overflow-x:auto;border:1px solid #E4E8F0;border-radius:10px;"
-        "box-shadow:0 1px 3px rgba(15,23,42,0.08);'>"
+        "<div style='overflow-x:auto;border:1px solid #E4E8F0;border-radius:8px;"
+        "box-shadow:0 1px 3px rgba(15,23,42,0.06);'>"
         "<table style='width:100%;border-collapse:collapse;background:white;'>"
         "<thead><tr>"
     )
@@ -1388,7 +1553,7 @@ def show_table(df, height=None, key=None):
     html += "</tr></thead><tbody>"
     for i, row in enumerate(rows):
         row_style = tr_alt if i % 2 == 1 else ""
-        html += f"<tr style='transition:background .15s;{row_style}'>"
+        html += f"<tr style='{row_style}'>"
         for val in row:
             try:
                 import pandas as _pd
@@ -2134,8 +2299,6 @@ def compute_variation_tables(df_source, nivel_temporal):
         result["message"] = "Se requiere al menos dos periodos con datos válidos para calcular variación."
         return result
 
-    if total_by_period.empty:
-        return np.nan, np.nan, np.nan, "N/D", "N/D"
     periodo_inicial = variation_period.iloc[0][period_col] if not variation_period.empty else "N/D"
     periodo_final = variation_period.iloc[-1][period_col]
     result["periodo_inicial"] = periodo_inicial
@@ -2269,8 +2432,6 @@ COLUMNAS_OPCIONALES = {
     "S1": 0, "S2": 0, "S3": 0, "S4": 0,
     "S1.1": 0, "S2.1": 0, "S3.1": 0, "S4.1": 0,
     "VR_M-1": np.nan, "VR_M-1.1": np.nan, "VR_M-12": np.nan, "VR_M-12.1": np.nan,
-    "BARRIO": None, "ZONA": None, "RUTA": None, "CIRCUITO": None,
-    "TIPOLOGIA": None, "CLASIFICACION": None,
     "META INGRESOS M0": np.nan, "EJEC INGRESOS M0": np.nan,
 }
 
@@ -2299,6 +2460,13 @@ def _process_claro_df(df_det):
     }
     df_det = df_det.rename(columns=_col_aliases)
 
+    # Normalize AGENTE name variants so colors always match
+    if "AGENTE" in df_det.columns:
+        _agente_norm = {"MRM": "MI RED MOVIL", "LIKE SUR": "LIKE ZONA SUR"}
+        df_det["AGENTE"] = df_det["AGENTE"].apply(
+            lambda x: _agente_norm.get(str(x).strip(), str(x).strip()) if x and str(x).strip() not in ("","nan") else x
+        )
+
     cols_excel = set(df_det.columns)
 
     # Columnas requeridas faltantes
@@ -2308,6 +2476,11 @@ def _process_claro_df(df_det):
     for c, default in COLUMNAS_OPCIONALES.items():
         if c not in df_det.columns:
             df_det[c] = default
+
+    # String columns — fill missing with empty string, never None/NaN which become numeric NaN
+    for c in ["BARRIO","ZONA","RUTA","CIRCUITO","TIPOLOGIA","CLASIFICACION"]:
+        if c not in df_det.columns:
+            df_det[c] = ""
 
     # Columnas nuevas no reconocidas
     conocidas = set(COLUMNAS_REQUERIDAS) | set(COLUMNAS_OPCIONALES.keys()) | {
@@ -2570,6 +2743,46 @@ def load_claro_data_from_path(path):
     return _load_from_xl(xl, str(path))
 
 
+@st.cache_data(show_spinner='Leyendo archivo...')
+def _load_excel_bytes(raw_bytes: bytes, fname: str):
+    """Cache Excel loading by file bytes hash."""
+    import io as _io
+    fname_lower = fname.lower()
+    is_xls = raw_bytes[:2] == bytes([0xD0, 0xCF])
+    engine = "xlrd" if is_xls else "openpyxl"
+    REQUIRED = ["AGENTE","ID","META ALTA NAT (>$2000)","EJEC ALTA NAT","CATEGORIA","ASESOR"]
+    sheet_names = pd.ExcelFile(_io.BytesIO(raw_bytes), engine=engine).sheet_names
+    best_sheet, best_hr, best_score = sheet_names[0], 0, 0
+    all_plan = []
+    sheet_order = {s:i for i,s in enumerate(sheet_names)}
+    for sheet in sheet_names:
+        for hr in [0,4,5]:
+            try:
+                preview = pd.read_excel(_io.BytesIO(raw_bytes), sheet_name=sheet, header=hr, nrows=2, engine=engine)
+                cols = [str(c).strip() for c in preview.columns]
+                score = sum(1 for c in REQUIRED if c in cols)
+                if score >= 3:
+                    all_plan.append({"sheet":sheet,"header_row":hr,"score":score})
+                    if score > best_score:
+                        best_sheet, best_hr, best_score = sheet, hr, score
+                    break
+            except Exception:
+                pass
+    _MONTHS = {"ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO",
+               "AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"}
+    # Prefer month-named sheets with high score; exclude agente-only sheets
+    high_score = [p for p in all_plan if p["score"] >= 5]
+    month_sheets = [p for p in all_plan if p["sheet"].strip().upper() in _MONTHS]
+    best_plan = high_score if high_score else (month_sheets if month_sheets else all_plan)
+    all_plan_sorted = sorted(best_plan, key=lambda x: sheet_order.get(x["sheet"], 0))
+    if all_plan_sorted:
+        p = all_plan_sorted[-1]
+        best_sheet, best_hr = p["sheet"], p["header_row"]
+    df = pd.read_excel(_io.BytesIO(raw_bytes), sheet_name=best_sheet, header=best_hr, engine=engine)
+    df.columns = [str(c).strip() for c in df.columns]
+    return df, best_sheet, best_hr, [p["sheet"] for p in all_plan_sorted]
+
+
 def load_claro_data_from_upload(uploaded_file):
     """Carga desde archivo subido. Lee bytes UNA vez y usa BytesIO para todo."""
     import io as _io
@@ -2668,62 +2881,67 @@ def load_claro_data_from_upload(uploaded_file):
             )
         }
 
+    # Use cached loader for the actual sheet scanning and reading
     try:
-        sheet_names = sheet_names
-        best_sheet, best_hr, best_score = sheet_names[0], 0, 0
-        all_plan = []
-        sheet_order = {s:i for i,s in enumerate(sheet_names)}
+        _df_raw, best_sheet, best_hr, all_plan_sheets = _load_excel_bytes(raw, fname)
+    except Exception:
+        # Fallback to non-cached scan if cache fails
+        try:
+            best_sheet, best_hr, best_score = sheet_names[0], 0, 0
+            all_plan = []
+            sheet_order = {s:i for i,s in enumerate(sheet_names)}
+            REQUIRED = ["AGENTE","ID","META ALTA NAT (>$2000)","EJEC ALTA NAT","CATEGORIA","ASESOR"]
+            for sheet in sheet_names:
+                for hr in [0,4,5]:
+                    try:
+                        preview = pd.read_excel(_io.BytesIO(raw), sheet_name=sheet, header=hr, nrows=2, engine=engine)
+                        cols = [str(c).strip() for c in preview.columns]
+                        score = sum(1 for c in REQUIRED if c in cols)
+                        if score >= 3:
+                            all_plan.append({"sheet":sheet,"header_row":hr,"score":score})
+                            if score > best_score:
+                                best_sheet, best_hr, best_score = sheet, hr, score
+                            break
+                    except Exception: pass
+            _MONTHS2 = {"ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO",
+                        "AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"}
+            _hs = [p for p in all_plan if p["score"] >= 5]
+            _ms = [p for p in all_plan if p["sheet"].strip().upper() in _MONTHS2]
+            _bp = _hs if _hs else (_ms if _ms else all_plan)
+            all_plan_sorted = sorted(_bp, key=lambda x: sheet_order.get(x["sheet"],0))
+            if all_plan_sorted:
+                p = all_plan_sorted[-1]; best_sheet, best_hr = p["sheet"], p["header_row"]
+            _df_raw = pd.read_excel(_io.BytesIO(raw), sheet_name=best_sheet, header=best_hr, engine=engine)
+            _df_raw.columns = [str(c).strip() for c in _df_raw.columns]
+            all_plan_sheets = [p["sheet"] for p in all_plan_sorted]
+        except Exception as e2:
+            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {"found":False,"message":f"Error: {e2}"}
 
-        for sheet in sheet_names:
-            for hr in [0,4,5]:
-                try:
-                    preview = pd.read_excel(_io.BytesIO(raw), sheet_name=sheet, header=hr, nrows=2, engine=engine)
-                    cols  = [str(c).strip() for c in preview.columns]
-                    score = sum(1 for c in REQUIRED if c in cols)
-                    if score >= 3:
-                        all_plan.append({"sheet":sheet,"header_row":hr,"score":score})
-                        if score > best_score:
-                            best_sheet, best_hr, best_score = sheet, hr, score
-                        break
-                except Exception:
-                    pass
+    # Use _df_raw (from cache or fallback) — no re-read
+    df = _df_raw.copy()
+    # Store debug info
+    _raw_barrio_sample = repr(df['BARRIO'].iloc[0]) if 'BARRIO' in df.columns and len(df)>0 else 'NO COL'
+    _raw_barrio_count = df['BARRIO'].notna().sum() if 'BARRIO' in df.columns else 0
+    df, faltantes, _ = _process_claro_df(df)
+    _post_barrio_sample = repr(df['BARRIO'].iloc[0]) if 'BARRIO' in df.columns and len(df)>0 else 'NO COL'
+    _post_barrio_count = (df['BARRIO'] != '').sum() if 'BARRIO' in df.columns else 0
+    import streamlit as _st_debug
+    _st_debug.session_state['_barrio_debug'] = f"sheet={best_sheet} · raw[0]={_raw_barrio_sample} · raw_notna={_raw_barrio_count} · post[0]={_post_barrio_sample} · post_nonempty={_post_barrio_count}"
+    if faltantes:
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {"found":False,"message":f"Faltan columnas: {', '.join(faltantes)}"}
 
-        all_plan_sorted = sorted(all_plan, key=lambda x: sheet_order.get(x["sheet"],0))
-        if all_plan_sorted:
-            p = all_plan_sorted[-1]
-            best_sheet, best_hr = p["sheet"], p["header_row"]
+    _dia = 7
+    for _s,_d in [("S1",7),("S2",14),("S3",21),("S4",30)]:
+        if _s in df.columns and pd.to_numeric(df[_s],errors="coerce").sum() > 100:
+            if _s == "S4":
+                if pd.to_numeric(df.get("S3",pd.Series([0])),errors="coerce").sum() > 100: _dia = _d
+            else: _dia = _d
 
-        df = pd.read_excel(_io.BytesIO(raw), sheet_name=best_sheet, header=best_hr, engine=engine)
-        df.columns = [str(c).strip() for c in df.columns]
-        # DEBUG: store raw BARRIO value before processing
-        _raw_barrio_sample = repr(df['BARRIO'].iloc[0]) if 'BARRIO' in df.columns and len(df)>0 else 'NO COL'
-        _raw_barrio_count = df['BARRIO'].notna().sum() if 'BARRIO' in df.columns else 0
-        df, faltantes, _ = _process_claro_df(df)
-        _post_barrio_sample = repr(df['BARRIO'].iloc[0]) if 'BARRIO' in df.columns and len(df)>0 else 'NO COL'
-        _post_barrio_count = (df['BARRIO'] != '').sum() if 'BARRIO' in df.columns else 0
-        # Store debug info for display
-        import streamlit as _st_debug
-        _st_debug.session_state['_barrio_debug'] = f"sheet={best_sheet} · raw[0]={_raw_barrio_sample} · raw_notna={_raw_barrio_count} · post[0]={_post_barrio_sample} · post_nonempty={_post_barrio_count}"
-        if faltantes:
-            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {"found":False,"message":f"Faltan columnas: {', '.join(faltantes)}"}
-
-        _dia = 7
-        for _s,_d in [("S1",7),("S2",14),("S3",21),("S4",30)]:
-            if _s in df.columns and pd.to_numeric(df[_s],errors="coerce").sum() > 100:
-                if _s == "S4":
-                    if pd.to_numeric(df.get("S3",pd.Series([0])),errors="coerce").sum() > 100: _dia = _d
-                else: _dia = _d
-
-        return df, pd.DataFrame(), pd.DataFrame(), {
-            "found":True,"message":None,"path":fname,
-            "sheet_name":best_sheet,"header_row":best_hr,"dia_corte":_dia,
-            "all_plan_sheets":[p["sheet"] for p in all_plan_sorted],
-        }
-    except Exception as e:
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), {
-            "found":False,
-            "message":f"Error abriendo Excel ({engine}): {e}"
-        }
+    return df, pd.DataFrame(), pd.DataFrame(), {
+        "found":True,"message":None,"path":fname,
+        "sheet_name":best_sheet,"header_row":best_hr,"dia_corte":_dia,
+        "all_plan_sheets": all_plan_sheets,
+    }
 
 def load_claro_data():
     """
@@ -2838,14 +3056,14 @@ def render_instructivo():
             f"letter-spacing:.4px;margin-bottom:8px;'>Archivos</div>"
             + _file_row("📄","RSRP_COMPLETO.csv",_tag_req,
                 "Se&#241;al por CP, operador y fecha &middot; Columnas: Codigo_postal &middot; Fecha de inicio &middot; Claro &middot; Tigo &middot; Movistar...")
-            + _file_row("📊","Cuota_mercado_completo.csv",_tag_opt,
+            + _file_row("📊","Cuota_mercado_completo.csv",_tag_req,
                 "Cuota de mercado por CP y operador &middot; Habilita el tab Mercado")
-            + _file_row("📊","Cuota_alta_completo.csv",_tag_opt,
+            + _file_row("📊","Cuota_alta_completo.csv",_tag_req,
                 "Captaci&#243;n de altas por CP &middot; Complementa el an&#225;lisis competitivo")
             + f"<div style='font-size:.66rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;"
             f"letter-spacing:.4px;margin:12px 0 7px;'>C&#243;mo cargar</div>"
             + _step_row(1,"Sube el CSV de se&#241;al usando el cargador <b>Se&#241;al RSRP</b> del sidebar")
-            + _step_row(2,"Los archivos de cuota (opcionales) van en el mismo cargador del sidebar")
+            + _step_row(2,"Sube los 3 archivos (RSRP, cuota de mercado y cuota de altas) — todos son requeridos")
             + "</div>",
             unsafe_allow_html=True
         )
@@ -2909,16 +3127,66 @@ def render_instructivo():
             unsafe_allow_html=True
         )
 
-    # Footer
+    # Footer + reading guide
+    st.markdown("""
+    <div style='margin-top:20px;'>
+    <div style='font-size:.80rem;font-weight:900;color:var(--text-primary);margin-bottom:12px;
+        text-transform:uppercase;letter-spacing:.5px;'>📖 Cómo leer el dashboard</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_r1, col_r2, col_r3 = st.columns(3, gap="large")
+    _rcss = "background:white;border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(15,23,42,0.06);"
+
+    with col_r1:
+        st.markdown(
+            f"<div style='{_rcss}'>"
+            "<div style='font-size:.70rem;font-weight:900;color:#2563EB;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;'>🔵 Vista Red y Mercado</div>"
+            + _tab_row("📊","Resumen","KPIs globales: señal promedio, % cobertura, score por operador. Lee el semáforo: 🟢 ≥-70dBm · 🟡 -90 a -70 · 🔴 &lt;-100")
+            + _tab_row("📡","Operadores","Ranking de señal entre Claro, Tigo, Movistar, WOM. El operador con mayor score = mejor red.")
+            + _tab_row("🗺","Territorio","CP críticos ordenados por señal débil. Los primeros = prioridad de inversión en red.")
+            + _tab_row("📈","Variación","Cambio % entre periodos. Verde = mejora · Rojo = deterioro.")
+            + _tab_row("🏪","Mercado","Cuota de participación vs altas nuevas por CP. Cruce señal + mercado = oportunidad.")
+            + "</div>",
+            unsafe_allow_html=True
+        )
+
+    with col_r2:
+        st.markdown(
+            f"<div style='{_rcss}'>"
+            "<div style='font-size:.70rem;font-weight:900;color:var(--accent);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;'>🔴 Vista Agentes Claro</div>"
+            + _tab_row("↗","¿Cómo vamos?","Meta vs ejecución del mes. La barra roja = agente. Verde = cumple. Amarillo = 70-99%. Rojo = &lt;70%.")
+            + _tab_row("◈","¿Quién cumple?","Ranking individual de agentes y asesores. Ordena por cumplimiento % para ver los críticos.")
+            + _tab_row("◎","La brecha","Barrios y PDVs donde más altas se pierden. Prioriza los de mayor brecha = mayor impacto.")
+            + _tab_row("∿","El ritmo","Curva S1→S4. Si S3 &gt; S1, hay aceleración. Si S4 cae = cerrar mes con urgencia.")
+            + _tab_row("◉","Oportunidades","PDVs con baja cuota de altas Claro = más espacio para crecer sin más cobertura.")
+            + "</div>",
+            unsafe_allow_html=True
+        )
+
+    with col_r3:
+        st.markdown(
+            f"<div style='{_rcss}'>"
+            "<div style='font-size:.70rem;font-weight:900;color:#7C3AED;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;'>⚙️ Controles del sidebar</div>"
+            + _tab_row("🗓","Periodo","Define el rango de fechas o ventana móvil. Afecta todos los tabs de Red y Mercado.")
+            + _tab_row("📍","Territorio","Filtra por localidad o barrio específico para acotar el análisis geográfico.")
+            + _tab_row("👥","Operadores","Activa o desactiva operadores para comparaciones directas.")
+            + _tab_row("🏢","Agente","En Vista Claro: filtra por agente, categoría, tipo de PDV o zona.")
+            + _tab_row("📅","Periodo mes","Selector de mes cuando hay múltiples hojas en el Excel.")
+            + "</div>",
+            unsafe_allow_html=True
+        )
+
     st.markdown(
-        "<div style='background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);"
-        "padding:12px 18px;margin-top:6px;display:flex;align-items:center;justify-content:space-between;"
-        "animation:fadeUp .4s ease both;'>"
+        "<div style='background:linear-gradient(135deg,#F8F9FC 0%,#EFF6FF 100%);"
+        "border:1px solid var(--border);border-radius:12px;"
+        "padding:14px 20px;margin-top:16px;display:flex;align-items:center;"
+        "justify-content:space-between;'>"
         "<span style='font-size:.70rem;color:var(--text-muted);'>"
-        "&#128274; Los archivos se procesan localmente en tu sesi&#243;n &middot; "
-        "No se almacenan en ning&#250;n servidor</span>"
-        "<span style='font-size:.70rem;font-weight:700;color:var(--text-muted);'>"
-        "Dashboard Claro Colombia</span>"
+        "🔒 Los archivos se procesan localmente en tu sesión &middot; "
+        "No se almacenan en ningún servidor &middot; Datos confidenciales seguros</span>"
+        "<span style='font-size:.70rem;font-weight:800;color:var(--accent);'>"
+        "Claro Colombia · R4 Prepago</span>"
         "</div>",
         unsafe_allow_html=True
     )
@@ -3658,6 +3926,13 @@ def render_claro_view():
             ejec_total=(_eje,"sum"),
         ).reset_index()
         by_asesor["cumpl"] = (by_asesor["ejec_nat"]/by_asesor["meta_nat"].replace(0,np.nan)*100).fillna(0)
+        # Make unique label for asesores that appear in multiple agents
+        _asesor_counts = by_asesor.groupby("ASESOR")["AGENTE"].count()
+        _dup_asesores = set(_asesor_counts[_asesor_counts > 1].index)
+        by_asesor["ASESOR_LABEL"] = by_asesor.apply(
+            lambda r: f"{r['ASESOR']} ({r['AGENTE']})" if r['ASESOR'] in _dup_asesores else r['ASESOR'],
+            axis=1
+        )
         by_asesor = by_asesor.sort_values("ejec_total", ascending=False).head(15)
 
         with c3a:
@@ -3667,14 +3942,18 @@ def render_claro_view():
                     cornerRadiusTopLeft=5, cornerRadiusTopRight=5
                 ).encode(
                     x=alt.X("ejec_total:Q", title="Altas totales"),
-                    y=alt.Y("ASESOR:N", sort="-x", title=None, axis=alt.Axis(labelLimit=200)),
+                    y=alt.Y("ASESOR_LABEL:N", sort="-x", title=None, axis=alt.Axis(labelLimit=220)),
                     color=alt.Color("AGENTE:N",
-                        scale=alt.Scale(domain=list(AGENTE_COLORS.keys()), range=list(AGENTE_COLORS.values())),
+                        scale=alt.Scale(
+                            domain=list(AGENTE_COLORS.keys()) + ["Otro"],
+                            range=list(AGENTE_COLORS.values()) + ["#94A3B8"]
+                        ),
                         legend=alt.Legend(title="Agente")),
-                    tooltip=[alt.Tooltip("ASESOR:N"), alt.Tooltip("AGENTE:N"),
+                    tooltip=[alt.Tooltip("ASESOR:N", title="Asesor"),
+                             alt.Tooltip("AGENTE:N", title="Agente"),
                              alt.Tooltip("ejec_total:Q", format=",.0f", title="Altas"),
                              alt.Tooltip("cumpl:Q", format=".1f", title="Cumpl. %")]
-                ).properties(height=360)
+                ).properties(height=380)
                 st.altair_chart(style_chart(chart_as), width='stretch', theme=None)
             st.markdown('</div>', unsafe_allow_html=True)
 
@@ -4459,22 +4738,59 @@ with st.sidebar:
     pass  # ensure sidebar renders
 
 st.sidebar.markdown(
-    "<div style='display:flex;align-items:center;gap:10px;padding:4px 0 16px 0;border-bottom:1px solid var(--border);margin-bottom:14px;'>"
-    "<div style='width:32px;height:32px;background:#E10600;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;'>"
-    "<svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'>"
+    "<div style='padding:0 0 14px 0;border-bottom:2px solid var(--border);margin-bottom:16px;'>"
+    "<div style='display:flex;align-items:center;gap:10px;'>"
+    "<div style='width:36px;height:36px;background:linear-gradient(135deg,#E10600 0%,#FF4D4D 100%);"
+    "border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"
+    "box-shadow:0 4px 12px rgba(225,6,0,0.30);'>"
+    "<svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' "
+    "stroke-linecap='round' stroke-linejoin='round'>"
     "<polyline points='22 7 13.5 15.5 8.5 10.5 2 17'/><polyline points='16 7 22 7 22 13'/></svg></div>"
-    "<div><div style='font-size:.82rem;font-weight:900;color:var(--text-primary);'>Inteligencia Comercial</div>"
-    "<div style='font-size:.66rem;color:var(--text-muted);font-weight:600;'>Claro Colombia</div></div>"
-    "</div>",
+    "<div><div style='font-size:.88rem;font-weight:900;color:var(--text-primary);letter-spacing:-.2px;'>"
+    "Inteligencia Comercial</div>"
+    "<div style='font-size:.64rem;color:var(--accent);font-weight:700;letter-spacing:.4px;text-transform:uppercase;'>"
+    "Claro Colombia · R4 Prepago</div></div></div></div>",
     unsafe_allow_html=True
 )
 
+# ---- SWITCH DE VISTA (top of sidebar) ----
+_default_vista = (
+    "Agentes Claro · PDVs" if _has_claro_file and not _rsrp_available
+    else ("Red y Mercado · Operadores" if _rsrp_available and _market_uploaded and _altas_uploaded
+    else "Instructivo · Guía de uso")
+)
+st.sidebar.markdown(
+    "<div style='margin-bottom:6px;'>"
+    "<span style='font-size:.60rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;"
+    "letter-spacing:.4px;'>Vista activa</span></div>",
+    unsafe_allow_html=True
+)
+vista_activa = st.sidebar.radio(
+    "Vista del dashboard",
+    options=["Red y Mercado · Operadores", "Agentes Claro · PDVs", "Instructivo · Guía de uso"],
+    index=["Red y Mercado · Operadores", "Agentes Claro · PDVs", "Instructivo · Guía de uso"].index(
+        st.session_state.get("vista_activa", _default_vista)
+    ),
+    key="vista_activa",
+    horizontal=False,
+    label_visibility="collapsed",
+)
+st.sidebar.markdown("<div style='margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:10px;'></div>", unsafe_allow_html=True)
+
 # ---- CARGADOR 1: AGENTES CLARO ----
 st.sidebar.markdown(
-    "<div class='sidebar-section'>"
-    "<div class='sidebar-section-title'>Agentes Claro</div>"
-    "<div class='sidebar-section-label'>Plan de trabajo mensual</div>"
-    "<div class='sidebar-section-sub'>Excel del mes &middot; el sistema detecta la hoja y el periodo automáticamente</div>"
+    "<div style='margin-bottom:4px;'>"
+    "<div style='display:flex;align-items:center;gap:6px;margin-bottom:3px;'>"
+    "<div style='width:18px;height:18px;background:var(--accent-soft);border-radius:5px;"
+    "display:flex;align-items:center;justify-content:center;'>"
+    "<svg width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='#E10600' stroke-width='2.5'>"
+    "<path d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/><circle cx='9' cy='7' r='4'/>"
+    "<path d='M23 21v-2a4 4 0 0 0-3-3.87'/><path d='M16 3.13a4 4 0 0 1 0 7.75'/></svg></div>"
+    "<span style='font-size:.68rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;"
+    "letter-spacing:.4px;'>Agentes Claro · PDVs</span></div>"
+    "<div style='font-size:.76rem;font-weight:700;color:var(--text-primary);margin-bottom:1px;'>"
+    "Plan de trabajo mensual</div>"
+    "<div style='font-size:.67rem;color:var(--text-muted);'>Excel del mes · detección automática de hoja y periodo</div>"
     "</div>",
     unsafe_allow_html=True
 )
@@ -4528,10 +4844,17 @@ else:
 
 # ---- CARGADOR 2: RED Y MERCADO ----
 st.sidebar.markdown(
-    "<div class='sidebar-section'>"
-    "<div class='sidebar-section-title'>Red y Mercado</div>"
-    "<div class='sidebar-section-label'>Archivos de señal y mercado</div>"
-    "<div class='sidebar-section-sub'>RSRP requerido &middot; cuota de mercado y altas opcionales</div>"
+    "<div style='margin:12px 0 4px;border-top:1px solid var(--border);padding-top:12px;'>"
+    "<div style='display:flex;align-items:center;gap:6px;margin-bottom:3px;'>"
+    "<div style='width:18px;height:18px;background:#EFF6FF;border-radius:5px;"
+    "display:flex;align-items:center;justify-content:center;'>"
+    "<svg width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='#2563EB' stroke-width='2.5'>"
+    "<path d='M1 6l5 5 5-5 5 5 5-5'/><path d='M1 12l5 5 5-5 5 5 5-5'/></svg></div>"
+    "<span style='font-size:.68rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;"
+    "letter-spacing:.4px;'>Red y Mercado · Operadores</span></div>"
+    "<div style='font-size:.76rem;font-weight:700;color:var(--text-primary);margin-bottom:1px;'>"
+    "Archivos de señal y mercado</div>"
+    "<div style='font-size:.67rem;color:var(--text-muted);'>Los 3 archivos son requeridos para activar esta vista</div>"
     "</div>",
     unsafe_allow_html=True
 )
@@ -4586,136 +4909,15 @@ else:
     if _disk_altas:
         st.sidebar.caption(f"Servidor: {os.path.basename(_disk_altas)}")
 
-# ---- SWITCH DE VISTA ----
-st.sidebar.markdown(
-    "<div style='margin-bottom:6px;'>"
-    "<div style='font-size:.70rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px;'>Vista activa</div>"
-    "</div>",
-    unsafe_allow_html=True
-)
-_default_vista = (
-    "Agentes Claro · PDVs" if _has_claro_file and not _rsrp_available
-    else "Instructivo · Guía de uso"
-)
-vista_activa = st.sidebar.radio(
-    "Vista del dashboard",
-    options=["Red y Mercado · Operadores", "Agentes Claro · PDVs", "Instructivo · Guía de uso"],
-    index=["Red y Mercado · Operadores", "Agentes Claro · PDVs", "Instructivo · Guía de uso"].index(
-        st.session_state.get("vista_activa", _default_vista)
-    ),
-    key="vista_activa",
-    horizontal=False,
-)
-st.sidebar.markdown('</div>', unsafe_allow_html=True)
+
 
 
 _vista_claro_sidebar     = st.session_state.get("vista_activa", "Red y Mercado · Operadores") == "Agentes Claro · PDVs"
 _vista_instructivo_sidebar = st.session_state.get("vista_activa", "") == "Instructivo · Guía de uso"
 
 if _show_welcome:
-    st.markdown(
-        "<div style='animation:fadeDown .3s ease both;display:flex;align-items:center;gap:16px;"
-        "padding:20px 24px;background:white;border:1px solid var(--border);"
-        "border-radius:var(--radius-lg);margin-bottom:28px;box-shadow:var(--shadow-md);"
-        "border-left:4px solid var(--accent);'>"
-        "<div style='width:44px;height:44px;background:var(--accent);border-radius:12px;"
-        "display:flex;align-items:center;justify-content:center;flex-shrink:0;'>"
-        "<svg width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='white'"
-        " stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'>"
-        "<polyline points='22 7 13.5 15.5 8.5 10.5 2 17'/>"
-        "<polyline points='16 7 22 7 22 13'/></svg></div>"
-        "<div><div style='font-size:1.3rem;font-weight:950;color:var(--text-primary);letter-spacing:-.3px;'>"
-        "Dashboard de Inteligencia Comercial</div>"
-        "<div style='font-size:.80rem;color:var(--text-muted);margin-top:2px;'>"
-        "Claro Colombia &middot; Red y Mercado &middot; Gesti&#243;n de Agentes PDVs</div></div>"
-        "</div>",
-        unsafe_allow_html=True
-    )
-
-    _card  = "background:white;border:1px solid var(--border);border-radius:var(--radius-md);padding:22px 24px;box-shadow:var(--shadow-sm);animation:fadeUp .35s ease both;"
-    _tag_req = "<span style='background:var(--accent);color:white;font-size:.58rem;font-weight:800;padding:2px 7px;border-radius:99px;margin-left:6px;'>REQUERIDO</span>"
-    _tag_opt = "<span style='background:var(--bg-sidebar);color:var(--text-muted);font-size:.58rem;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid var(--border);margin-left:6px;'>OPCIONAL</span>"
-    _step_s  = "width:20px;height:20px;background:var(--text-primary);color:white;font-size:.62rem;font-weight:900;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;"
-
-    def _fr(icon, name, tag, desc):
-        return (f"<div style='display:flex;align-items:flex-start;gap:10px;padding:10px 12px;"
-                f"background:var(--bg);border:1px solid var(--border);border-radius:10px;margin-bottom:7px;'>"
-                f"<span style='font-size:1rem;flex-shrink:0;margin-top:1px;'>{icon}</span>"
-                f"<div><div style='font-size:.76rem;font-weight:800;color:var(--text-primary);'>{name}{tag}</div>"
-                f"<div style='font-size:.70rem;color:var(--text-muted);margin-top:2px;line-height:1.5;'>{desc}</div></div></div>")
-
-    def _sr(n, text):
-        return (f"<div style='display:flex;gap:9px;align-items:flex-start;margin-bottom:7px;'>"
-                f"<span style='{_step_s}'>{n}</span>"
-                f"<span style='font-size:.74rem;color:var(--text-secondary);line-height:1.55;'>{text}</span></div>")
-
-    col_w1, col_w2 = st.columns(2, gap="large")
-
-    with col_w1:
-        st.markdown(
-            f"<div style='{_card}border-top:3px solid #2563EB;'>"
-            f"<div style='display:flex;align-items:center;gap:8px;margin-bottom:10px;'>"
-            f"<div style='width:28px;height:28px;background:rgba(37,99,235,0.10);border-radius:7px;"
-            f"display:flex;align-items:center;justify-content:center;'>"
-            f"<svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='#2563EB' stroke-width='2.2'"
-            f" stroke-linecap='round' stroke-linejoin='round'><path d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z'/>"
-            f"<circle cx='12' cy='12' r='3'/></svg></div>"
-            f"<span style='font-size:.90rem;font-weight:900;color:#2563EB;'>Vista Red y Mercado</span></div>"
-            f"<div style='font-size:.76rem;color:var(--text-muted);line-height:1.65;margin-bottom:12px;'>"
-            f"Analiza se&#241;al RSRP de todos los operadores por CP &middot; "
-            f"Cuota de mercado y captaci&#243;n de altas</div>"
-            f"<div style='font-size:.64rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;"
-            f"letter-spacing:.4px;margin-bottom:7px;'>Archivos</div>"
-            + _fr("📄","RSRP_COMPLETO.csv",_tag_req,"Se&#241;al por CP, operador y fecha")
-            + _fr("📊","Cuota_mercado_completo.csv",_tag_req,"Cuota de mercado por CP y operador")
-            + _fr("📊","Cuota_alta_completo.csv",_tag_req,"Captaci&#243;n de altas por CP y operador")
-            + f"<div style='font-size:.64rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;"
-            f"letter-spacing:.4px;margin:10px 0 7px;'>C&#243;mo activar</div>"
-            + _sr(1,"Sube el CSV en el cargador <b>Se&#241;al RSRP</b> del sidebar")
-            + _sr(2,"Selecciona <b>Red y Mercado &middot; Operadores</b>")
-            + "</div>",
-            unsafe_allow_html=True
-        )
-
-    with col_w2:
-        st.markdown(
-            f"<div style='{_card}border-top:3px solid var(--accent);'>"
-            f"<div style='display:flex;align-items:center;gap:8px;margin-bottom:10px;'>"
-            f"<div style='width:28px;height:28px;background:var(--accent-soft);border-radius:7px;"
-            f"display:flex;align-items:center;justify-content:center;'>"
-            f"<svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='var(--accent)' stroke-width='2.2'"
-            f" stroke-linecap='round' stroke-linejoin='round'>"
-            f"<path d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/><circle cx='9' cy='7' r='4'/>"
-            f"<path d='M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'/></svg></div>"
-            f"<span style='font-size:.90rem;font-weight:900;color:var(--accent);'>Vista Agentes Claro</span></div>"
-            f"<div style='font-size:.76rem;color:var(--text-muted);line-height:1.65;margin-bottom:12px;'>"
-            f"Seguimiento del plan mensual: metas, ejecuci&#243;n, PDVs, asesores y cuota de altas</div>"
-            f"<div style='font-size:.64rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;"
-            f"letter-spacing:.4px;margin-bottom:7px;'>Archivo</div>"
-            + _fr("📋","Plan de trabajo mensual .xlsx",_tag_req,
-                "<b style='color:var(--text-primary);'>Nombre y hoja pueden ser cualquiera</b> "
-                "&mdash; el sistema detecta el contenido")
-            + f"<div style='font-size:.64rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;"
-            f"letter-spacing:.4px;margin:10px 0 7px;'>C&#243;mo activar</div>"
-            + _sr(1,"Sube el Excel en el cargador <b>Plan de trabajo</b> del sidebar")
-            + _sr(2,"Selecciona <b>Agentes Claro &middot; PDVs</b>")
-            + _sr(3,"Si hay varios meses, aparece un selector de periodo autom&#225;ticamente")
-            + "</div>",
-            unsafe_allow_html=True
-        )
-
-    st.markdown(
-        "<div style='background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);"
-        "padding:11px 16px;margin-top:4px;display:flex;align-items:center;justify-content:space-between;"
-        "animation:fadeUp .45s ease both;'>"
-        "<span style='font-size:.68rem;color:var(--text-muted);'>"
-        "&#128274; Archivos procesados localmente &middot; No se almacenan en ning&#250;n servidor</span>"
-        "<span style='font-size:.68rem;font-weight:700;color:var(--text-muted);'>Claro Colombia</span>"
-        "</div>",
-        unsafe_allow_html=True
-    )
+    render_instructivo()
     st.stop()
-
 
 if not _rsrp_available or df.empty or "Fecha de inicio" not in df.columns:
     fecha_min = pd.Timestamp("2024-01-01")
@@ -5460,21 +5662,31 @@ if _vista_claro:
 # HEADER (VISTA RED/MERCADO)
 # =========================================================
 
-# Guard: if no RSRP data, show friendly message
-if not _rsrp_available:
+# Guard: require ALL 3 files to show Red y Mercado view
+if not _rsrp_available or not _market_uploaded or not _altas_uploaded:
+    _missing = []
+    if not _rsrp_available:   _missing.append("📶 RSRP_COMPLETO.csv — señal por CP, operador y fecha")
+    if not _market_uploaded:  _missing.append("📊 Cuota_mercado_completo.csv — cuota de mercado por CP")
+    if not _altas_uploaded:   _missing.append("📈 Cuota_alta_completo.csv — captación de altas por CP")
     st.markdown(
         "<div style='background:var(--bg);border:1px solid var(--border);"
-        "border-radius:20px;padding:48px 32px;text-align:center;margin:60px auto;max-width:520px;'>"
+        "border-radius:20px;padding:48px 32px;text-align:center;margin:40px auto;max-width:560px;'>"
         "<div style='font-size:2.5rem;margin-bottom:14px;'>📡</div>"
-        "<div style='font-size:1.1rem;font-weight:800;color:var(--text-primary);margin-bottom:8px;'>Sin datos de señal RSRP</div>"
-        "<div style='font-size:.84rem;color:var(--text-muted);margin-bottom:16px;'>"
-        "Sube el archivo de señal RSRP usando el cargador del sidebar para activar esta vista.</div>"
-        "<div style='font-size:.76rem;color:var(--text-muted);'>"
-        "Acepta archivos .csv y .xlsx &middot; "
-        "Columnas requeridas: Codigo_postal &middot; Fecha de inicio &middot; Claro &middot; Tigo &middot; Movistar...</div>"
-        "</div>",
+        "<div style='font-size:1.1rem;font-weight:800;color:var(--text-primary);margin-bottom:8px;'>"
+        "Se requieren los 3 archivos para activar esta vista</div>"
+        "<div style='font-size:.84rem;color:var(--text-muted);margin-bottom:20px;'>"
+        "Sube los archivos faltantes usando los cargadores del sidebar:</div>"
+        "<div style='text-align:left;display:inline-block;'>",
         unsafe_allow_html=True
     )
+    for _m in _missing:
+        st.markdown(
+            f"<div style='background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;"
+            f"padding:10px 14px;margin-bottom:8px;font-size:.82rem;color:#991B1B;'>"
+            f"❌ {_m}</div>",
+            unsafe_allow_html=True
+        )
+    st.markdown("</div></div>", unsafe_allow_html=True)
     st.stop()
 
 # excel_bytes — defined at module level so download button always works
