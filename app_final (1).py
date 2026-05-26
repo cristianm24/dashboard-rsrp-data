@@ -159,6 +159,13 @@ h1, h2, h3, h4, h5, h6 { color: var(--text-primary); font-weight: 800; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
 
+/* Force white text in REQUERIDO badges */
+span[style*="background:#E10600"],
+span[style*="background: #E10600"] {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
 /* ── Hide Altair/Vega dark toolbar ───────────────────────────── */
 .vega-embed .vega-actions,
 .vega-embed summary,
@@ -3019,9 +3026,10 @@ def render_instructivo():
     """, unsafe_allow_html=True)
 
     # ── Shared helpers ─────────────────────────────────────────────────────────
-    _tag_req = ("<span style='background:#E10600;color:#FFFFFF;font-size:.55rem;font-weight:900;"
+    _tag_req = ("<span style='background:#E10600;color:#FFFFFF !important;font-size:.55rem;font-weight:900;"
                 "padding:2px 9px;border-radius:99px;margin-left:7px;vertical-align:middle;"
-                "letter-spacing:.4px;text-transform:uppercase;box-shadow:0 2px 6px rgba(225,6,0,0.3);'>"
+                "letter-spacing:.4px;text-transform:uppercase;box-shadow:0 2px 6px rgba(225,6,0,0.3);"
+                "-webkit-text-fill-color:#FFFFFF !important;'>"
                 "Requerido</span>")
 
     def _file_row(icon, name, tag_html, desc):
