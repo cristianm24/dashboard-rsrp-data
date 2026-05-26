@@ -2003,9 +2003,11 @@ def merge_business_sources(market_long, altas_long, territorial_df):
 
     grp = ["Codigo_postal", "Fecha de inicio"]
     market_total = business.groupby(grp, dropna=False)["Mercado"].transform("sum")
-    altas_total = business.groupby(grp, dropna=False)["Altas"].transform("sum")
-    business["Cuota_mercado"] = np.where(market_total > 0, business["Mercado"] / market_total * 100, np.nan)
-    business["Participacion_altas"] = np.where(altas_total > 0, business["Altas"] / altas_total * 100, np.nan)
+    altas_total  = business.groupby(grp, dropna=False)["Altas"].transform("sum")
+    # Use replace(0, np.nan) instead of np.where — pandas numexpr evaluates both
+    # branches of np.where BEFORE applying the condition, causing ZeroDivisionError
+    business["Cuota_mercado"]      = business["Mercado"] / market_total.replace(0, np.nan) * 100
+    business["Participacion_altas"] = business["Altas"]  / altas_total.replace(0, np.nan)  * 100
     business = business.loc[:, ~business.columns.duplicated()].copy()
     return business
 
@@ -2059,7 +2061,7 @@ def compute_business_metrics(business_df, rsrp_df):
             )
         )
         total_market = market_operator["Mercado_total"].sum()
-        market_operator["Cuota_mercado_global"] = np.where(total_market > 0, market_operator["Mercado_total"] / total_market * 100, np.nan)
+        market_operator["Cuota_mercado_global"] = market_operator["Mercado_total"] / (total_market if total_market != 0 else np.nan) * 100
         market_operator = market_operator.sort_values("Cuota_mercado_global", ascending=False).reset_index(drop=True)
         result["market_operator"] = market_operator
         if not market_operator.empty:
@@ -2073,7 +2075,7 @@ def compute_business_metrics(business_df, rsrp_df):
         if not market_time.empty:
             totals = market_time.groupby("Periodo_Mes", as_index=False)["Mercado_total"].sum().rename(columns={"Mercado_total": "Total_mes"})
             market_time = market_time.merge(totals, on="Periodo_Mes", how="left")
-            market_time["Cuota_mercado"] = np.where(market_time["Total_mes"] > 0, market_time["Mercado_total"] / market_time["Total_mes"] * 100, np.nan)
+            market_time["Cuota_mercado"] = market_time["Mercado_total"] / market_time["Total_mes"].replace(0, np.nan) * 100
             result["market_time"] = market_time
             pts = market_time.sort_values(["Periodo_Mes", "Cuota_mercado"], ascending=[True, False]).copy()
             month_rank = pts.groupby("Periodo_Mes", as_index=False).first()
@@ -2099,7 +2101,7 @@ def compute_business_metrics(business_df, rsrp_df):
             )
         )
         total_altas = altas_operator["Altas_total"].sum()
-        altas_operator["Participacion_altas_global"] = np.where(total_altas > 0, altas_operator["Altas_total"] / total_altas * 100, np.nan)
+        altas_operator["Participacion_altas_global"] = altas_operator["Altas_total"] / (total_altas if total_altas != 0 else np.nan) * 100
         altas_operator = altas_operator.sort_values("Participacion_altas_global", ascending=False).reset_index(drop=True)
         result["altas_operator"] = altas_operator
         if not altas_operator.empty:
@@ -2113,7 +2115,7 @@ def compute_business_metrics(business_df, rsrp_df):
         if not altas_time.empty:
             totals = altas_time.groupby("Periodo_Mes", as_index=False)["Altas_total"].sum().rename(columns={"Altas_total": "Total_mes"})
             altas_time = altas_time.merge(totals, on="Periodo_Mes", how="left")
-            altas_time["Participacion_altas"] = np.where(altas_time["Total_mes"] > 0, altas_time["Altas_total"] / altas_time["Total_mes"] * 100, np.nan)
+            altas_time["Participacion_altas"] = altas_time["Altas_total"] / altas_time["Total_mes"].replace(0, np.nan) * 100
             result["altas_time"] = altas_time
             pts = altas_time.sort_values(["Periodo_Mes", "Participacion_altas"], ascending=[True, False]).copy()
             month_rank = pts.groupby("Periodo_Mes", as_index=False).first()
@@ -5482,7 +5484,7 @@ if _rsrp_available and not df_long.empty:
     quality_pct = quality.copy()
     quality_totals = quality_pct.groupby("Operador", as_index=False)["Cantidad"].sum().rename(columns={"Cantidad": "Total"})
     quality_pct = quality_pct.merge(quality_totals, on="Operador", how="left")
-    quality_pct["Porcentaje"] = np.where(quality_pct["Total"] > 0, quality_pct["Cantidad"] / quality_pct["Total"] * 100, np.nan)
+    quality_pct["Porcentaje"] = quality_pct["Cantidad"] / quality_pct["Total"].replace(0, np.nan) * 100
 
     matrix_source = (
         df_f[df_f["Codigo_postal"].isin(top_zones["Codigo_postal"])] if not top_zones.empty else df_f.iloc[0:0]
